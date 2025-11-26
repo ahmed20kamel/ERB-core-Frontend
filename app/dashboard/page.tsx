@@ -636,7 +636,8 @@ function DashboardPageContent() {
                         {stats?.suppliers.total || 0}
                       </div>
                     </div>
-                    <BuildingIcon className="w-8 h-8" style={{ color: '#22C55E', opacity: 0.2 }} />
+                    <BuildingIcon className="w-8 h-8 text-green-500 opacity-20" />
+
                   </div>
                 </div>
               </Link>
