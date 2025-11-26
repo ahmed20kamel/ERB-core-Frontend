@@ -1301,9 +1301,13 @@ function DashboardPageContent() {
                       }}
                     >
                       <div className="flex items-center gap-2 mb-1">
-                        <Badge variant={getActionBadgeVariant(activity.action)} style={{ fontSize: '10px', padding: '2px 6px' }}>
-                          {getActionLabel(activity.action)}
-                        </Badge>
+                      <Badge
+                        variant={getActionBadgeVariant(activity.action)}
+                        className="text-[10px] px-[6px]"
+                      >
+                        {getActionLabel(activity.action)}
+                      </Badge>
+
                         <div className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>
                           {getTypeLabel(activity.type)}
                         </div>
