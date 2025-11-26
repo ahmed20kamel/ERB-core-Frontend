@@ -1,0 +1,842 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { purchaseQuotationsApi } from '@/lib/api/purchase-quotations';
+import { quotationRequestsApi } from '@/lib/api/quotation-requests';
+import { purchaseRequestsApi } from '@/lib/api/purchase-requests';
+import { suppliersApi } from '@/lib/api/suppliers';
+import { productsApi } from '@/lib/api/products';
+import MainLayout from '@/components/layout/MainLayout';
+import Link from 'next/link';
+import { PurchaseQuotationItem } from '@/types';
+import { toast } from '@/lib/hooks/use-toast';
+import SearchableDropdown from '@/components/ui/SearchableDropdown';
+import FormField from '@/components/ui/FormField';
+import { formatBackendError, validateRequired, validatePositiveNumber, validateDateAfter } from '@/lib/utils/validation';
+import { formatPrice } from '@/lib/utils/format';
+import RouteGuard from '@/components/auth/RouteGuard';
+import { useAuth } from '@/lib/hooks/use-auth';
+
+export default function NewPurchaseQuotationPage() {
+  return (
+    <RouteGuard
+      requiredPermission={{ category: 'purchase_quotation', action: 'create' }}
+      redirectTo="/purchase-quotations"
+    >
+      <NewPurchaseQuotationPageContent />
+    </RouteGuard>
+  );
+}
+
+function NewPurchaseQuotationPageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const quotationRequestId = searchParams.get('quotation_request_id');
+  const { user } = useAuth();
+
+  const [formData, setFormData] = useState({
+    quotation_request_id: quotationRequestId ? Number(quotationRequestId) : null,
+    purchase_request_id: null as number | null,
+    supplier_id: 0,
+    quotation_date: new Date().toISOString().split('T')[0],
+    valid_until: '',
+    payment_terms: '',
+    delivery_terms: '',
+    notes: '',
+    tax_rate: 0,
+    discount: 0,
+  });
+
+  const [items, setItems] = useState<
+    Omit<PurchaseQuotationItem, 'product' | 'total' | 'created_at'>[]
+  >([]);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const { data: quotationRequest } = useQuery({
+    queryKey: ['quotation-requests', quotationRequestId],
+    queryFn: () => quotationRequestsApi.getById(Number(quotationRequestId!)),
+    enabled: !!quotationRequestId,
+  });
+
+  // Get purchase request if we have purchase_request_id
+  const purchaseRequestIdFromQR = quotationRequest 
+    ? (typeof quotationRequest.purchase_request === 'object' 
+        ? quotationRequest.purchase_request.id 
+        : quotationRequest.purchase_request)
+    : null;
+
+  const { data: purchaseRequest } = useQuery({
+    queryKey: ['purchase-requests', purchaseRequestIdFromQR],
+    queryFn: () => purchaseRequestsApi.getById(Number(purchaseRequestIdFromQR!)),
+    enabled: !!purchaseRequestIdFromQR,
+  });
+
+  const { data: suppliers } = useQuery({
+    queryKey: ['suppliers'],
+    queryFn: () => suppliersApi.getAll({ page: 1 }),
+  });
+
+  const { data: products } = useQuery({
+    queryKey: ['products'],
+    queryFn: () => productsApi.getAll({ page: 1, page_size: 1000 }), // Get more products to ensure we have all
+  });
+
+  useEffect(() => {
+    if (quotationRequest) {
+      // Get supplier ID (handle both object and number)
+      const supplierId = typeof quotationRequest.supplier === 'object' 
+        ? quotationRequest.supplier.id 
+        : quotationRequest.supplier;
+      
+      // Get purchase_request_id from quotation_request
+      const purchaseRequestId = typeof quotationRequest.purchase_request === 'object'
+        ? quotationRequest.purchase_request.id
+        : quotationRequest.purchase_request;
+      
+      setFormData((prev) => ({
+        ...prev,
+        quotation_request_id: quotationRequest.id,
+        purchase_request_id: purchaseRequestId || null,
+        supplier_id: supplierId,
+      }));
+      
+      // Pre-fill items from Quotation Request
+      if (quotationRequest.items && quotationRequest.items.length > 0) {
+        const requestItems = quotationRequest.items.map((item) => {
+          // Get product_id (handle both object and number)
+          const productId = item.product?.id || item.product_id;
+          
+          if (!productId) {
+            console.warn('Item missing product_id:', item);
+            return null;
+          }
+          
+          return {
+            product_id: productId,
+            quantity: item.quantity || 0,
+            unit_price: 0, // User will enter price
+            discount: 0,
+            tax_rate: 0,
+            notes: item.notes || '',
+            // Store product info if available for display
+            _product: item.product || null,
+          };
+        }).filter((item) => item !== null) as any[]; // Remove any null items
+        
+        if (requestItems.length > 0) {
+          setItems(requestItems);
+        }
+      }
+    }
+  }, [quotationRequest]);
+
+  // Update products in items when products list is loaded
+  useEffect(() => {
+    if (products?.results && items.length > 0) {
+      const updatedItems = items.map((item) => {
+        // If item doesn't have _product, try to find it in products list
+        if (!(item as any)._product) {
+          const product = products.results.find((p) => p.id === item.product_id);
+          if (product) {
+            return { ...item, _product: product };
+          }
+        }
+        return item;
+      });
+      // Only update if there are changes
+      const hasChanges = updatedItems.some((item, index) => 
+        (item as any)._product !== (items[index] as any)._product
+      );
+      if (hasChanges) {
+        setItems(updatedItems);
+      }
+    }
+  }, [products?.results]);
+
+  const mutation = useMutation({
+    mutationFn: purchaseQuotationsApi.create,
+    onSuccess: () => {
+      toast('Purchase quotation created successfully!', 'success');
+      router.push('/purchase-quotations');
+    },
+    onError: (error: any) => {
+      const errorMessage = formatBackendError(error);
+      toast(errorMessage, 'error');
+      
+      // Set field-specific errors
+      if (error?.response?.data) {
+        const backendErrors: Record<string, string> = {};
+        Object.entries(error.response.data).forEach(([key, value]) => {
+          if (Array.isArray(value)) {
+            backendErrors[key] = value[0];
+          } else if (typeof value === 'string') {
+            backendErrors[key] = value;
+          } else if (typeof value === 'object') {
+            Object.entries(value as Record<string, any>).forEach(([nestedKey, nestedValue]) => {
+              backendErrors[`${key}.${nestedKey}`] = Array.isArray(nestedValue) ? nestedValue[0] : nestedValue;
+            });
+          }
+        });
+        setErrors(backendErrors);
+      }
+    },
+  });
+
+
+  const handleRemoveItem = (index: number) => {
+    setItems(items.filter((_, i) => i !== index));
+  };
+
+  const handleUpdateItem = (index: number, field: string, value: any) => {
+    const updatedItems = [...items];
+    const currentItem = items[index];
+    updatedItems[index] = { 
+      ...currentItem, 
+      [field]: value,
+      // Always preserve _product
+      _product: (currentItem as any)._product || null,
+    };
+    setItems(updatedItems);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrors({});
+    
+    // Frontend validation
+    const validationErrors: Record<string, string> = {};
+    
+    // Check if PR has awarded quotation or purchase orders
+    if (purchaseRequest) {
+      if (purchaseRequest.has_awarded_quotation) {
+        validationErrors.purchase_request_id = 'This Purchase Request already has an awarded quotation. Cannot create new purchase quotations after supplier has been awarded.';
+        toast('This Purchase Request already has an awarded quotation. Cannot create new purchase quotations.', 'error');
+      } else if (purchaseRequest.has_purchase_orders) {
+        validationErrors.purchase_request_id = 'This Purchase Request already has purchase orders. Cannot create new purchase quotations after LPO has been created.';
+        toast('This Purchase Request already has purchase orders. Cannot create new purchase quotations.', 'error');
+      }
+    }
+    
+    // Validate supplier
+    if (!formData.supplier_id || formData.supplier_id === 0) {
+      validationErrors.supplier_id = 'Supplier is required. Please select a supplier.';
+    }
+    
+    // Validate quotation date
+    if (!formData.quotation_date) {
+      validationErrors.quotation_date = 'Quotation date is required.';
+    }
+    
+    // Validate valid_until
+    if (formData.valid_until) {
+      const dateError = validateDateAfter(formData.valid_until, formData.quotation_date, 'Valid Until', 'Quotation Date');
+      if (dateError) {
+        validationErrors.valid_until = dateError;
+      }
+    }
+    
+    // Validate items
+    if (items.length === 0) {
+      validationErrors.items = 'At least one product must be added.';
+    } else {
+      // Validate each item
+      items.forEach((item, index) => {
+        if (!item.product_id || item.product_id === 0) {
+          validationErrors[`items.${index}.product_id`] = 'Product is required.';
+        }
+        const qtyError = validatePositiveNumber(item.quantity, `Product ${index + 1} Quantity`);
+        if (qtyError) {
+          validationErrors[`items.${index}.quantity`] = qtyError;
+        }
+        if (item.unit_price < 0) {
+          validationErrors[`items.${index}.unit_price`] = `Unit price for product ${index + 1} cannot be negative.`;
+        }
+        if (item.discount < 0) {
+          validationErrors[`items.${index}.discount`] = `Discount for product ${index + 1} cannot be negative.`;
+        }
+        if (item.tax_rate < 0 || item.tax_rate > 100) {
+          validationErrors[`items.${index}.tax_rate`] = `Tax rate for product ${index + 1} must be between 0 and 100.`;
+        }
+      });
+    }
+    
+    // Validate tax_rate and discount
+    if (formData.tax_rate < 0 || formData.tax_rate > 100) {
+      validationErrors.tax_rate = 'Tax rate must be between 0 and 100.';
+    }
+    if (formData.discount < 0) {
+      validationErrors.discount = 'Discount cannot be negative.';
+    }
+    
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      toast('Please correct the errors in the form', 'error');
+      // Scroll to first error
+      setTimeout(() => {
+        const firstErrorField = Object.keys(validationErrors)[0];
+        const element = document.querySelector(`[name="${firstErrorField}"]`) || 
+                       document.querySelector(`[data-field="${firstErrorField}"]`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          if ('focus' in element && typeof (element as any).focus === 'function') {
+            (element as any).focus();
+          }
+        }
+      }, 100);
+      return;
+    }
+    
+    mutation.mutate({ 
+      ...formData, 
+      purchase_request_id: formData.purchase_request_id || undefined,
+      items 
+    });
+  };
+
+  const calculateSubtotal = () => {
+    return items.reduce((sum, item) => {
+      const itemTotal = item.quantity * item.unit_price;
+      const discountAmount = itemTotal * (item.discount / 100);
+      return sum + itemTotal - discountAmount;
+    }, 0);
+  };
+
+  const calculateTotal = () => {
+    const subtotal = calculateSubtotal();
+    const discountAmount = subtotal * (formData.discount / 100);
+    const afterDiscount = subtotal - discountAmount;
+    const taxAmount = afterDiscount * (formData.tax_rate / 100);
+    return afterDiscount + taxAmount;
+  };
+
+  return (
+    <MainLayout>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-6)' }}>
+        {/* Header Section - Unified */}
+        <div>
+          <Link 
+            href="/purchase-quotations" 
+            className="text-sm mb-2 inline-block"
+            style={{ 
+              color: 'var(--text-secondary)',
+              textDecoration: 'none',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = 'var(--text-primary)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'var(--text-secondary)';
+            }}
+          >
+            ← Back to Purchase Quotations
+          </Link>
+          <h1 style={{ 
+            fontSize: 'var(--font-2xl)',
+            fontWeight: 'var(--font-weight-semibold)',
+            color: 'var(--text-primary)',
+            margin: 0,
+            marginBottom: 'var(--spacing-1)',
+          }}>
+            Create Purchase Quotation
+          </h1>
+          <p style={{ 
+            fontSize: 'var(--font-sm)',
+            color: 'var(--text-secondary)',
+            margin: 0,
+          }}>
+            Create a new purchase quotation with pricing details
+          </p>
+        </div>
+
+        {/* Info Banner - Unified */}
+        {quotationRequest && (
+          <div className="card" style={{ 
+            backgroundColor: 'var(--info-banner-bg)',
+            borderColor: 'var(--info-banner-border)',
+            borderWidth: '1px',
+            borderStyle: 'solid',
+          }}>
+            <h3 style={{ 
+              fontSize: 'var(--font-sm)',
+              fontWeight: 'var(--font-weight-semibold)',
+              color: 'var(--info-banner-text)',
+              margin: 0,
+              marginBottom: 'var(--spacing-2)',
+            }}>
+              Quotation Request Information
+            </h3>
+            <div style={{ 
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: 'var(--spacing-2)',
+              fontSize: 'var(--font-sm)',
+            }}>
+              <div>
+                <span style={{ color: 'var(--info-banner-text)' }}>Request ID:</span>{' '}
+                <span style={{ fontWeight: 'var(--font-weight-medium)', color: 'var(--text-primary)' }}>#{quotationRequest.id}</span>
+              </div>
+              <div>
+                <span style={{ color: 'var(--info-banner-text)' }}>Supplier:</span>{' '}
+                <span style={{ fontWeight: 'var(--font-weight-medium)', color: 'var(--text-primary)' }}>
+                  {typeof quotationRequest.supplier === 'object'
+                    ? quotationRequest.supplier.name || quotationRequest.supplier.business_name
+                    : 'N/A'}
+                </span>
+              </div>
+              {quotationRequest.items && (
+                <div>
+                  <span style={{ color: 'var(--info-banner-text)' }}>Items:</span>{' '}
+                  <span style={{ fontWeight: 'var(--font-weight-medium)', color: 'var(--text-primary)' }}>{quotationRequest.items.length} items loaded automatically</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Form Card - Unified */}
+        <form onSubmit={handleSubmit} className="card">
+          {/* Form Fields Grid - Unified Spacing */}
+          <div style={{ 
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+            gap: 'var(--spacing-4)',
+            marginBottom: 'var(--spacing-6)',
+          }}>
+            <FormField
+              label="Supplier"
+              required
+              error={errors.supplier_id}
+              fieldName="supplier_id"
+            >
+              <SearchableDropdown
+                options={[
+                  { value: 0, label: 'Select Supplier' },
+                  ...(suppliers?.results
+                    .filter((s) => s.is_active)
+                    .map((supplier) => ({
+                      value: supplier.id,
+                      label: supplier.business_name || supplier.name,
+                      searchText: `${supplier.business_name || ''} ${supplier.name || ''} ${supplier.contact_person || ''}`,
+                    })) || []),
+                ]}
+                value={formData.supplier_id}
+                onChange={(val) => {
+                  setFormData({ ...formData, supplier_id: Number(val) });
+                  if (errors.supplier_id) {
+                    setErrors({ ...errors, supplier_id: '' });
+                  }
+                }}
+                placeholder="Select Supplier"
+                allowClear
+              />
+            </FormField>
+
+            <FormField
+              label="Quotation Date"
+              required
+              error={errors.quotation_date}
+              fieldName="quotation_date"
+            >
+              <input
+                type="date"
+                name="quotation_date"
+                value={formData.quotation_date}
+                onChange={(e) => {
+                  setFormData({ ...formData, quotation_date: e.target.value });
+                  if (errors.quotation_date) {
+                    setErrors({ ...errors, quotation_date: '' });
+                  }
+                }}
+                className={`input w-full ${errors.quotation_date ? 'border-red-500' : ''}`}
+              />
+            </FormField>
+
+            <FormField
+              label="Valid Until"
+              error={errors.valid_until}
+              fieldName="valid_until"
+            >
+              <input
+                type="date"
+                name="valid_until"
+                value={formData.valid_until}
+                onChange={(e) => {
+                  setFormData({ ...formData, valid_until: e.target.value });
+                  if (errors.valid_until) {
+                    setErrors({ ...errors, valid_until: '' });
+                  }
+                }}
+                className={`input w-full ${errors.valid_until ? 'border-red-500' : ''}`}
+              />
+            </FormField>
+
+            <FormField
+              label="Tax Rate (%)"
+              error={errors.tax_rate}
+              fieldName="tax_rate"
+            >
+              <input
+                type="number"
+                name="tax_rate"
+                step="0.01"
+                min="0"
+                max="100"
+                value={formData.tax_rate}
+                onChange={(e) => {
+                  setFormData({ ...formData, tax_rate: Number(e.target.value) });
+                  if (errors.tax_rate) {
+                    setErrors({ ...errors, tax_rate: '' });
+                  }
+                }}
+                className={`input w-full ${errors.tax_rate ? 'border-red-500' : ''}`}
+              />
+            </FormField>
+
+            <FormField
+              label="Discount (%)"
+              error={errors.discount}
+              fieldName="discount"
+            >
+              <input
+                type="number"
+                name="discount"
+                step="0.01"
+                min="0"
+                value={formData.discount}
+                onChange={(e) => {
+                  setFormData({ ...formData, discount: Number(e.target.value) });
+                  if (errors.discount) {
+                    setErrors({ ...errors, discount: '' });
+                  }
+                }}
+                className={`input w-full ${errors.discount ? 'border-red-500' : ''}`}
+              />
+            </FormField>
+
+            <div style={{ gridColumn: 'span 2' }}>
+              <FormField label="Payment Terms">
+                <textarea
+                  value={formData.payment_terms}
+                  onChange={(e) => setFormData({ ...formData, payment_terms: e.target.value })}
+                  rows={3}
+                  className="input"
+                />
+              </FormField>
+            </div>
+
+            <div style={{ gridColumn: 'span 2' }}>
+              <FormField label="Delivery Method (Optional)">
+                <select
+                  value={formData.delivery_method}
+                  onChange={(e) => setFormData({ ...formData, delivery_method: e.target.value as 'pickup' | 'delivery' | '' })}
+                  className="input w-full"
+                >
+                  <option value="">-- Select Delivery Method --</option>
+                  <option value="pickup">Pick Up</option>
+                  <option value="delivery">Delivery</option>
+                </select>
+              </FormField>
+
+              <FormField label="Delivery Terms (Optional)">
+                <textarea
+                  value={formData.delivery_terms}
+                  onChange={(e) => setFormData({ ...formData, delivery_terms: e.target.value })}
+                  rows={3}
+                  className="input"
+                />
+              </FormField>
+            </div>
+
+            <div style={{ gridColumn: '1 / -1' }}>
+              <FormField label="Notes">
+                <textarea
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  rows={3}
+                  className="input"
+                />
+              </FormField>
+            </div>
+          </div>
+
+          {/* Items Section - Unified */}
+          <div style={{ marginBottom: 'var(--spacing-6)' }}>
+            <div style={{ 
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: 'var(--spacing-4)',
+            }}>
+              <h3 style={{ 
+                fontSize: 'var(--font-lg)',
+                fontWeight: 'var(--font-weight-semibold)',
+                color: 'var(--text-primary)',
+                margin: 0,
+              }}>
+                Products
+              </h3>
+              {errors.items && (
+                <span style={{ 
+                  fontSize: 'var(--font-sm)',
+                  color: 'var(--color-error)',
+                }}>
+                  {errors.items}
+                </span>
+              )}
+            </div>
+
+            {items.length > 0 ? (
+              <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                <div style={{ overflowX: 'auto' }}>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Product</th>
+                        <th>Qty</th>
+                        <th>Price</th>
+                        <th>Disc %</th>
+                        <th>Tax %</th>
+                        <th>Total</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {items.map((item, index) => {
+                        // Try to get product from stored _product first, then from products list
+                        let product = (item as any)._product;
+                        
+                        // If no product in stored _product, try to get from products list
+                        if (!product && products?.results) {
+                          product = products.results.find((p) => p.id === item.product_id);
+                          // Store it if found
+                          if (product) {
+                            (item as any)._product = product;
+                          }
+                        }
+                        
+                        // If still no product, try to fetch it from quotationRequest items
+                        if (!product && quotationRequest?.items) {
+                          const requestItem = quotationRequest.items.find((ri: any) => {
+                            const riProductId = ri.product?.id || ri.product_id;
+                            return riProductId === item.product_id;
+                          });
+                          if (requestItem?.product) {
+                            product = requestItem.product;
+                            // Store it for future use
+                            (item as any)._product = product;
+                          }
+                        }
+                        
+                        const itemSubtotal = item.quantity * item.unit_price;
+                        const discountAmount = itemSubtotal * (item.discount / 100);
+                        const afterDiscount = itemSubtotal - discountAmount;
+                        const taxAmount = afterDiscount * (item.tax_rate / 100);
+                        const itemTotal = afterDiscount + taxAmount;
+
+                        return (
+                          <tr key={index}>
+                            <td>
+                              <div style={{ 
+                                fontWeight: 'var(--font-weight-medium)',
+                                color: 'var(--text-primary)',
+                              }}>
+                                {product?.name || `Product ID: ${item.product_id}`}
+                              </div>
+                              {product?.code && (
+                                <div style={{ 
+                                  fontSize: 'var(--font-xs)',
+                                  color: 'var(--text-secondary)',
+                                }}>
+                                  {product.code}
+                                </div>
+                              )}
+                            </td>
+                            <td>
+                              <input
+                                type="number"
+                                min="1"
+                                step="0.01"
+                                value={item.quantity}
+                                onChange={(e) => handleUpdateItem(index, 'quantity', Number(e.target.value))}
+                                className="input"
+                                style={{ width: '80px' }}
+                              />
+                            </td>
+                            <td>
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={item.unit_price}
+                                onChange={(e) => handleUpdateItem(index, 'unit_price', Number(e.target.value))}
+                                className="input"
+                                style={{ width: '96px' }}
+                              />
+                            </td>
+                            <td>
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={item.discount}
+                                onChange={(e) => handleUpdateItem(index, 'discount', Number(e.target.value))}
+                                className="input"
+                                style={{ width: '80px' }}
+                              />
+                            </td>
+                            <td>
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={item.tax_rate}
+                                onChange={(e) => handleUpdateItem(index, 'tax_rate', Number(e.target.value))}
+                                className="input"
+                                style={{ width: '80px' }}
+                              />
+                            </td>
+                            <td>
+                              <div style={{ 
+                                fontWeight: 'var(--font-weight-semibold)',
+                                color: 'var(--text-primary)',
+                              }}>
+                                {itemTotal.toFixed(2)}
+                              </div>
+                            </td>
+                            <td>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveItem(index)}
+                                className="btn btn-primary"
+                                style={{
+                                  backgroundColor: 'var(--color-error)',
+                                  borderColor: 'var(--color-error)',
+                                  color: '#FFFFFF',
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor = '#DC2626';
+                                  e.currentTarget.style.borderColor = '#DC2626';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'var(--color-error)';
+                                  e.currentTarget.style.borderColor = 'var(--color-error)';
+                                }}
+                              >
+                                Delete
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : (
+              <div className="card" style={{ 
+                textAlign: 'center', 
+                padding: 'var(--spacing-8)',
+                color: 'var(--text-secondary)',
+              }}>
+                <p style={{ margin: 0 }}>
+                  {quotationRequestId 
+                    ? 'No products found in the Quotation Request. Please add products to the Quotation Request first.'
+                    : 'No products loaded. Please create a Quotation Request first with products.'}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Summary - Unified */}
+          <div className="card" style={{ 
+            backgroundColor: 'var(--bg-tertiary)',
+            marginBottom: 'var(--spacing-6)',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <div style={{ width: '256px', display: 'flex', flexDirection: 'column', gap: 'var(--spacing-2)' }}>
+                <div style={{ 
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  fontSize: 'var(--font-sm)',
+                }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>Subtotal:</span>
+                  <span style={{ 
+                    fontWeight: 'var(--font-weight-semibold)',
+                    color: 'var(--text-primary)',
+                  }}>
+                    {formatPrice(calculateSubtotal())}
+                  </span>
+                </div>
+                <div style={{ 
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  fontSize: 'var(--font-sm)',
+                }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>Discount ({formData.discount}%):</span>
+                  <span style={{ 
+                    fontWeight: 'var(--font-weight-semibold)',
+                    color: 'var(--text-primary)',
+                  }}>
+                    {formatPrice(calculateSubtotal() * (formData.discount / 100))}
+                  </span>
+                </div>
+                <div style={{ 
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  fontSize: 'var(--font-sm)',
+                }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>Tax ({formData.tax_rate}%):</span>
+                  <span style={{ 
+                    fontWeight: 'var(--font-weight-semibold)',
+                    color: 'var(--text-primary)',
+                  }}>
+                    {formatPrice(
+                      (calculateSubtotal() - calculateSubtotal() * (formData.discount / 100)) *
+                      (formData.tax_rate / 100)
+                    )}
+                  </span>
+                </div>
+                <div style={{ 
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  borderTop: `1px solid var(--border-primary)`,
+                  paddingTop: 'var(--spacing-2)',
+                  fontSize: 'var(--font-base)',
+                }}>
+                  <span style={{ 
+                    fontWeight: 'var(--font-weight-bold)',
+                    color: 'var(--text-primary)',
+                  }}>
+                    Total:
+                  </span>
+                  <span style={{ 
+                    fontWeight: 'var(--font-weight-bold)',
+                    color: 'var(--text-primary)',
+                  }}>
+                    {formatPrice(calculateTotal())}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Form Actions - Unified */}
+          <div style={{ display: 'flex', gap: 'var(--spacing-3)' }}>
+            <button
+              type="submit"
+              disabled={mutation.isPending}
+              className="btn btn-primary"
+            >
+              {mutation.isPending ? 'Creating...' : 'Create Quotation'}
+            </button>
+            <Link href="/purchase-quotations" className="btn btn-secondary">
+              Cancel
+            </Link>
+          </div>
+        </form>
+      </div>
+    </MainLayout>
+  );
+}

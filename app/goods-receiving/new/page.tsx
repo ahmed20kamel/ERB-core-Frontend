@@ -1,0 +1,629 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { purchaseOrdersApi } from '@/lib/api/purchase-orders';
+import { goodsReceivingApi, GRNItem } from '@/lib/api/goods-receiving';
+import MainLayout from '@/components/layout/MainLayout';
+import { formatPrice } from '@/lib/utils/format';
+import { toast } from '@/lib/hooks/use-toast';
+import SearchableDropdown from '@/components/ui/SearchableDropdown';
+import FormField from '@/components/ui/FormField';
+import { formatBackendError, validateRequired, validatePositiveNumber } from '@/lib/utils/validation';
+import { canCreateGRN } from '@/lib/utils/workflow-guards';
+import RouteGuard from '@/components/auth/RouteGuard';
+
+export default function NewGRNPage() {
+  return (
+    <RouteGuard
+      requiredPermission={{ category: 'goods_receiving', action: 'create' }}
+      redirectTo="/goods-receiving"
+    >
+      <NewGRNPageContent />
+    </RouteGuard>
+  );
+}
+
+function NewGRNPageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const purchaseOrderId = searchParams.get('purchase_order_id');
+
+  const [formData, setFormData] = useState({
+    purchase_order_id: purchaseOrderId ? Number(purchaseOrderId) : 0,
+    receipt_date: new Date().toISOString().split('T')[0],
+    status: 'draft' as 'draft' | 'partial' | 'completed' | 'cancelled',
+    notes: '',
+    invoice_delivery_status: 'not_delivered' as 'not_delivered' | 'delivered',
+  });
+
+  const [items, setItems] = useState<GRNItem[]>([]);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [materialImages, setMaterialImages] = useState<File[]>([]);
+  const [materialImagePreviews, setMaterialImagePreviews] = useState<string[]>([]);
+  const [supplierInvoiceFile, setSupplierInvoiceFile] = useState<File | null>(null);
+  const [supplierInvoicePreview, setSupplierInvoicePreview] = useState<string | null>(null);
+
+  const { data: purchaseOrder } = useQuery({
+    queryKey: ['purchase-orders', purchaseOrderId],
+    queryFn: () => purchaseOrdersApi.getById(Number(purchaseOrderId!)),
+    enabled: !!purchaseOrderId,
+  });
+
+  useEffect(() => {
+    if (purchaseOrder && purchaseOrder.items && purchaseOrder.items.length > 0) {
+      // Pre-fill items from Purchase Order
+      const grnItems: GRNItem[] = purchaseOrder.items.map((item) => ({
+        purchase_order_item_id: item.id!,
+        product_id: item.product?.id || item.product_id,
+        ordered_quantity: Number(item.quantity) || 0,
+        received_quantity: 0,
+        rejected_quantity: 0,
+        quality_status: 'good' as const,
+        notes: '',
+      }));
+      console.log('Setting items from purchase order:', grnItems);
+      console.log('Items count:', grnItems.length);
+      setItems(grnItems);
+    } else {
+      console.warn('Purchase order items not found or empty:', purchaseOrder);
+      if (purchaseOrder) {
+        console.warn('Purchase order items:', purchaseOrder.items);
+        console.warn('Purchase order items length:', purchaseOrder.items?.length);
+      }
+      setItems([]);
+    }
+  }, [purchaseOrder]);
+
+  const mutation = useMutation({
+    mutationFn: (data: typeof formData & { items: GRNItem[] }) => goodsReceivingApi.create(data),
+    onSuccess: (data) => {
+      toast('GRN created successfully!', 'success');
+      if (data && data.id) {
+        router.push(`/goods-receiving/${data.id}`);
+      } else {
+        router.push(`/purchase-orders/${formData.purchase_order_id}`);
+      }
+    },
+    onError: (error: any) => {
+      console.error('GRN creation error:', error);
+      console.error('Error response:', error?.response);
+      console.error('Error response data:', error?.response?.data);
+      
+      const errorMessage = formatBackendError(error);
+      toast(errorMessage, 'error');
+      
+      // Set field-specific errors
+      if (error?.response?.data) {
+        const backendErrors: Record<string, string> = {};
+        Object.entries(error.response.data).forEach(([key, value]) => {
+          if (Array.isArray(value)) {
+            backendErrors[key] = value[0] || 'Error';
+          } else if (typeof value === 'string') {
+            backendErrors[key] = value;
+          } else if (typeof value === 'object' && value !== null) {
+            Object.entries(value as Record<string, any>).forEach(([nestedKey, nestedValue]) => {
+              backendErrors[`${key}.${nestedKey}`] = Array.isArray(nestedValue) ? nestedValue[0] : nestedValue;
+            });
+          }
+        });
+        console.error('Backend errors:', backendErrors);
+        console.error('Full error response data:', JSON.stringify(error.response.data, null, 2));
+        setErrors(backendErrors);
+      }
+    },
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrors({});
+    
+    // Frontend validation
+    const validationErrors: Record<string, string> = {};
+    
+    // Validate purchase order
+    if (!formData.purchase_order_id || formData.purchase_order_id === 0) {
+      validationErrors.purchase_order_id = 'Purchase order is required. Please select a purchase order.';
+    } else if (purchaseOrder) {
+      // Check workflow guard
+      const guard = canCreateGRN(purchaseOrder.status);
+      if (!guard.canProceed) {
+        validationErrors.purchase_order_id = guard.reason || 'Cannot create GRN from this purchase order.';
+        toast(guard.reason || 'Cannot create GRN', 'error');
+      }
+    }
+    
+    // Validate receipt date
+    if (!formData.receipt_date) {
+      validationErrors.receipt_date = 'Receipt date is required.';
+    }
+    
+    // Validate items
+    if (!items || items.length === 0) {
+      validationErrors.items = 'هذا الحقل مطلوب';
+      toast('يجب إضافة منتج واحد على الأقل', 'error');
+      setErrors(validationErrors);
+      return;
+    }
+    
+    // Validate each item
+    items.forEach((item, index) => {
+      if (item.received_quantity < 0) {
+        validationErrors[`items.${index}.received_quantity`] = `الكمية المستلمة للمنتج ${index + 1} لا يمكن أن تكون سالبة.`;
+      }
+      if (item.rejected_quantity < 0) {
+        validationErrors[`items.${index}.rejected_quantity`] = `الكمية المرفوضة للمنتج ${index + 1} لا يمكن أن تكون سالبة.`;
+      }
+      const totalReceived = item.received_quantity + item.rejected_quantity;
+      if (totalReceived > item.ordered_quantity) {
+        validationErrors[`items.${index}.received_quantity`] = `الكمية المستلمة + الكمية المرفوضة (${totalReceived}) للمنتج ${index + 1} لا يمكن أن تتجاوز الكمية المطلوبة (${item.ordered_quantity}).`;
+      }
+      if (item.received_quantity === 0 && item.rejected_quantity === 0) {
+        validationErrors[`items.${index}.received_quantity`] = `يرجى إدخال الكمية المستلمة أو المرفوضة للمنتج ${index + 1}.`;
+      }
+    });
+    
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      toast('Please correct the errors in the form', 'error');
+      setTimeout(() => {
+        const firstErrorField = Object.keys(validationErrors)[0];
+        const element = document.querySelector(`[name="${firstErrorField}"]`) || 
+                       document.querySelector(`[data-field="${firstErrorField}"]`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          if ('focus' in element && typeof (element as any).focus === 'function') {
+            (element as any).focus();
+          }
+        }
+      }, 100);
+      return;
+    }
+    
+    // Ensure items are properly formatted
+    const formattedItems = items.map((item) => ({
+      purchase_order_item_id: item.purchase_order_item_id,
+      product_id: item.product_id,
+      ordered_quantity: Number(item.ordered_quantity),
+      received_quantity: Number(item.received_quantity) || 0,
+      rejected_quantity: Number(item.rejected_quantity) || 0,
+      quality_status: item.quality_status || 'good',
+      notes: item.notes || '',
+    }));
+    
+    console.log('Sending GRN data:', {
+      ...formData,
+      items: formattedItems,
+      itemsCount: formattedItems.length,
+    });
+    console.log('Formatted items:', formattedItems);
+    console.log('Items type:', typeof formattedItems);
+    console.log('Items is array:', Array.isArray(formattedItems));
+    console.log('Items length:', formattedItems.length);
+    
+    if (!formattedItems || formattedItems.length === 0) {
+      toast('يجب إضافة منتج واحد على الأقل', 'error');
+      return;
+    }
+    
+    mutation.mutate({ 
+      ...formData, 
+      items: formattedItems,
+      material_images: materialImages,
+      supplier_invoice_file: supplierInvoiceFile,
+    });
+  };
+
+  const updateItem = (index: number, field: keyof GRNItem, value: any) => {
+    const newItems = [...items];
+    newItems[index] = { ...newItems[index], [field]: value };
+    setItems(newItems);
+  };
+
+  if (!purchaseOrderId) {
+    return (
+      <MainLayout>
+        <div className="space-y-6">
+          <div className="card text-center py-12">
+            <p className="text-muted-foreground">Purchase Order ID is required</p>
+            <button onClick={() => router.back()} className="btn btn-primary mt-4">
+              Go Back
+            </button>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  return (
+    <MainLayout>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-6)' }}>
+        {/* Header Section - Unified */}
+        <div>
+          <h1 style={{ 
+            fontSize: 'var(--font-2xl)',
+            fontWeight: 'var(--font-weight-semibold)',
+            color: 'var(--text-primary)',
+            margin: 0,
+            marginBottom: 'var(--spacing-1)',
+          }}>
+            Create Goods Received Note (GRN)
+          </h1>
+          <p style={{ 
+            fontSize: 'var(--font-sm)',
+            color: 'var(--text-secondary)',
+            margin: 0,
+          }}>
+            Record the receipt of goods from Purchase Order
+          </p>
+        </div>
+
+        {/* Info Banner - Unified */}
+        {purchaseOrder && (
+          <div className="card" style={{ 
+            backgroundColor: 'var(--info-banner-bg)',
+            borderColor: 'var(--info-banner-border)',
+            borderWidth: '1px',
+            borderStyle: 'solid',
+          }}>
+            <h3 style={{ 
+              fontSize: 'var(--font-sm)',
+              fontWeight: 'var(--font-weight-semibold)',
+              color: 'var(--info-banner-text)',
+              margin: 0,
+              marginBottom: 'var(--spacing-2)',
+            }}>
+              Purchase Order Information
+            </h3>
+            <div style={{ 
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: 'var(--spacing-2)',
+              fontSize: 'var(--font-sm)',
+            }}>
+              <div>
+                <span style={{ color: 'var(--info-banner-text)' }}>Order Number:</span>{' '}
+                <span style={{ fontWeight: 'var(--font-weight-medium)', color: 'var(--text-primary)' }}>{purchaseOrder.order_number}</span>
+              </div>
+              <div>
+                <span style={{ color: 'var(--info-banner-text)' }}>Supplier:</span>{' '}
+                <span style={{ fontWeight: 'var(--font-weight-medium)', color: 'var(--text-primary)' }}>
+                  {typeof purchaseOrder.supplier === 'object'
+                    ? purchaseOrder.supplier.name
+                    : 'N/A'}
+                </span>
+              </div>
+              <div>
+                <span style={{ color: 'var(--info-banner-text)' }}>Total:</span>{' '}
+                <span style={{ fontWeight: 'var(--font-weight-medium)', color: 'var(--text-primary)' }}>{formatPrice(Number(purchaseOrder.total || 0))}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Form Card - Unified */}
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-6)' }}>
+          <div className="card">
+            <h3 style={{ 
+              fontSize: 'var(--font-lg)',
+              fontWeight: 'var(--font-weight-semibold)',
+              color: 'var(--text-primary)',
+              margin: 0,
+              marginBottom: 'var(--spacing-4)',
+            }}>
+              GRN Details
+            </h3>
+            <div style={{ 
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+              gap: 'var(--spacing-4)',
+            }}>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Receipt Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={formData.receipt_date}
+                  onChange={(e) => setFormData({ ...formData, receipt_date: e.target.value })}
+                  className="input"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Status</label>
+                <select
+                  value={formData.status}
+                  onChange={(e) =>
+                    setFormData({ ...formData, status: e.target.value as typeof formData.status })
+                  }
+                  className="input"
+                >
+                  <option value="draft">Draft</option>
+                  <option value="partial">Partially Received</option>
+                  <option value="completed">Fully Received</option>
+                </select>
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-foreground mb-2">Notes</label>
+                <textarea
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  className="input"
+                  rows={3}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Material Images and Invoice Section */}
+          <div className="card">
+            <h3 style={{ 
+              fontSize: 'var(--font-lg)',
+              fontWeight: 'var(--font-weight-semibold)',
+              color: 'var(--text-primary)',
+              margin: 0,
+              marginBottom: 'var(--spacing-4)',
+            }}>
+              Material Photos & Supplier Invoice
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-4)' }}>
+              {/* Material Images */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Material Photos (Proof of Delivery)
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []);
+                    setMaterialImages(files);
+                    // Create previews
+                    const previews: string[] = [];
+                    files.forEach((file) => {
+                      const reader = new FileReader();
+                      reader.onload = (event) => {
+                        previews.push(event.target?.result as string);
+                        if (previews.length === files.length) {
+                          setMaterialImagePreviews(previews);
+                        }
+                      };
+                      reader.readAsDataURL(file);
+                    });
+                  }}
+                  className="input"
+                />
+                {materialImagePreviews.length > 0 && (
+                  <div style={{ display: 'flex', gap: 'var(--spacing-2)', marginTop: 'var(--spacing-2)', flexWrap: 'wrap' }}>
+                    {materialImagePreviews.map((preview, index) => (
+                      <div key={index} style={{ position: 'relative', width: '100px', height: '100px' }}>
+                        <img
+                          src={preview}
+                          alt={`Material ${index + 1}`}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px' }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newImages = [...materialImages];
+                            const newPreviews = [...materialImagePreviews];
+                            newImages.splice(index, 1);
+                            newPreviews.splice(index, 1);
+                            setMaterialImages(newImages);
+                            setMaterialImagePreviews(newPreviews);
+                          }}
+                          style={{
+                            position: 'absolute',
+                            top: '-8px',
+                            right: '-8px',
+                            background: 'var(--destructive)',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '50%',
+                            width: '24px',
+                            height: '24px',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Supplier Invoice */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Supplier Invoice (Photo/PDF)
+                </label>
+                <input
+                  type="file"
+                  accept="image/*,.pdf"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    setSupplierInvoiceFile(file);
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = (event) => {
+                        setSupplierInvoicePreview(event.target?.result as string);
+                      };
+                      reader.readAsDataURL(file);
+                    } else {
+                      setSupplierInvoicePreview(null);
+                    }
+                  }}
+                  className="input"
+                />
+                {supplierInvoicePreview && (
+                  <div style={{ marginTop: 'var(--spacing-2)' }}>
+                    {supplierInvoiceFile?.type.startsWith('image/') ? (
+                      <img
+                        src={supplierInvoicePreview}
+                        alt="Supplier Invoice"
+                        style={{ maxWidth: '200px', maxHeight: '200px', objectFit: 'contain', borderRadius: '4px' }}
+                      />
+                    ) : (
+                      <div style={{ padding: 'var(--spacing-2)', background: 'var(--bg-secondary)', borderRadius: '4px' }}>
+                        <p style={{ margin: 0, color: 'var(--text-primary)' }}>PDF: {supplierInvoiceFile?.name}</p>
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSupplierInvoiceFile(null);
+                        setSupplierInvoicePreview(null);
+                      }}
+                      className="btn btn-secondary"
+                      style={{ marginTop: 'var(--spacing-2)' }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Invoice Delivery Status */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Invoice Delivery Status
+                </label>
+                <select
+                  value={formData.invoice_delivery_status}
+                  onChange={(e) =>
+                    setFormData({ ...formData, invoice_delivery_status: e.target.value as typeof formData.invoice_delivery_status })
+                  }
+                  className="input"
+                >
+                  <option value="not_delivered">Invoice Not Delivered to Office</option>
+                  <option value="delivered">Invoice Delivered to Office</option>
+                </select>
+                <p style={{ fontSize: 'var(--font-xs)', color: 'var(--text-secondary)', marginTop: 'var(--spacing-1)' }}>
+                  Default: Invoice Not Delivered to Office. Procurement Officer will update this when invoice arrives at office.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="card">
+            <h3 style={{ 
+              fontSize: 'var(--font-lg)',
+              fontWeight: 'var(--font-weight-semibold)',
+              color: 'var(--text-primary)',
+              margin: 0,
+              marginBottom: 'var(--spacing-4)',
+            }}>
+              Received Items
+            </h3>
+            <div style={{ overflowX: 'auto' }}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Product</th>
+                    <th>Ordered Qty</th>
+                    <th>Received Qty</th>
+                    <th>Rejected Qty</th>
+                    <th>Quality Status</th>
+                    <th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((item, index) => (
+                    <tr key={index}>
+                      <td>
+                        <div className="font-medium text-foreground">
+                          {purchaseOrder?.items?.find((poItem) => poItem.id === item.purchase_order_item_id)
+                            ?.product?.name || 'N/A'}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {purchaseOrder?.items?.find((poItem) => poItem.id === item.purchase_order_item_id)
+                            ?.product?.code || ''}
+                        </div>
+                      </td>
+                      <td>
+                        <div className="text-foreground">{item.ordered_quantity}</div>
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          min="0"
+                          max={item.ordered_quantity}
+                          step="0.01"
+                          value={item.received_quantity}
+                          onChange={(e) =>
+                            updateItem(index, 'received_quantity', parseFloat(e.target.value) || 0)
+                          }
+                          className="input w-24"
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="number"
+                          min="0"
+                          max={item.ordered_quantity - item.received_quantity}
+                          step="0.01"
+                          value={item.rejected_quantity}
+                          onChange={(e) =>
+                            updateItem(index, 'rejected_quantity', parseFloat(e.target.value) || 0)
+                          }
+                          className="input w-24"
+                        />
+                      </td>
+                      <td>
+                        <select
+                          value={item.quality_status}
+                          onChange={(e) =>
+                            updateItem(index, 'quality_status', e.target.value as GRNItem['quality_status'])
+                          }
+                          className="input"
+                        >
+                          <option value="good">Good</option>
+                          <option value="damaged">Damaged</option>
+                          <option value="defective">Defective</option>
+                          <option value="missing">Missing</option>
+                        </select>
+                      </td>
+                      <td>
+                        <input
+                          type="text"
+                          value={item.notes || ''}
+                          onChange={(e) => updateItem(index, 'notes', e.target.value)}
+                          className="input"
+                          placeholder="Notes..."
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Form Actions - Unified */}
+          <div style={{ display: 'flex', gap: 'var(--spacing-3)' }}>
+            <button
+              type="submit"
+              disabled={mutation.isPending}
+              className="btn btn-primary"
+            >
+              {mutation.isPending ? 'Creating...' : 'Create GRN'}
+            </button>
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="btn btn-secondary"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </MainLayout>
+  );
+}
+
