@@ -610,7 +610,7 @@ function DashboardPageContent() {
                         {stats?.quotationRequests.total || 0}
                       </div>
                     </div>
-                    <DollarIcon className="w-8 h-8 text-purple-500 opacity-20" />
+                    <DollarIcon className="w-8 h-8 text-[#8B5CF6]/20" />
 
                   </div>
                 </div>
@@ -662,7 +662,7 @@ function DashboardPageContent() {
                         {stats?.products.total || 0}
                       </div>
                     </div>
-                    <PackageIcon className="w-8 h-8" style={{ color: '#8B5CF6', opacity: 0.2 }} />
+                    <PackageIcon className="w-8 h-8 text-[#8B5CF6]/20" />
                   </div>
                 </div>
               </Link>
@@ -687,7 +687,7 @@ function DashboardPageContent() {
                         {stats?.goodsReceiving.total || 0}
                       </div>
                     </div>
-                    <PackageIcon className="w-8 h-8" style={{ color: '#6366F1', opacity: 0.2 }} />
+                    <PackageIcon className="w-8 h-8 text-[#6366F1]/20" />
                   </div>
                 </div>
               </Link>
