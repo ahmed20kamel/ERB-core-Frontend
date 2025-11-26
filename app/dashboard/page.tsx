@@ -610,7 +610,8 @@ function DashboardPageContent() {
                         {stats?.quotationRequests.total || 0}
                       </div>
                     </div>
-                    <DollarIcon className="w-8 h-8" style={{ color: '#8B5CF6', opacity: 0.2 }} />
+                    <DollarIcon className="w-8 h-8 text-purple-500 opacity-20" />
+
                   </div>
                 </div>
               </Link>
