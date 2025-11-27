@@ -225,7 +225,11 @@ function NewPurchaseInvoicePageContent() {
       return;
     }
     
-    mutation.mutate({ ...formData, items });
+    mutation.mutate({ 
+      ...formData, 
+      grn_id: formData.grn_id ?? undefined, // Convert null to undefined
+      items 
+    });
   };
 
   const updateItem = (index: number, field: keyof PurchaseInvoiceItem, value: any) => {
