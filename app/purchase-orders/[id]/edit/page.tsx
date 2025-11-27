@@ -105,8 +105,22 @@ function EditPurchaseOrderPageContent() {
     }
   }, [order]);
 
+  type PurchaseOrderUpdateData = {
+    supplier_id: number;
+    order_date: string;
+    delivery_date?: string;
+    delivery_method?: 'pickup' | 'delivery';
+    payment_terms?: string;
+    delivery_terms?: string;
+    notes?: string;
+    tax_rate?: number;
+    discount?: number;
+    status?: 'draft' | 'pending' | 'approved' | 'rejected' | 'completed' | 'cancelled';
+    items: typeof items;
+  };
+
   const mutation = useMutation({
-    mutationFn: (data: typeof formData & { items: typeof items }) =>
+    mutationFn: (data: PurchaseOrderUpdateData) =>
       purchaseOrdersApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });
@@ -153,7 +167,11 @@ function EditPurchaseOrderPageContent() {
       toast('Please add at least one product', 'warning');
       return;
     }
-    mutation.mutate({ ...formData, items });
+    mutation.mutate({ 
+      ...formData, 
+      delivery_method: formData.delivery_method || undefined,
+      items 
+    });
   };
 
   const calculateSubtotal = () => {

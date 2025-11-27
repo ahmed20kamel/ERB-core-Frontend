@@ -336,7 +336,11 @@ Terms & Conditions:
       return;
     }
     
-    mutation.mutate({ ...formData, items });
+    mutation.mutate({ 
+      ...formData, 
+      delivery_method: formData.delivery_method || undefined,
+      items 
+    });
   };
 
   const calculateSubtotal = () => {
