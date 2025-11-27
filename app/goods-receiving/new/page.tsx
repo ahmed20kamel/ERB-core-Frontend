@@ -76,8 +76,19 @@ function NewGRNPageContent() {
     }
   }, [purchaseOrder]);
 
+  type GRNCreateData = {
+    purchase_order_id: number;
+    receipt_date: string;
+    status: 'draft' | 'partial' | 'completed' | 'cancelled';
+    notes: string;
+    invoice_delivery_status: 'not_delivered' | 'delivered';
+    items: GRNItem[];
+    material_images?: File[];
+    supplier_invoice_file?: File | null;
+  };
+
   const mutation = useMutation({
-    mutationFn: (data: typeof formData & { items: GRNItem[] }) => goodsReceivingApi.create(data),
+    mutationFn: (data: GRNCreateData) => goodsReceivingApi.create(data),
     onSuccess: (data) => {
       toast('GRN created successfully!', 'success');
       if (data && data.id) {

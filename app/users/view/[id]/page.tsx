@@ -14,7 +14,7 @@ export default function UserDetailPage() {
   
   // Call all hooks at the top, before any conditional returns
   const { user: currentUser } = useAuth();
-  const isAdmin = currentUser?.role === 'admin' || currentUser?.is_staff;
+  const isAdmin = currentUser?.role === 'super_admin' || currentUser?.is_staff;
 
   const { data: user, isLoading } = useQuery({
     queryKey: ['users', id],
@@ -136,9 +136,9 @@ export default function UserDetailPage() {
                 Role
               </label>
               <span className={`badge ${
-                user.role === 'admin' ? 'badge-error' :
-                user.role === 'manager' ? 'badge-warning' :
-                user.role === 'procurement' ? 'badge-info' :
+                user.role === 'super_admin' ? 'badge-error' :
+                user.role === 'procurement_manager' ? 'badge-warning' :
+                user.role === 'procurement_officer' ? 'badge-info' :
                 'badge-success'
               }`}>
                 {user.role || 'employee'}

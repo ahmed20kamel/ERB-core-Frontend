@@ -198,7 +198,7 @@ export default function ProjectsPage() {
     : allSystemSelected;
   const checkboxIndeterminate = selectMode === 'page'
     ? somePageSelected
-    : someSystemSelected;
+    : (someSystemSelected ?? false);
 
   return (
     <MainLayout>
@@ -307,7 +307,7 @@ export default function ProjectsPage() {
                           <Checkbox
                             checked={checkboxChecked}
                             ref={(input) => {
-                              if (input) input.indeterminate = checkboxIndeterminate;
+                              if (input) input.indeterminate = checkboxIndeterminate ?? false;
                             }}
                             onChange={(e) => handleSelectAll(e.target.checked)}
                             disabled={selectMode === 'all' && isLoadingAll}

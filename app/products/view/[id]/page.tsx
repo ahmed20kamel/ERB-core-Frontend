@@ -43,7 +43,7 @@ export default function ProductDetailPage() {
   }
 
   const { user } = useAuth();
-  const isAdmin = user?.role === 'admin' || user?.is_staff;
+  const isAdmin = user?.role === 'super_admin' || user?.is_staff;
 
   const getStatusVariant = () => {
     if (!product.is_active) return 'error';

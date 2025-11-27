@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { authApi } from '@/lib/api/auth';
 import MainLayout from '@/components/layout/MainLayout';
@@ -35,16 +35,20 @@ export default function ProfilePage() {
   const { data: user, isLoading } = useQuery({
     queryKey: ['auth', 'me'],
     queryFn: () => authApi.me(),
-    onSuccess: (data) => {
-      setFormData({
-        first_name: data.first_name || '',
-        last_name: data.last_name || '',
-        email: data.email || '',
-        phone: data.phone || '',
-        job_title: data.job_title || '',
-      });
-    },
   });
+
+  // Update form data when user data is loaded
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        first_name: user.first_name || '',
+        last_name: user.last_name || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        job_title: user.job_title || '',
+      });
+    }
+  }, [user]);
 
   // Fetch user permissions
   const { data: userPermissions } = useQuery({
@@ -90,9 +94,23 @@ export default function ProfilePage() {
       toast('Profile updated successfully', 'success');
     },
     onError: (error: any) => {
-      const formattedErrors = formatBackendError(error);
-      setErrors(formattedErrors);
-      toast('Failed to update profile', 'error');
+      const errorMessage = formatBackendError(error);
+      toast(errorMessage, 'error');
+      
+      // Set field-specific errors
+      if (error?.response?.data) {
+        const backendErrors: Record<string, string> = {};
+        Object.entries(error.response.data).forEach(([key, value]) => {
+          if (Array.isArray(value)) {
+            backendErrors[key] = value[0] || 'Error';
+          } else if (typeof value === 'string') {
+            backendErrors[key] = value;
+          }
+        });
+        setErrors(backendErrors);
+      } else {
+        setErrors({});
+      }
     },
   });
 
@@ -147,7 +165,7 @@ export default function ProfilePage() {
       return;
     }
     
-    const updateData = { ...formData };
+    const updateData: typeof formData & { avatar?: File } = { ...formData };
     if (avatarFile) {
       updateData.avatar = avatarFile;
       console.log('Uploading avatar file:', avatarFile.name, avatarFile.size, avatarFile.type);
@@ -578,11 +596,11 @@ export default function ProfilePage() {
                 </label>
                 <span
                   className={`badge ${
-                    user.role === 'admin'
+                    user.role === 'super_admin'
                       ? 'badge-error'
-                      : user.role === 'manager'
+                      : user.role === 'procurement_manager'
                       ? 'badge-warning'
-                      : user.role === 'procurement'
+                      : user.role === 'procurement_officer'
                       ? 'badge-info'
                       : 'badge-success'
                   }`}
@@ -638,7 +656,7 @@ export default function ProfilePage() {
                 >
                   Permission Set (Role)
                 </label>
-                <Badge variant="info" style={{ fontSize: 'var(--font-sm)' }}>
+                <Badge variant="info">
                   {userPermissions.permission_set.name}
                 </Badge>
               </div>
@@ -658,7 +676,7 @@ export default function ProfilePage() {
                 </label>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--spacing-2)' }}>
                   {userPermissions.permissions.map((perm, index) => (
-                    <Badge key={index} variant="info" style={{ fontSize: 'var(--font-xs)' }}>
+                    <Badge key={index} variant="info">
                       {perm.category}.{perm.action}
                     </Badge>
                   ))}

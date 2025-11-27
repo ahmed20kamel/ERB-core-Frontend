@@ -81,8 +81,8 @@ export default function PurchaseInvoiceDetailPage() {
     },
   });
 
-  const canApprove = user && (user.role === 'manager' || user.role === 'admin' || user.role === 'accountant' || user.is_staff);
-  const canMarkPaid = user && (user.role === 'accountant' || user.role === 'admin' || user.is_staff);
+  const canApprove = user && (user.role === 'procurement_manager' || user.role === 'super_admin' || user.is_staff);
+  const canMarkPaid = user && (user.role === 'super_admin' || user.is_staff);
 
   if (isLoading) {
     return (

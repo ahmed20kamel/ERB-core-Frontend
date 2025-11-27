@@ -106,7 +106,9 @@ export default function EditProductPage() {
         category: product.category || '',
         tags: product.tags || '',
         unit: product.unit || 'piece',
-        supplier: product.supplier || null,
+        supplier: typeof product.supplier === 'object' && product.supplier !== null 
+          ? (product.supplier as any).id 
+          : (product.supplier as number | null) || null,
         unit_price: product.unit_price || 0,
         buy_price: product.buy_price || 0,
         minimum_price: product.minimum_price || 0,

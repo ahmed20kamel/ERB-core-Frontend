@@ -39,7 +39,7 @@ const ACTION_LABELS: Record<string, string> = {
 
 export default function PermissionsPage() {
   const { user: currentUser } = useAuth();
-  const isAdmin = currentUser?.role === 'admin' || currentUser?.is_staff;
+  const isAdmin = currentUser?.role === 'super_admin' || currentUser?.is_staff;
   const queryClient = useQueryClient();
   
   const [selectedPermissionSet, setSelectedPermissionSet] = useState<number | null>(null);
