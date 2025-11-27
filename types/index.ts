@@ -248,6 +248,7 @@ export interface PurchaseQuotation {
   subtotal?: number;
   tax_amount?: number;
   discount?: number;
+  tax_rate?: number;
   payment_terms?: string;
   delivery_method?: 'pickup' | 'delivery';
   delivery_terms?: string;
