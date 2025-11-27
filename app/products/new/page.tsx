@@ -240,7 +240,7 @@ export default function NewProductPage() {
                       })) || []),
                   ]}
                   value={formData.supplier || ''}
-                  onChange={(val) => setFormData({ ...formData, supplier: val ? Number(val) : null })}
+                  onChange={(val) => setFormData({ ...formData, supplier: val ? Number(val) : undefined })}
                   placeholder="Select Supplier"
                   allowClear
                 />

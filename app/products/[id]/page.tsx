@@ -269,7 +269,7 @@ export default function EditProductPage() {
                 </label>
                 <select
                   value={formData.supplier || ''}
-                  onChange={(e) => setFormData({ ...formData, supplier: e.target.value ? Number(e.target.value) : null })}
+                  onChange={(e) => setFormData({ ...formData, supplier: e.target.value ? Number(e.target.value) : undefined })}
                   className="w-full"
                 >
                   <option value="">Select Supplier</option>

@@ -71,7 +71,7 @@ function NewPurchaseRequestPageContent() {
   });
 
   // Handle project selection
-  const handleProjectChange = (projectId: number | null) => {
+  const handleProjectChange = (projectId: number | null | undefined) => {
     if (projectId) {
       const selectedProject = projectsData?.results.find((p: Project) => p.id === projectId);
       if (selectedProject) {
@@ -85,7 +85,7 @@ function NewPurchaseRequestPageContent() {
     } else {
       setFormData({
         ...formData,
-        project_id: null,
+        project_id: undefined,
         project_code: '',
         title: '',
       });
@@ -110,7 +110,7 @@ function NewPurchaseRequestPageContent() {
     } else if (!code) {
       setFormData({
         ...formData,
-        project_id: null,
+        project_id: undefined,
         project_code: '',
         title: '',
       });
@@ -298,7 +298,7 @@ function NewPurchaseRequestPageContent() {
                   })) || []
                 }
                 value={formData.project_id}
-                onChange={(val) => handleProjectChange(val ? Number(val) : null)}
+                onChange={(val) => handleProjectChange(val ? Number(val) : undefined)}
                 placeholder="Select Project"
                 searchPlaceholder="Search by name or code..."
                 allowClear
