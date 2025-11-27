@@ -53,15 +53,25 @@ function NewPurchaseInvoicePageContent() {
   useEffect(() => {
     if (purchaseOrder && purchaseOrder.items) {
       // Pre-fill items from Purchase Order
-      const invoiceItems: PurchaseInvoiceItem[] = purchaseOrder.items.map((item) => ({
-        purchase_order_item_id: item.id!,
-        product_id: item.product?.id || item.product_id,
-        quantity: item.quantity,
-        unit_price: item.unit_price || 0,
-        discount: item.discount || 0,
-        tax_rate: item.tax_rate || 0,
-        notes: item.notes || '',
-      }));
+      const invoiceItems: PurchaseInvoiceItem[] = purchaseOrder.items.map((item) => {
+        // Calculate total for each item
+        const subtotal = item.quantity * (item.unit_price || 0);
+        const discountAmount = subtotal * ((item.discount || 0) / 100);
+        const afterDiscount = subtotal - discountAmount;
+        const taxAmount = afterDiscount * ((item.tax_rate || 0) / 100);
+        const total = afterDiscount + taxAmount;
+        
+        return {
+          purchase_order_item_id: item.id!,
+          product_id: item.product?.id || item.product_id,
+          quantity: item.quantity,
+          unit_price: item.unit_price || 0,
+          discount: item.discount || 0,
+          tax_rate: item.tax_rate || 0,
+          total: total, // Add calculated total
+          notes: item.notes || '',
+        };
+      });
       setItems(invoiceItems);
       
       // Pre-fill form data
