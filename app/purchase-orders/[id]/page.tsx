@@ -338,32 +338,35 @@ export default function PurchaseOrderDetailPage() {
             </div>
           )}
 
-          {order.terms_and_conditions && (
-            <div className="col-span-3 mb-4">
-              <div className="text-sm leading-relaxed font-mono">
-                {order.terms_and_conditions.split('\n').map((line, index) => {
-                  if (!line.trim()) {
-                    return <div key={index} style={{ marginBottom: '0.5rem' }} />;
-                  }
-                  // Check if line contains Arabic characters
-                  const hasArabic = /[\u0600-\u06FF]/.test(line);
-                  return (
-                    <div
-                      key={index}
-                      style={{
-                        direction: hasArabic ? 'rtl' : 'ltr',
-                        textAlign: hasArabic ? 'right' : 'left',
-                        marginBottom: index < order.terms_and_conditions.split('\n').length - 1 ? '0.5rem' : '0',
-                        whiteSpace: 'pre-wrap',
-                      }}
-                    >
-                      {line}
-                    </div>
-                  );
-                })}
+          {order.terms_and_conditions && (() => {
+            const termsLines = (order.terms_and_conditions ?? '').split('\n');
+            return (
+              <div className="col-span-3 mb-4">
+                <div className="text-sm leading-relaxed font-mono">
+                  {termsLines.map((line, index) => {
+                    if (!line.trim()) {
+                      return <div key={index} style={{ marginBottom: '0.5rem' }} />;
+                    }
+                    // Check if line contains Arabic characters
+                    const hasArabic = /[\u0600-\u06FF]/.test(line);
+                    return (
+                      <div
+                        key={index}
+                        style={{
+                          direction: hasArabic ? 'rtl' : 'ltr',
+                          textAlign: hasArabic ? 'right' : 'left',
+                          marginBottom: index < termsLines.length - 1 ? '0.5rem' : '0',
+                          whiteSpace: 'pre-wrap',
+                        }}
+                      >
+                        {line}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {order.payment_terms && (
             <div className="col-span-3 mb-4">
