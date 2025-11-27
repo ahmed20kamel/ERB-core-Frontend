@@ -106,8 +106,8 @@ function EditPurchaseOrderPageContent() {
   }, [order]);
 
   type PurchaseOrderUpdateData = {
-    supplier_id: number;
-    order_date: string;
+    supplier_id?: number;
+    order_date?: string;
     delivery_date?: string;
     delivery_method?: 'pickup' | 'delivery';
     payment_terms?: string;
@@ -116,12 +116,12 @@ function EditPurchaseOrderPageContent() {
     tax_rate?: number;
     discount?: number;
     status?: 'draft' | 'pending' | 'approved' | 'rejected' | 'completed' | 'cancelled';
-    items: typeof items;
+    items?: Omit<PurchaseOrderItem, 'product' | 'total' | 'created_at'>[];
   };
 
   const mutation = useMutation({
     mutationFn: (data: PurchaseOrderUpdateData) =>
-      purchaseOrdersApi.update(id, data),
+      purchaseOrdersApi.update(id, data as Partial<PurchaseOrder>),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });
       toast('Purchase Order updated successfully!', 'success');
