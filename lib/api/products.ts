@@ -4,6 +4,7 @@ import { Product, PaginatedResponse } from '@/types';
 export const productsApi = {
   getAll: async (params?: {
     page?: number;
+    page_size?: number;
     search?: string;
     // Text filters
     name?: string;
