@@ -225,10 +225,10 @@ function NewPurchaseInvoicePageContent() {
       return;
     }
     
-    mutation.mutate({ 
-      ...formData, 
-      grn_id: formData.grn_id ?? undefined, // Convert null to undefined
-      items 
+    mutation.mutate({
+      ...formData,
+      grn_id: formData.grn_id ?? undefined,
+      items,
     });
   };
 
