@@ -48,7 +48,11 @@ export function useRealtimeUpdates() {
       const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:9000/api';
       const apiHost = apiUrl.replace('/api', '').replace('http://', '').replace('https://', '');
-      const wsHost = process.env.NEXT_PUBLIC_WS_URL || `${wsProtocol}//${apiHost}`;
+      let wsHost = process.env.NEXT_PUBLIC_WS_URL || `${wsProtocol}//${apiHost}`;
+      
+      // Remove trailing /ws if present to avoid /ws/ws/ duplication
+      wsHost = wsHost.replace(/\/ws\/?$/, '');
+      
       const wsUrl = `${wsHost}/ws/notifications/${user.id}/`;
 
       try {
