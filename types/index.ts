@@ -160,29 +160,6 @@ export interface Product {
 }
 
 // Purchase Request Types
-export interface PurchaseRequest {
-  id: number;
-  code: string;
-  title: string;
-  project?: number | Project;
-  project_id?: number | null;
-  project_code?: string;
-  request_date: string;
-  required_by: string;
-  status: 'pending' | 'approved' | 'rejected';
-  notes: string;
-  rejection_reason?: string;
-  created_by: number;
-  created_by_name?: string;
-  approved_by?: number | null;
-  approved_by_name?: string | null;
-  approved_at?: string | null;
-  items: PurchaseRequestItem[];
-  total_items?: number;
-  created_at: string;
-  updated_at: string;
-}
-
 export interface PurchaseRequestItem {
   id?: number;
   product_id: number;
@@ -208,12 +185,12 @@ export interface PurchaseRequest {
   notes: string;
   rejection_reason?: string;
   created_by: number;
-  created_by_name: string;
-  approved_by: number | null;
-  approved_by_name: string | null;
-  approved_at: string | null;
+  created_by_name?: string;
+  approved_by?: number | null;
+  approved_by_name?: string | null;
+  approved_at?: string | null;
   items: PurchaseRequestItem[];
-  total_items: number;
+  total_items?: number;
   has_quotation_requests?: boolean;
   has_purchase_orders?: boolean;
   has_awarded_quotation?: boolean;

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { purchaseOrdersApi } from '@/lib/api/purchase-orders';
 import { purchaseInvoicesApi, PurchaseInvoiceItem } from '@/lib/api/purchase-invoices';
+import { PurchaseInvoiceFormData, toPurchaseInvoiceCreateData } from '@/lib/types/form-data';
 import MainLayout from '@/components/layout/MainLayout';
 import { formatPrice } from '@/lib/utils/format';
 import { toast } from '@/lib/hooks/use-toast';
@@ -30,12 +31,12 @@ function NewPurchaseInvoicePageContent() {
   const searchParams = useSearchParams();
   const purchaseOrderId = searchParams.get('purchase_order_id');
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<PurchaseInvoiceFormData>({
     purchase_order_id: purchaseOrderId ? Number(purchaseOrderId) : 0,
-    grn_id: undefined as number | undefined,
+    grn_id: undefined,
     invoice_date: new Date().toISOString().split('T')[0],
     due_date: '',
-    status: 'draft' as 'draft' | 'pending' | 'approved' | 'rejected' | 'paid' | 'cancelled',
+    status: 'draft',
     tax_rate: 0,
     discount: 0,
     notes: '',
@@ -84,20 +85,9 @@ function NewPurchaseInvoicePageContent() {
     }
   }, [purchaseOrder]);
 
-  type InvoiceCreateData = {
-    purchase_order_id: number;
-    grn_id?: number;
-    invoice_date: string;
-    due_date?: string;
-    status?: 'draft' | 'pending' | 'approved' | 'rejected' | 'paid' | 'cancelled';
-    tax_rate?: number;
-    discount?: number;
-    notes?: string;
-    items: Omit<PurchaseInvoiceItem, 'id' | 'created_at' | 'product'>[];
-  };
-
   const mutation = useMutation({
-    mutationFn: (data: InvoiceCreateData) => purchaseInvoicesApi.create(data),
+    mutationFn: (data: PurchaseInvoiceFormData) => 
+      purchaseInvoicesApi.create(toPurchaseInvoiceCreateData(data, items)),
     onSuccess: (data) => {
       toast('Purchase invoice created successfully!', 'success');
       if (data && data.id) {
@@ -238,10 +228,7 @@ function NewPurchaseInvoicePageContent() {
       return;
     }
     
-    mutation.mutate({
-      ...formData,
-      items,
-    });
+    mutation.mutate(formData);
   };
 
   const updateItem = (index: number, field: keyof PurchaseInvoiceItem, value: any) => {

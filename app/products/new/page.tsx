@@ -51,7 +51,7 @@ const statusOptions = [
 
 export default function NewProductPage() {
   const router = useRouter();
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ProductFormData>({
     name: '',
     code: '',
     sku: '',
@@ -63,19 +63,19 @@ export default function NewProductPage() {
     category: '',
     tags: '',
     unit: 'piece',
-    supplier: undefined as number | undefined,
+    supplier: undefined,
     unit_price: 0,
     buy_price: 0,
     minimum_price: 0,
     discount: 0,
-    discount_type: 'percentage' as 'percentage' | 'fixed',
+    discount_type: 'percentage',
     tax1: 0,
     tax2: 0,
     track_stock: false,
     stock_balance: 0,
     low_stock_threshold: 0,
     profit_margin: 0,
-    status: 'active' as 'active' | 'inactive' | 'archived',
+    status: 'active',
     is_active: true,
   });
 
@@ -93,10 +93,7 @@ export default function NewProductPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    mutation.mutate({
-      ...formData,
-      supplier: formData.supplier || undefined,
-    });
+    mutation.mutate(toProductCreateData(formData));
   };
 
   return (

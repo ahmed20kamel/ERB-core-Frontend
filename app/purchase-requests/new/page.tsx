@@ -9,6 +9,7 @@ import { projectsApi } from '@/lib/api/projects';
 import MainLayout from '@/components/layout/MainLayout';
 import Link from 'next/link';
 import { PurchaseRequestItem, Product, Project } from '@/types';
+import { PurchaseRequestFormData, toPurchaseRequestCreateData } from '@/lib/types/form-data';
 import { toast } from '@/lib/hooks/use-toast';
 import ProductSelector from '@/components/ui/ProductSelector';
 import QuantityInput from '@/components/ui/QuantityInput';
@@ -30,8 +31,8 @@ export default function NewPurchaseRequestPage() {
 
 function NewPurchaseRequestPageContent() {
   const router = useRouter();
-  const [formData, setFormData] = useState({
-    project_id: undefined as number | undefined,
+  const [formData, setFormData] = useState<PurchaseRequestFormData>({
+    project_id: undefined,
     project_code: '',
     title: '',
     request_date: new Date().toISOString().split('T')[0],
@@ -232,14 +233,7 @@ function NewPurchaseRequestPageContent() {
       notes: item.notes,
     }));
     
-    mutation.mutate({ 
-      project_id: formData.project_id || undefined,
-      title: formData.title,
-      request_date: formData.request_date,
-      required_by: formData.required_by,
-      notes: formData.notes,
-      items: itemsToSubmit 
-    });
+    mutation.mutate(toPurchaseRequestCreateData(formData, itemsToSubmit));
   };
 
   return (

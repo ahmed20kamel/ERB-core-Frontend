@@ -11,6 +11,7 @@ import { productsApi } from '@/lib/api/products';
 import MainLayout from '@/components/layout/MainLayout';
 import Link from 'next/link';
 import { PurchaseOrderItem } from '@/types';
+import { PurchaseOrderFormData, toPurchaseOrderCreateData } from '@/lib/types/form-data';
 import { toast } from '@/lib/hooks/use-toast';
 import SearchableDropdown from '@/components/ui/SearchableDropdown';
 import FormField from '@/components/ui/FormField';
@@ -66,13 +67,13 @@ Terms & Conditions:
 
 4- طلب الشراء هذا يجب أن يكون موقع ومختوم من المفوض بالتوقيع`;
 
-  const [formData, setFormData] = useState({
-    purchase_request_id: purchaseRequestId ? Number(purchaseRequestId) : null,
-    purchase_quotation_id: purchaseQuotationId ? Number(purchaseQuotationId) : null,
+  const [formData, setFormData] = useState<PurchaseOrderFormData>({
+    purchase_request_id: purchaseRequestId ? Number(purchaseRequestId) : undefined,
+    purchase_quotation_id: purchaseQuotationId ? Number(purchaseQuotationId) : undefined,
     supplier_id: 0,
     order_date: new Date().toISOString().split('T')[0],
     delivery_date: '',
-    delivery_method: '' as 'pickup' | 'delivery' | '',
+    delivery_method: '',
     payment_terms: '',
     delivery_terms: '',
     notes: '',
@@ -336,11 +337,7 @@ Terms & Conditions:
       return;
     }
     
-    mutation.mutate({ 
-      ...formData, 
-      delivery_method: formData.delivery_method || undefined,
-      items 
-    });
+    mutation.mutate(toPurchaseOrderCreateData(formData, items));
   };
 
   const calculateSubtotal = () => {

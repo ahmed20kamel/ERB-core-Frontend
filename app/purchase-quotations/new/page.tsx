@@ -11,6 +11,7 @@ import { productsApi } from '@/lib/api/products';
 import MainLayout from '@/components/layout/MainLayout';
 import Link from 'next/link';
 import { PurchaseQuotationItem } from '@/types';
+import { PurchaseQuotationFormData, toPurchaseQuotationCreateData } from '@/lib/types/form-data';
 import { toast } from '@/lib/hooks/use-toast';
 import SearchableDropdown from '@/components/ui/SearchableDropdown';
 import FormField from '@/components/ui/FormField';
@@ -36,14 +37,16 @@ function NewPurchaseQuotationPageContent() {
   const quotationRequestId = searchParams.get('quotation_request_id');
   const { user } = useAuth();
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<PurchaseQuotationFormData>({
     quotation_request_id: quotationRequestId ? Number(quotationRequestId) : undefined,
-    purchase_request_id: undefined as number | undefined,
+    purchase_request_id: undefined,
     supplier_id: 0,
+    quotation_number: '',
     quotation_date: new Date().toISOString().split('T')[0],
     valid_until: '',
     payment_terms: '',
     delivery_terms: '',
+    delivery_method: '',
     notes: '',
     tax_rate: 0,
     discount: 0,
@@ -288,11 +291,7 @@ function NewPurchaseQuotationPageContent() {
       return;
     }
     
-    mutation.mutate({ 
-      ...formData, 
-      purchase_request_id: formData.purchase_request_id || undefined,
-      items 
-    });
+    mutation.mutate(toPurchaseQuotationCreateData(formData, items));
   };
 
   const calculateSubtotal = () => {

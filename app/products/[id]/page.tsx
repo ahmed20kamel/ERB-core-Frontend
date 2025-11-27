@@ -64,7 +64,7 @@ export default function EditProductPage() {
     queryFn: () => suppliersApi.getAll({ page: 1 }),
   });
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ProductFormData>({
     name: '',
     code: '',
     sku: '',
@@ -76,19 +76,19 @@ export default function EditProductPage() {
     category: '',
     tags: '',
     unit: 'piece',
-    supplier: undefined as number | undefined,
+    supplier: undefined,
     unit_price: 0,
     buy_price: 0,
     minimum_price: 0,
     discount: 0,
-    discount_type: 'percentage' as 'percentage' | 'fixed',
+    discount_type: 'percentage',
     tax1: 0,
     tax2: 0,
     track_stock: false,
     stock_balance: 0,
     low_stock_threshold: 0,
     profit_margin: 0,
-    status: 'active' as 'active' | 'inactive' | 'archived',
+    status: 'active',
     is_active: true,
   });
 
@@ -108,7 +108,7 @@ export default function EditProductPage() {
         unit: product.unit || 'piece',
         supplier: typeof product.supplier === 'object' && product.supplier !== null 
           ? (product.supplier as any).id 
-          : (product.supplier as number | null) || null,
+          : (product.supplier as number | undefined) || undefined,
         unit_price: product.unit_price || 0,
         buy_price: product.buy_price || 0,
         minimum_price: product.minimum_price || 0,
@@ -127,10 +127,7 @@ export default function EditProductPage() {
   }, [product]);
 
   const mutation = useMutation({
-    mutationFn: (data: typeof formData) => productsApi.update(id, {
-      ...data,
-      supplier: data.supplier || undefined,
-    }),
+    mutationFn: (data: ProductFormData) => productsApi.update(id, toProductCreateData(data)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       router.push('/products');

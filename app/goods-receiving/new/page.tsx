@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { purchaseOrdersApi } from '@/lib/api/purchase-orders';
 import { goodsReceivingApi, GRNItem } from '@/lib/api/goods-receiving';
+import { GRNFormData } from '@/lib/types/form-data';
 import MainLayout from '@/components/layout/MainLayout';
 import { formatPrice } from '@/lib/utils/format';
 import { toast } from '@/lib/hooks/use-toast';
@@ -30,12 +31,12 @@ function NewGRNPageContent() {
   const searchParams = useSearchParams();
   const purchaseOrderId = searchParams.get('purchase_order_id');
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<GRNFormData & { invoice_delivery_status: 'not_delivered' | 'delivered' }>({
     purchase_order_id: purchaseOrderId ? Number(purchaseOrderId) : 0,
     receipt_date: new Date().toISOString().split('T')[0],
-    status: 'draft' as 'draft' | 'partial' | 'completed' | 'cancelled',
+    status: 'draft',
     notes: '',
-    invoice_delivery_status: 'not_delivered' as 'not_delivered' | 'delivered',
+    invoice_delivery_status: 'not_delivered',
   });
 
   const [items, setItems] = useState<GRNItem[]>([]);
@@ -76,19 +77,18 @@ function NewGRNPageContent() {
     }
   }, [purchaseOrder]);
 
-  type GRNCreateData = {
-    purchase_order_id: number;
-    receipt_date: string;
-    status: 'draft' | 'partial' | 'completed' | 'cancelled';
-    notes: string;
-    invoice_delivery_status: 'not_delivered' | 'delivered';
-    items: GRNItem[];
-    material_images?: File[];
-    supplier_invoice_file?: File | null;
-  };
-
   const mutation = useMutation({
-    mutationFn: (data: GRNCreateData) => goodsReceivingApi.create(data),
+    mutationFn: (data: {
+      formData: GRNFormData & { invoice_delivery_status: 'not_delivered' | 'delivered' };
+      items: GRNItem[];
+      materialImages?: File[];
+      supplierInvoiceFile?: File | null;
+    }) => goodsReceivingApi.create(toGRNCreateData(
+      data.formData,
+      data.items,
+      data.materialImages,
+      data.supplierInvoiceFile
+    )),
     onSuccess: (data) => {
       toast('GRN created successfully!', 'success');
       if (data && data.id) {
@@ -219,10 +219,10 @@ function NewGRNPageContent() {
     }
     
     mutation.mutate({ 
-      ...formData, 
+      formData,
       items: formattedItems,
-      material_images: materialImages,
-      supplier_invoice_file: supplierInvoiceFile,
+      materialImages,
+      supplierInvoiceFile,
     });
   };
 

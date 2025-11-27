@@ -9,6 +9,7 @@ import { productsApi } from '@/lib/api/products';
 import MainLayout from '@/components/layout/MainLayout';
 import Link from 'next/link';
 import { PurchaseOrder, PurchaseOrderItem } from '@/types';
+import { PurchaseOrderUpdateFormData, toPurchaseOrderUpdateData } from '@/lib/types/form-data';
 import { toast } from '@/lib/hooks/use-toast';
 import SearchableDropdown from '@/components/ui/SearchableDropdown';
 import { formatPrice } from '@/lib/utils/format';
@@ -41,17 +42,17 @@ function EditPurchaseOrderPageContent() {
     queryFn: () => purchaseOrdersApi.getById(id),
   });
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<PurchaseOrderUpdateFormData>({
     supplier_id: 0,
     order_date: new Date().toISOString().split('T')[0],
     delivery_date: '',
-    delivery_method: '' as 'pickup' | 'delivery' | '',
+    delivery_method: '',
     payment_terms: '',
     delivery_terms: '',
     notes: '',
     tax_rate: 0,
     discount: 0,
-    status: 'draft' as 'draft' | 'pending' | 'approved' | 'rejected' | 'completed' | 'cancelled',
+    status: 'draft',
   });
 
   const [items, setItems] = useState<
@@ -105,23 +106,9 @@ function EditPurchaseOrderPageContent() {
     }
   }, [order]);
 
-  type PurchaseOrderUpdateData = {
-    supplier_id?: number;
-    order_date?: string;
-    delivery_date?: string;
-    delivery_method?: 'pickup' | 'delivery';
-    payment_terms?: string;
-    delivery_terms?: string;
-    notes?: string;
-    tax_rate?: number;
-    discount?: number;
-    status?: 'draft' | 'pending' | 'approved' | 'rejected' | 'completed' | 'cancelled';
-    items?: Omit<PurchaseOrderItem, 'product' | 'total' | 'created_at'>[];
-  };
-
   const mutation = useMutation({
-    mutationFn: (data: PurchaseOrderUpdateData) =>
-      purchaseOrdersApi.update(id, data as Partial<PurchaseOrder>),
+    mutationFn: (data: PurchaseOrderUpdateFormData) =>
+      purchaseOrdersApi.update(id, toPurchaseOrderUpdateData(data, items) as Partial<PurchaseOrder>),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });
       toast('Purchase Order updated successfully!', 'success');
@@ -167,11 +154,7 @@ function EditPurchaseOrderPageContent() {
       toast('Please add at least one product', 'warning');
       return;
     }
-    mutation.mutate({ 
-      ...formData, 
-      delivery_method: formData.delivery_method || undefined,
-      items 
-    });
+    mutation.mutate(formData);
   };
 
   const calculateSubtotal = () => {
