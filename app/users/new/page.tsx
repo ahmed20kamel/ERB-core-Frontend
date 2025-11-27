@@ -97,7 +97,10 @@ export default function NewUserPage() {
     if (avatarFile) {
       (submitData as any).avatar = avatarFile;
     }
-    mutation.mutate(submitData);
+    mutation.mutate({
+      ...submitData,
+      role: submitData.role as 'site_engineer' | 'procurement_manager' | 'procurement_officer' | 'super_admin',
+    });
   };
 
   if (currentUser?.role !== 'super_admin' && !currentUser?.is_superuser) {

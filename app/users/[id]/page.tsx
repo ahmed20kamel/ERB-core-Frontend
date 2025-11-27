@@ -75,6 +75,8 @@ export default function EditUserPage() {
         last_name: user.last_name || '',
         phone: user.phone || '',
         role: user.role || 'site_engineer',
+        password: '',
+        password2: '',
       });
     }
   }, [user]);
@@ -180,7 +182,7 @@ export default function EditUserPage() {
     mutation.mutate(submitData);
   };
 
-  if (currentUser?.role !== 'admin' && !currentUser?.is_staff) {
+  if (currentUser?.role !== 'super_admin' && !currentUser?.is_staff) {
     return (
       <MainLayout>
         <div className="space-y-6">

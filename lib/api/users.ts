@@ -4,6 +4,7 @@ import { User, PaginatedResponse } from '@/types';
 export const usersApi = {
   getAll: async (params?: {
     page?: number;
+    page_size?: number;
     search?: string;
     // Text filters
     username?: string;
@@ -59,7 +60,7 @@ export const usersApi = {
     }
   },
 
-  update: async (id: number, data: Partial<User>): Promise<User> => {
+  update: async (id: number, data: Partial<User> & { password?: string; avatar?: File }): Promise<User> => {
     // Check if avatar is a File object (for upload)
     const formData = new FormData();
     let hasFile = false;

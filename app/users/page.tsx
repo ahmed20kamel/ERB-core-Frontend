@@ -259,7 +259,7 @@ export default function UsersPage() {
               </Button>
             )}
             <Link href="/users/pending">
-              <Button variant="warning" style={{ marginRight: 'var(--spacing-2)' }}>
+              <Button variant="secondary" style={{ marginRight: 'var(--spacing-2)' }}>
                 Pending Approvals
                 {(() => {
                   // Count pending users if available

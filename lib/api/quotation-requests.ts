@@ -4,12 +4,16 @@ import { QuotationRequest, QuotationRequestItem, PaginatedResponse } from '@/typ
 export const quotationRequestsApi = {
   getAll: async (params?: {
     page?: number;
+    page_size?: number;
+    search?: string;
     // Foreign key filters
     supplier?: number;
     purchase_request?: number;
     created_by?: number;
     // Text filters
     notes?: string;
+    // Status filter
+    status?: string;
     // Date filters
     created_at_after?: string;
     created_at_before?: string;

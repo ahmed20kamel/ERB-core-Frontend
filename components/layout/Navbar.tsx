@@ -68,7 +68,7 @@ export default function Navbar() {
               e.currentTarget.style.borderColor = 'var(--input-border)';
             }}
           >
-            <SearchIcon className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--text-tertiary)' }} />
+            <SearchIcon className="w-4 h-4 flex-shrink-0" />
             <span className="text-sm" style={{ color: 'var(--input-placeholder)' }}>Search...</span>
           </div>
         </div>

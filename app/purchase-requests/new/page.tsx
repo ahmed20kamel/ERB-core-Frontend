@@ -45,6 +45,7 @@ function NewPurchaseRequestPageContent() {
     product?: Product;
     quantity: number;
     unit: string;
+    project_site: string;
     reason: string;
     notes: string;
   }>>([]);
@@ -54,6 +55,7 @@ function NewPurchaseRequestPageContent() {
   const [currentItem, setCurrentItem] = useState({
     quantity: 1,
     unit: '',
+    project_site: '',
     reason: '',
     notes: '',
   });
@@ -168,6 +170,7 @@ function NewPurchaseRequestPageContent() {
       setCurrentItem({
         quantity: 1,
         unit: '',
+        project_site: '',
         reason: '',
         notes: '',
       });
@@ -189,6 +192,7 @@ function NewPurchaseRequestPageContent() {
       product: selectedProduct,
       quantity: Math.floor(currentItem.quantity),
       unit: currentItem.unit || selectedProduct.unit || '',
+      project_site: currentItem.project_site || '',
       reason: currentItem.reason,
       notes: currentItem.notes,
     };
@@ -200,6 +204,7 @@ function NewPurchaseRequestPageContent() {
     setCurrentItem({
       quantity: 1,
       unit: '',
+      project_site: '',
       reason: '',
       notes: '',
     });
@@ -229,6 +234,7 @@ function NewPurchaseRequestPageContent() {
       product_id: item.product_id,
       quantity: item.quantity,
       unit: item.unit,
+      project_site: item.project_site || '',
       reason: item.reason,
       notes: item.notes,
     }));
@@ -447,7 +453,7 @@ function NewPurchaseRequestPageContent() {
                       <SearchableDropdown
                         options={unitOptions}
                         value={currentItem.unit}
-                        onChange={(val) => setCurrentItem({ ...currentItem, unit: val || '' })}
+                        onChange={(val) => setCurrentItem({ ...currentItem, unit: String(val || '') })}
                         placeholder="Select Unit"
                         searchPlaceholder="Search unit..."
                         allowClear
@@ -495,6 +501,7 @@ function NewPurchaseRequestPageContent() {
                         setCurrentItem({
                           quantity: 1,
                           unit: '',
+                          project_site: '',
                           reason: '',
                           notes: '',
                         });

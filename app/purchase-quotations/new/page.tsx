@@ -10,7 +10,7 @@ import { suppliersApi } from '@/lib/api/suppliers';
 import { productsApi } from '@/lib/api/products';
 import MainLayout from '@/components/layout/MainLayout';
 import Link from 'next/link';
-import { PurchaseQuotationItem } from '@/types';
+import { Product, PurchaseQuotationItem } from '@/types';
 import { PurchaseQuotationFormData, toPurchaseQuotationCreateData } from '@/lib/types/form-data';
 import { toast } from '@/lib/hooks/use-toast';
 import SearchableDropdown from '@/components/ui/SearchableDropdown';
@@ -19,6 +19,10 @@ import { formatBackendError, validateRequired, validatePositiveNumber, validateD
 import { formatPrice } from '@/lib/utils/format';
 import RouteGuard from '@/components/auth/RouteGuard';
 import { useAuth } from '@/lib/hooks/use-auth';
+
+type PurchaseQuotationFormItem = Omit<PurchaseQuotationItem, 'product' | 'total' | 'created_at'> & {
+  _product?: Product | null;
+};
 
 export default function NewPurchaseQuotationPage() {
   return (
@@ -52,9 +56,7 @@ function NewPurchaseQuotationPageContent() {
     discount: 0,
   });
 
-  const [items, setItems] = useState<
-    Omit<PurchaseQuotationItem, 'product' | 'total' | 'created_at'>[]
-  >([]);
+  const [items, setItems] = useState<PurchaseQuotationFormItem[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const { data: quotationRequest } = useQuery({
@@ -101,13 +103,13 @@ function NewPurchaseQuotationPageContent() {
       setFormData((prev) => ({
         ...prev,
         quotation_request_id: quotationRequest.id,
-        purchase_request_id: purchaseRequestId || null,
+        purchase_request_id: purchaseRequestId ?? undefined,
         supplier_id: supplierId,
       }));
       
       // Pre-fill items from Quotation Request
       if (quotationRequest.items && quotationRequest.items.length > 0) {
-        const requestItems = quotationRequest.items.map((item) => {
+        const requestItems = quotationRequest.items.map((item): PurchaseQuotationFormItem | null => {
           // Get product_id (handle both object and number)
           const productId = item.product?.id || item.product_id;
           
@@ -126,7 +128,7 @@ function NewPurchaseQuotationPageContent() {
             // Store product info if available for display
             _product: item.product || null,
           };
-        }).filter((item) => item !== null) as any[]; // Remove any null items
+        }).filter((item): item is PurchaseQuotationFormItem => item !== null); // Remove any null items
         
         if (requestItems.length > 0) {
           setItems(requestItems);
@@ -140,7 +142,7 @@ function NewPurchaseQuotationPageContent() {
     if (products?.results && items.length > 0) {
       const updatedItems = items.map((item) => {
         // If item doesn't have _product, try to find it in products list
-        if (!(item as any)._product) {
+        if (!item._product) {
           const product = products.results.find((p) => p.id === item.product_id);
           if (product) {
             return { ...item, _product: product };
@@ -150,7 +152,7 @@ function NewPurchaseQuotationPageContent() {
       });
       // Only update if there are changes
       const hasChanges = updatedItems.some((item, index) => 
-        (item as any)._product !== (items[index] as any)._product
+        item._product !== items[index]._product
       );
       if (hasChanges) {
         setItems(updatedItems);
@@ -199,7 +201,7 @@ function NewPurchaseQuotationPageContent() {
       ...currentItem, 
       [field]: value,
       // Always preserve _product
-      _product: (currentItem as any)._product || null,
+      _product: currentItem._product || null,
     };
     setItems(updatedItems);
   };
@@ -256,10 +258,11 @@ function NewPurchaseQuotationPageContent() {
         if (item.unit_price < 0) {
           validationErrors[`items.${index}.unit_price`] = `Unit price for product ${index + 1} cannot be negative.`;
         }
-        if (item.discount < 0) {
+        if ((item.discount ?? 0) < 0) {
           validationErrors[`items.${index}.discount`] = `Discount for product ${index + 1} cannot be negative.`;
         }
-        if (item.tax_rate < 0 || item.tax_rate > 100) {
+        const taxRate = item.tax_rate ?? 0;
+        if (taxRate < 0 || taxRate > 100) {
           validationErrors[`items.${index}.tax_rate`] = `Tax rate for product ${index + 1} must be between 0 and 100.`;
         }
       });
@@ -297,7 +300,7 @@ function NewPurchaseQuotationPageContent() {
   const calculateSubtotal = () => {
     return items.reduce((sum, item) => {
       const itemTotal = item.quantity * item.unit_price;
-      const discountAmount = itemTotal * (item.discount / 100);
+      const discountAmount = itemTotal * ((item.discount ?? 0) / 100);
       return sum + itemTotal - discountAmount;
     }, 0);
   };
@@ -604,14 +607,14 @@ function NewPurchaseQuotationPageContent() {
                     <tbody>
                       {items.map((item, index) => {
                         // Try to get product from stored _product first, then from products list
-                        let product = (item as any)._product;
+                        let product = item._product;
                         
                         // If no product in stored _product, try to get from products list
                         if (!product && products?.results) {
                           product = products.results.find((p) => p.id === item.product_id);
                           // Store it if found
                           if (product) {
-                            (item as any)._product = product;
+                            item._product = product;
                           }
                         }
                         
@@ -624,14 +627,14 @@ function NewPurchaseQuotationPageContent() {
                           if (requestItem?.product) {
                             product = requestItem.product;
                             // Store it for future use
-                            (item as any)._product = product;
+                            item._product = product;
                           }
                         }
                         
                         const itemSubtotal = item.quantity * item.unit_price;
-                        const discountAmount = itemSubtotal * (item.discount / 100);
+                        const discountAmount = itemSubtotal * ((item.discount ?? 0) / 100);
                         const afterDiscount = itemSubtotal - discountAmount;
-                        const taxAmount = afterDiscount * (item.tax_rate / 100);
+                        const taxAmount = afterDiscount * ((item.tax_rate ?? 0) / 100);
                         const itemTotal = afterDiscount + taxAmount;
 
                         return (
@@ -679,7 +682,7 @@ function NewPurchaseQuotationPageContent() {
                                 type="number"
                                 min="0"
                                 step="0.01"
-                                value={item.discount}
+                                value={item.discount ?? 0}
                                 onChange={(e) => handleUpdateItem(index, 'discount', Number(e.target.value))}
                                 className="input"
                                 style={{ width: '80px' }}
@@ -690,7 +693,7 @@ function NewPurchaseQuotationPageContent() {
                                 type="number"
                                 min="0"
                                 step="0.01"
-                                value={item.tax_rate}
+                                value={item.tax_rate ?? 0}
                                 onChange={(e) => handleUpdateItem(index, 'tax_rate', Number(e.target.value))}
                                 className="input"
                                 style={{ width: '80px' }}

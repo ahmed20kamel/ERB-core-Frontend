@@ -393,7 +393,11 @@ export default function PurchaseQuotationsPage() {
                           </div>
                         </td>
                         <td>
-                          <div className="text-foreground">{quotation.supplier?.name || 'N/A'}</div>
+                          <div className="text-foreground">
+                            {typeof quotation.supplier === 'object' && quotation.supplier
+                              ? quotation.supplier.business_name || quotation.supplier.name || 'N/A'
+                              : 'N/A'}
+                          </div>
                         </td>
                         <td>
                           <div className="text-muted-foreground">

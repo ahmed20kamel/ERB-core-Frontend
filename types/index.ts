@@ -15,6 +15,7 @@ export interface User {
   is_superuser?: boolean;
   permission_set?: number;
   permission_set_id?: number;
+  created_at?: string;
 }
 
 // Permission Types
@@ -229,6 +230,7 @@ export interface PurchaseQuotationItem {
   tax?: number;
   tax_rate?: number;
   total: number;
+  notes?: string;
 }
 
 export interface PurchaseQuotation {
@@ -243,7 +245,7 @@ export interface PurchaseQuotation {
   has_awarded_quotation?: boolean;
   supplier: number | Supplier;
   quotation_date: string;
-  valid_until: string;
+  valid_until?: string;
   status?: 'pending' | 'awarded' | 'rejected' | 'expired';
   total: number;
   subtotal?: number;
@@ -327,7 +329,7 @@ export interface PurchaseInvoiceItem {
 
 export interface PurchaseInvoice {
   id: number;
-  purchase_order: number | any;
+  purchase_order?: number | PurchaseOrder;
   purchase_order_id: number;
   grn?: number | any;
   grn_id?: number;

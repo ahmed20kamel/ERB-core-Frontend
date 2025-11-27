@@ -1,11 +1,11 @@
 import apiClient from './client';
-import { PaginatedResponse } from '@/types';
+import { PaginatedResponse, Product, PurchaseOrder } from '@/types';
 
 export interface GRNItem {
   id?: number;
   purchase_order_item_id: number;
   product_id: number;
-  product?: any;
+  product?: Product;
   ordered_quantity: number;
   received_quantity: number;
   rejected_quantity: number;
@@ -16,7 +16,7 @@ export interface GRNItem {
 
 export interface GoodsReceivedNote {
   id: number;
-  purchase_order: number | any;
+  purchase_order?: number | PurchaseOrder;
   purchase_order_id: number;
   grn_number: string;
   receipt_date: string;
@@ -39,6 +39,7 @@ export interface GoodsReceivedNote {
 export const goodsReceivingApi = {
   getAll: async (params?: {
     page?: number;
+    page_size?: number;
     search?: string;
     purchase_order?: number;
     status?: string;

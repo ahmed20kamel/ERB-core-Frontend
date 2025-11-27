@@ -104,6 +104,17 @@ export default function PurchaseQuotationDetailPage() {
     );
   }
 
+  const supplierName =
+    typeof quotation.supplier === 'object' && quotation.supplier !== null
+      ? quotation.supplier.business_name ||
+        quotation.supplier.name ||
+        quotation.supplier.contact_person ||
+        'N/A'
+      : typeof quotation.supplier === 'number'
+      ? `Supplier #${quotation.supplier}`
+      : 'N/A';
+  const quotationStatus: string = quotation.status || 'pending';
+
   return (
     <MainLayout>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-6)' }}>
@@ -148,9 +159,9 @@ export default function PurchaseQuotationDetailPage() {
                 View quotation details and pricing
               </p>
             </div>
-            {quotation.status && (
-              <span className={`badge ${statusColors[quotation.status] || 'badge-info'}`}>
-                {statusLabels[quotation.status] || quotation.status}
+          {quotationStatus && (
+            <span className={`badge ${statusColors[quotationStatus] || 'badge-info'}`}>
+              {statusLabels[quotationStatus] || quotationStatus}
               </span>
             )}
           </div>
@@ -194,7 +205,7 @@ export default function PurchaseQuotationDetailPage() {
                 color: 'var(--text-primary)',
                 margin: 0,
               }}>
-                {quotation.supplier?.name || 'N/A'}
+                {supplierName}
               </p>
             </div>
             <div>
@@ -230,7 +241,9 @@ export default function PurchaseQuotationDetailPage() {
                 color: 'var(--text-primary)',
                 margin: 0,
               }}>
-                {new Date(quotation.valid_until).toLocaleDateString('en-US')}
+                {quotation.valid_until
+                  ? new Date(quotation.valid_until).toLocaleDateString('en-US')
+                  : 'Not set'}
               </p>
             </div>
             {quotation.payment_terms && (
@@ -360,44 +373,60 @@ export default function PurchaseQuotationDetailPage() {
                 </tr>
               </thead>
               <tbody>
-                {quotation.items.map((item) => (
-                  <tr key={item.id}>
-                    <td>
-                      <div style={{ 
-                        fontWeight: 'var(--font-weight-medium)',
-                        color: 'var(--text-primary)',
-                      }}>
-                        {item.product.name}
-                      </div>
-                      <div style={{ 
-                        fontSize: 'var(--font-xs)',
-                        color: 'var(--text-secondary)',
-                      }}>
-                        {item.product.code}
-                      </div>
-                    </td>
-                    <td>
-                      <div style={{ color: 'var(--text-primary)' }}>{item.quantity}</div>
-                    </td>
-                    <td>
-                      <div style={{ color: 'var(--text-secondary)' }}>{formatPrice(Number(item.unit_price))}</div>
-                    </td>
-                    <td>
-                      <div style={{ color: 'var(--text-secondary)' }}>{item.discount || 0}%</div>
-                    </td>
-                    <td>
-                      <div style={{ color: 'var(--text-secondary)' }}>{item.tax_rate || item.tax || 0}%</div>
-                    </td>
-                    <td>
-                      <div style={{ 
-                        fontWeight: 'var(--font-weight-semibold)',
-                        color: 'var(--text-primary)',
-                      }}>
-                        {formatPrice(Number(item.total))}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {quotation.items.map((item) => {
+                  const productName =
+                    typeof item.product === 'object' && item.product
+                      ? item.product.name
+                      : `Product #${item.product_id}`;
+                  const productCode =
+                    typeof item.product === 'object' && item.product
+                      ? item.product.code
+                      : '';
+                  return (
+                    <tr key={item.id ?? `${item.product_id}-${item.quantity}`}>
+                      <td>
+                        <div
+                          style={{
+                            fontWeight: 'var(--font-weight-medium)',
+                            color: 'var(--text-primary)',
+                          }}
+                        >
+                          {productName}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 'var(--font-xs)',
+                            color: 'var(--text-secondary)',
+                          }}
+                        >
+                          {productCode}
+                        </div>
+                      </td>
+                      <td>
+                        <div style={{ color: 'var(--text-primary)' }}>{item.quantity}</div>
+                      </td>
+                      <td>
+                        <div style={{ color: 'var(--text-secondary)' }}>{formatPrice(Number(item.unit_price))}</div>
+                      </td>
+                      <td>
+                        <div style={{ color: 'var(--text-secondary)' }}>{item.discount || 0}%</div>
+                      </td>
+                      <td>
+                        <div style={{ color: 'var(--text-secondary)' }}>{item.tax_rate || item.tax || 0}%</div>
+                      </td>
+                      <td>
+                        <div
+                          style={{
+                            fontWeight: 'var(--font-weight-semibold)',
+                            color: 'var(--text-primary)',
+                          }}
+                        >
+                          {formatPrice(Number(item.total))}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -472,12 +501,16 @@ export default function PurchaseQuotationDetailPage() {
 
         {/* Actions - Unified */}
         <div style={{ display: 'flex', gap: 'var(--spacing-3)' }}>
-          {quotation.status === 'pending' && (canAward || canReject) && (
+          {quotationStatus === 'pending' && (canAward || canReject) && (
             <>
               {canAward && !quotation.has_awarded_quotation && (
                 <button
                   onClick={() => {
-                    const guard = canAwardQuotation(quotation.status, quotation.valid_until, canAward);
+                    const guard = canAwardQuotation(
+                      quotationStatus,
+                      quotation.valid_until ?? undefined,
+                      canAward
+                    );
                     // canAward is already passed from hasPermission check
                     if (!guard.canProceed) {
                       toast(guard.reason || 'Cannot award quotation', 'error');
@@ -503,7 +536,7 @@ export default function PurchaseQuotationDetailPage() {
                   {awardMutation.isPending ? 'Processing...' : 'Award Supplier'}
                 </button>
               )}
-              {quotation.has_awarded_quotation && quotation.status !== 'awarded' && (
+              {quotation.has_awarded_quotation && (
                 <p style={{ 
                   fontSize: 'var(--font-sm)', 
                   color: 'var(--color-warning)', 
@@ -524,10 +557,10 @@ export default function PurchaseQuotationDetailPage() {
               )}
             </>
           )}
-          {quotation.status === 'awarded' && canConvert && (
+          {quotationStatus === 'awarded' && canConvert && (
             <button
               onClick={() => {
-                const guard = canCreatePurchaseOrder(quotation.status);
+                const guard = canCreatePurchaseOrder(quotationStatus);
                 if (!guard.canProceed) {
                   toast(guard.reason || 'Cannot create purchase order', 'error');
                   return;

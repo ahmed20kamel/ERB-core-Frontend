@@ -301,11 +301,17 @@ export default function QuotationRequestsPage() {
                         )}
                         <td>
                           <div className="font-medium text-foreground">
-                            {request.purchase_request?.code || 'N/A'}
+                            {typeof request.purchase_request === 'object' && request.purchase_request
+                              ? request.purchase_request.code || 'N/A'
+                              : 'N/A'}
                           </div>
                         </td>
                         <td>
-                          <div className="text-foreground">{request.supplier?.name || 'N/A'}</div>
+                          <div className="text-foreground">
+                            {typeof request.supplier === 'object' && request.supplier
+                              ? request.supplier.business_name || request.supplier.name || 'N/A'
+                              : 'N/A'}
+                          </div>
                         </td>
                         <td>
                           <div className="text-muted-foreground">

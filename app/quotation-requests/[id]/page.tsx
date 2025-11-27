@@ -103,7 +103,9 @@ export default function QuotationRequestDetailPage() {
                 color: 'var(--text-primary)',
                 margin: 0,
               }}>
-                {request.purchase_request?.code || 'N/A'}
+                {typeof request.purchase_request === 'object' && request.purchase_request
+                  ? request.purchase_request.code || 'N/A'
+                  : 'N/A'}
               </p>
             </div>
             <div>
@@ -122,7 +124,9 @@ export default function QuotationRequestDetailPage() {
                 color: 'var(--text-primary)',
                 margin: 0,
               }}>
-                {request.supplier?.name || 'N/A'}
+                {typeof request.supplier === 'object' && request.supplier
+                  ? request.supplier.business_name || request.supplier.name || 'N/A'
+                  : 'N/A'}
               </p>
             </div>
             <div>
@@ -194,12 +198,12 @@ export default function QuotationRequestDetailPage() {
                         fontWeight: 'var(--font-weight-medium)',
                         color: 'var(--text-primary)',
                       }}>
-                        {item.product.name}
+                        {item.product?.name || 'N/A'}
                       </div>
                     </td>
                     <td>
                       <div style={{ color: 'var(--text-secondary)' }}>
-                        {item.product.code}
+                        {item.product?.code || ''}
                       </div>
                     </td>
                     <td>

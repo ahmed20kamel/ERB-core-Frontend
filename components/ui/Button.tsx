@@ -11,8 +11,9 @@ export interface ButtonProps extends BaseButtonProps {
 }
 
 export function Button({ children, asChild, ...props }: ButtonProps) {
-  if (asChild && typeof children === 'object' && 'type' in children && children.type === Link) {
-    const { className, ...linkProps } = children.props;
+  if (asChild && children && typeof children === 'object' && 'type' in children && children.type === Link) {
+    const childProps = (children as any).props || {};
+    const { className, ...linkProps } = childProps;
     return (
       <Link
         {...linkProps}
@@ -33,7 +34,7 @@ export function Button({ children, asChild, ...props }: ButtonProps) {
           className
         )}
       >
-        {children.props.children}
+        {(children as any).props?.children || children}
       </Link>
     );
   }

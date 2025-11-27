@@ -177,12 +177,17 @@ export default function PendingUsersPage() {
                               value: ps.id,
                               label: ps.name,
                             }))}
-                            value={selectedPermissionSet[user.id] || ''}
+                            value={selectedPermissionSet[user.id] ? String(selectedPermissionSet[user.id]) : ''}
                             onChange={(value) => {
-                              setSelectedPermissionSet(prev => ({
-                                ...prev,
-                                [user.id]: value ? parseInt(value) : undefined,
-                              }));
+                              setSelectedPermissionSet(prev => {
+                                const newState = { ...prev };
+                                if (value) {
+                                  newState[user.id] = parseInt(String(value));
+                                } else {
+                                  delete newState[user.id];
+                                }
+                                return newState;
+                              });
                             }}
                             placeholder="Select permission set (optional)"
                           />

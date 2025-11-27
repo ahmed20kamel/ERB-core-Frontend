@@ -4,6 +4,7 @@ import { PurchaseOrder, PurchaseOrderItem, PaginatedResponse } from '@/types';
 export const purchaseOrdersApi = {
   getAll: async (params?: {
     page?: number;
+    page_size?: number;
     search?: string;
     // Text filters
     order_number?: string;

@@ -73,6 +73,7 @@ export const permissionsApi = {
   // Permission Sets
   getAllPermissionSets: async (params?: {
     page?: number;
+    page_size?: number;
     search?: string;
   }): Promise<PaginatedResponse<PermissionSet>> => {
     const response = await apiClient.get('/permission-sets/', { params });

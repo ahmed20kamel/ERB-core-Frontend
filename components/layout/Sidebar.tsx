@@ -194,7 +194,7 @@ export default function Sidebar() {
               }}
               onClick={() => setSidebarOpen(false)}
             >
-              <DashboardIcon className="w-4 h-4 flex-shrink-0" style={{ minWidth: '16px' }} />
+              <DashboardIcon className="w-4 h-4 flex-shrink-0 min-w-[16px]" />
               <span className="truncate font-semibold">Dashboard</span>
             </Link>
             )}
@@ -224,7 +224,7 @@ export default function Sidebar() {
               }}
               onClick={() => setSidebarOpen(false)}
             >
-              <UsersIcon className="w-4 h-4 flex-shrink-0" style={{ minWidth: '16px' }} />
+              <UsersIcon className="w-4 h-4 flex-shrink-0 min-w-[16px]" />
               <span className="truncate font-semibold">My Profile</span>
             </Link>
 
@@ -298,7 +298,7 @@ export default function Sidebar() {
                         }}
                         onClick={() => setSidebarOpen(false)}
                       >
-                        <Icon className="w-4 h-4 flex-shrink-0" style={{ minWidth: '16px' }} />
+                        <Icon className="w-4 h-4 flex-shrink-0 min-w-[16px]" />
                         <span className="truncate font-semibold">{item.name}</span>
                       </Link>
                     )}

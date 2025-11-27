@@ -4,6 +4,7 @@ import { PurchaseQuotation, PurchaseQuotationItem, PaginatedResponse } from '@/t
 export const purchaseQuotationsApi = {
   getAll: async (params?: {
     page?: number;
+    page_size?: number;
     search?: string;
     // Text filters
     quotation_number?: string;
