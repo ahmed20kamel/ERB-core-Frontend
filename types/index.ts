@@ -227,6 +227,7 @@ export interface PurchaseQuotationItem {
   unit_price: number;
   discount?: number;
   tax?: number;
+  tax_rate?: number;
   total: number;
 }
 
