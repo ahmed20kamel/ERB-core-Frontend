@@ -167,16 +167,16 @@ function EditPurchaseOrderPageContent() {
 
   const calculateTaxAmount = () => {
     const subtotal = calculateSubtotal();
-    const discountAmount = subtotal * (formData.discount / 100) || 0;
+    const discountAmount = subtotal * ((formData.discount ?? 0) / 100) || 0;
     const afterDiscount = subtotal - discountAmount;
-    return afterDiscount * (formData.tax_rate / 100) || 0;
+    return afterDiscount * ((formData.tax_rate ?? 0) / 100) || 0;
   };
 
   const calculateTotal = () => {
     const subtotal = calculateSubtotal();
-    const discountAmount = subtotal * (formData.discount / 100) || 0;
+    const discountAmount = subtotal * ((formData.discount ?? 0) / 100) || 0;
     const afterDiscount = subtotal - discountAmount;
-    const taxAmount = afterDiscount * (formData.tax_rate / 100) || 0;
+    const taxAmount = afterDiscount * ((formData.tax_rate ?? 0) / 100) || 0;
     return afterDiscount + taxAmount;
   };
 
@@ -543,7 +543,7 @@ function EditPurchaseOrderPageContent() {
                   min="0"
                   max="100"
                   step="0.01"
-                  value={formData.discount}
+                  value={formData.discount ?? 0}
                   onChange={(e) => setFormData({ ...formData, discount: parseFloat(e.target.value) || 0 })}
                   className="form-input"
                 />
@@ -556,7 +556,7 @@ function EditPurchaseOrderPageContent() {
                   min="0"
                   max="100"
                   step="0.01"
-                  value={formData.tax_rate}
+                  value={formData.tax_rate ?? 0}
                   onChange={(e) => setFormData({ ...formData, tax_rate: parseFloat(e.target.value) || 0 })}
                   className="form-input"
                 />
@@ -573,7 +573,7 @@ function EditPurchaseOrderPageContent() {
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Discount:</span>
                     <span className="font-semibold text-foreground">
-                      {formatPrice(calculateSubtotal() * (formData.discount / 100) || 0)}
+                      {formatPrice(calculateSubtotal() * ((formData.discount ?? 0) / 100) || 0)}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
