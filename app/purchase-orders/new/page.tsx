@@ -147,8 +147,8 @@ Terms & Conditions:
           product_id: item.product?.id || item.product_id,
           quantity: Number(item.quantity || 0),
           unit_price: Number(item.unit_price || 0),
-          discount: Number(item.discount || 0),
-          tax_rate: Number(item.tax_rate || item.tax || 0),
+          discount: Number(item.discount ?? 0),
+          tax_rate: Number(item.tax_rate ?? item.tax ?? 0),
           notes: item.notes || '',
           _product: item.product || null, // Store product for display
         }));
@@ -287,10 +287,11 @@ Terms & Conditions:
         if (item.unit_price < 0) {
           validationErrors[`items.${index}.unit_price`] = `Unit price for product ${index + 1} cannot be negative.`;
         }
-        if (item.discount < 0) {
+        if ((item.discount ?? 0) < 0) {
           validationErrors[`items.${index}.discount`] = `Discount for product ${index + 1} cannot be negative.`;
         }
-        if (item.tax_rate < 0 || item.tax_rate > 100) {
+        const taxRate = item.tax_rate ?? 0;
+        if (taxRate < 0 || taxRate > 100) {
           validationErrors[`items.${index}.tax_rate`] = `Tax rate for product ${index + 1} must be between 0 and 100.`;
         }
       });
@@ -343,7 +344,7 @@ Terms & Conditions:
   const calculateSubtotal = () => {
     return items.reduce((sum, item) => {
       const itemSubtotal = item.quantity * item.unit_price;
-      const discountAmount = itemSubtotal * (item.discount / 100) || 0;
+      const discountAmount = itemSubtotal * ((item.discount ?? 0) / 100) || 0;
       return sum + itemSubtotal - discountAmount;
     }, 0);
   };
@@ -711,9 +712,9 @@ Terms & Conditions:
                         }
 
                         const itemSubtotal = item.quantity * item.unit_price;
-                        const discountAmount = itemSubtotal * (item.discount / 100) || 0;
+                        const discountAmount = itemSubtotal * ((item.discount ?? 0) / 100) || 0;
                         const afterDiscount = itemSubtotal - discountAmount;
-                        const taxAmount = afterDiscount * (item.tax_rate / 100) || 0;
+                        const taxAmount = afterDiscount * ((item.tax_rate ?? 0) / 100) || 0;
                         const itemTotal = afterDiscount + taxAmount;
 
                         return (
@@ -768,7 +769,7 @@ Terms & Conditions:
                                 min="0"
                                 max="100"
                                 step="0.01"
-                                value={item.discount || 0}
+                                value={item.discount ?? 0}
                                 onChange={(e) =>
                                   handleUpdateItem(index, 'discount', parseFloat(e.target.value) || 0)
                                 }
@@ -783,7 +784,7 @@ Terms & Conditions:
                                 min="0"
                                 max="100"
                                 step="0.01"
-                                value={item.tax_rate || 0}
+                                value={item.tax_rate ?? 0}
                                 onChange={(e) =>
                                   handleUpdateItem(index, 'tax_rate', parseFloat(e.target.value) || 0)
                                 }

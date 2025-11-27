@@ -98,8 +98,8 @@ function EditPurchaseOrderPageContent() {
           product_id: item.product?.id || item.product_id,
           quantity: item.quantity,
           unit_price: item.unit_price,
-          discount: item.discount || 0,
-          tax_rate: item.tax_rate || 0,
+          discount: item.discount ?? 0,
+          tax_rate: item.tax_rate ?? 0,
           notes: item.notes || '',
         }))
       );
@@ -160,7 +160,7 @@ function EditPurchaseOrderPageContent() {
   const calculateSubtotal = () => {
     return items.reduce((sum, item) => {
       const itemSubtotal = item.quantity * item.unit_price;
-      const discountAmount = itemSubtotal * (item.discount / 100) || 0;
+      const discountAmount = itemSubtotal * ((item.discount ?? 0) / 100) || 0;
       return sum + itemSubtotal - discountAmount;
     }, 0);
   };
@@ -414,9 +414,9 @@ function EditPurchaseOrderPageContent() {
                     {items.map((item, index) => {
                       const product = products?.results.find((p) => p.id === item.product_id);
                       const itemSubtotal = item.quantity * item.unit_price;
-                      const discountAmount = itemSubtotal * (item.discount / 100) || 0;
+                      const discountAmount = itemSubtotal * ((item.discount ?? 0) / 100) || 0;
                       const afterDiscount = itemSubtotal - discountAmount;
-                      const taxAmount = afterDiscount * (item.tax_rate / 100) || 0;
+                      const taxAmount = afterDiscount * ((item.tax_rate ?? 0) / 100) || 0;
                       const itemTotal = afterDiscount + taxAmount;
 
                       return (
@@ -455,7 +455,7 @@ function EditPurchaseOrderPageContent() {
                               min="0"
                               max="100"
                               step="0.01"
-                              value={item.discount || 0}
+                              value={item.discount ?? 0}
                               onChange={(e) =>
                                 handleUpdateItem(index, 'discount', parseFloat(e.target.value) || 0)
                               }
@@ -468,7 +468,7 @@ function EditPurchaseOrderPageContent() {
                               min="0"
                               max="100"
                               step="0.01"
-                              value={item.tax_rate || 0}
+                              value={item.tax_rate ?? 0}
                               onChange={(e) =>
                                 handleUpdateItem(index, 'tax_rate', parseFloat(e.target.value) || 0)
                               }
