@@ -197,10 +197,10 @@ export default function PurchaseOrdersPage() {
 
   const checkboxChecked = selectMode === 'page' 
     ? allPageSelected 
-    : allSystemSelected;
+    : (allSystemSelected ?? false);
   const checkboxIndeterminate = selectMode === 'page'
     ? somePageSelected
-    : someSystemSelected;
+    : (someSystemSelected ?? false);
 
   return (
     <MainLayout>
@@ -311,7 +311,7 @@ export default function PurchaseOrdersPage() {
                           <Checkbox
                             checked={checkboxChecked}
                             ref={(input) => {
-                              if (input) input.indeterminate = checkboxIndeterminate;
+                              if (input) input.indeterminate = checkboxIndeterminate ?? false;
                             }}
                             onChange={(e) => handleSelectAll(e.target.checked)}
                             disabled={selectMode === 'all' && isLoadingAll}

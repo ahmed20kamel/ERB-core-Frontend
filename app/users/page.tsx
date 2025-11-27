@@ -194,10 +194,10 @@ export default function UsersPage() {
 
   const checkboxChecked = selectMode === 'page' 
     ? allPageSelected 
-    : allSystemSelected;
+    : (allSystemSelected ?? false);
   const checkboxIndeterminate = selectMode === 'page'
     ? somePageSelected
-    : someSystemSelected;
+    : (someSystemSelected ?? false);
 
   // Only show this page to super admins
   const isSuperuser = currentUser?.is_superuser ?? false;
@@ -327,7 +327,7 @@ export default function UsersPage() {
                         <Checkbox
                           checked={checkboxChecked}
                           ref={(input) => {
-                            if (input) input.indeterminate = checkboxIndeterminate;
+                            if (input) input.indeterminate = checkboxIndeterminate ?? false;
                           }}
                           onChange={(e) => handleSelectAll(e.target.checked)}
                           disabled={selectMode === 'all' && isLoadingAll}

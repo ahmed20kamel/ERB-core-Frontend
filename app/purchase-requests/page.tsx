@@ -262,10 +262,10 @@ export default function PurchaseRequestsPage() {
 
   const checkboxChecked = selectMode === 'page' 
     ? allPageSelected 
-    : allSystemSelected;
+    : (allSystemSelected ?? false);
   const checkboxIndeterminate = selectMode === 'page'
     ? somePageSelected
-    : someSystemSelected;
+    : (someSystemSelected ?? false);
 
   return (
     <MainLayout>
