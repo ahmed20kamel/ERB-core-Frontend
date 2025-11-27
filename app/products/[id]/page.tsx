@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { productsApi } from '@/lib/api/products';
 import { suppliersApi } from '@/lib/api/suppliers';
 import { ProductFormData, toProductCreateData } from '@/lib/types/form-data';
+import { Product } from '@/types';
 import MainLayout from '@/components/layout/MainLayout';
 import Link from 'next/link';
 import SearchableDropdown from '@/components/ui/SearchableDropdown';
@@ -251,7 +252,7 @@ export default function EditProductPage() {
                 <select
                   required
                   value={formData.unit}
-                  onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, unit: e.target.value as Product['unit'] })}
                   className="w-full"
                 >
                   {units.map((unit) => (
