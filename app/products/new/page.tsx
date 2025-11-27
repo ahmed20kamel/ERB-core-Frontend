@@ -63,7 +63,7 @@ export default function NewProductPage() {
     category: '',
     tags: '',
     unit: 'piece',
-    supplier: null as number | null,
+    supplier: undefined as number | undefined,
     unit_price: 0,
     buy_price: 0,
     minimum_price: 0,
@@ -93,7 +93,10 @@ export default function NewProductPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    mutation.mutate(formData as any);
+    mutation.mutate({
+      ...formData,
+      supplier: formData.supplier || undefined,
+    });
   };
 
   return (

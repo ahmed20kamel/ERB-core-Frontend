@@ -31,7 +31,7 @@ export default function NewPurchaseRequestPage() {
 function NewPurchaseRequestPageContent() {
   const router = useRouter();
   const [formData, setFormData] = useState({
-    project_id: null as number | null,
+    project_id: undefined as number | undefined,
     project_code: '',
     title: '',
     request_date: new Date().toISOString().split('T')[0],
@@ -233,7 +233,7 @@ function NewPurchaseRequestPageContent() {
     }));
     
     mutation.mutate({ 
-      project_id: formData.project_id,
+      project_id: formData.project_id || undefined,
       title: formData.title,
       request_date: formData.request_date,
       required_by: formData.required_by,

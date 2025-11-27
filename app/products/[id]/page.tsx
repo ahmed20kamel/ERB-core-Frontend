@@ -76,7 +76,7 @@ export default function EditProductPage() {
     category: '',
     tags: '',
     unit: 'piece',
-    supplier: null as number | null,
+    supplier: undefined as number | undefined,
     unit_price: 0,
     buy_price: 0,
     minimum_price: 0,
@@ -127,7 +127,10 @@ export default function EditProductPage() {
   }, [product]);
 
   const mutation = useMutation({
-    mutationFn: (data: typeof formData) => productsApi.update(id, data as any),
+    mutationFn: (data: typeof formData) => productsApi.update(id, {
+      ...data,
+      supplier: data.supplier || undefined,
+    }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       router.push('/products');

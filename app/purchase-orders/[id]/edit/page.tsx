@@ -8,7 +8,7 @@ import { suppliersApi } from '@/lib/api/suppliers';
 import { productsApi } from '@/lib/api/products';
 import MainLayout from '@/components/layout/MainLayout';
 import Link from 'next/link';
-import { PurchaseOrderItem } from '@/types';
+import { PurchaseOrder, PurchaseOrderItem } from '@/types';
 import { toast } from '@/lib/hooks/use-toast';
 import SearchableDropdown from '@/components/ui/SearchableDropdown';
 import { formatPrice } from '@/lib/utils/format';

@@ -37,8 +37,8 @@ function NewPurchaseQuotationPageContent() {
   const { user } = useAuth();
 
   const [formData, setFormData] = useState({
-    quotation_request_id: quotationRequestId ? Number(quotationRequestId) : null,
-    purchase_request_id: null as number | null,
+    quotation_request_id: quotationRequestId ? Number(quotationRequestId) : undefined,
+    purchase_request_id: undefined as number | undefined,
     supplier_id: 0,
     quotation_date: new Date().toISOString().split('T')[0],
     valid_until: '',
