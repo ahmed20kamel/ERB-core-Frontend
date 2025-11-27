@@ -32,7 +32,7 @@ function NewPurchaseInvoicePageContent() {
 
   const [formData, setFormData] = useState({
     purchase_order_id: purchaseOrderId ? Number(purchaseOrderId) : 0,
-    grn_id: null as number | null,
+    grn_id: undefined as number | undefined,
     invoice_date: new Date().toISOString().split('T')[0],
     due_date: '',
     status: 'draft' as 'draft' | 'pending' | 'approved' | 'rejected' | 'paid' | 'cancelled',
@@ -84,8 +84,20 @@ function NewPurchaseInvoicePageContent() {
     }
   }, [purchaseOrder]);
 
+  type InvoiceCreateData = {
+    purchase_order_id: number;
+    grn_id?: number;
+    invoice_date: string;
+    due_date?: string;
+    status?: 'draft' | 'pending' | 'approved' | 'rejected' | 'paid' | 'cancelled';
+    tax_rate?: number;
+    discount?: number;
+    notes?: string;
+    items: Omit<PurchaseInvoiceItem, 'id' | 'created_at' | 'product'>[];
+  };
+
   const mutation = useMutation({
-    mutationFn: (data: typeof formData & { items: PurchaseInvoiceItem[] }) => purchaseInvoicesApi.create(data),
+    mutationFn: (data: InvoiceCreateData) => purchaseInvoicesApi.create(data),
     onSuccess: (data) => {
       toast('Purchase invoice created successfully!', 'success');
       if (data && data.id) {
@@ -169,10 +181,11 @@ function NewPurchaseInvoicePageContent() {
         if (item.unit_price < 0) {
           validationErrors[`items.${index}.unit_price`] = `Unit price for product ${index + 1} cannot be negative.`;
         }
-        if (item.discount < 0) {
+        if ((item.discount ?? 0) < 0) {
           validationErrors[`items.${index}.discount`] = `Discount for product ${index + 1} cannot be negative.`;
         }
-        if (item.tax_rate < 0 || item.tax_rate > 100) {
+        const taxRate = item.tax_rate ?? 0;
+        if (taxRate < 0 || taxRate > 100) {
           validationErrors[`items.${index}.tax_rate`] = `Tax rate for product ${index + 1} must be between 0 and 100.`;
         }
       });
@@ -227,7 +240,6 @@ function NewPurchaseInvoicePageContent() {
     
     mutation.mutate({
       ...formData,
-      grn_id: formData.grn_id ?? undefined,
       items,
     });
   };
