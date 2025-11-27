@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { purchaseOrdersApi } from '@/lib/api/purchase-orders';
 import { goodsReceivingApi, GRNItem } from '@/lib/api/goods-receiving';
-import { GRNFormData } from '@/lib/types/form-data';
+import { GRNFormData, toGRNCreateData } from '@/lib/types/form-data';
 import MainLayout from '@/components/layout/MainLayout';
 import { formatPrice } from '@/lib/utils/format';
 import { toast } from '@/lib/hooks/use-toast';

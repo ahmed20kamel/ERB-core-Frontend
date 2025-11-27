@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { productsApi } from '@/lib/api/products';
 import { suppliersApi } from '@/lib/api/suppliers';
+import { ProductFormData, toProductCreateData } from '@/lib/types/form-data';
 import MainLayout from '@/components/layout/MainLayout';
 import Link from 'next/link';
 import SearchableDropdown, { DropdownOption } from '@/components/ui/SearchableDropdown';
