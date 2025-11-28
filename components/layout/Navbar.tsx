@@ -5,21 +5,12 @@ import { useUIStore } from '@/lib/store/ui-store';
 import { MenuIcon, SearchIcon } from '@/components/icons';
 import NotificationsDropdown from '@/components/ui/NotificationsDropdown';
 import DarkModeToggle from '@/components/ui/DarkModeToggle';
-import Image from 'next/image';
+import Avatar from '@/components/ui/Avatar';
 import Link from 'next/link';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
   const { sidebarOpen, toggleSidebar } = useUIStore();
-  
-  // Debug: Log user data to see if avatar_url is present
-  if (typeof window !== 'undefined' && user) {
-    console.log('Navbar user data:', { 
-      username: user.username, 
-      avatar_url: user.avatar_url, 
-      avatar: user.avatar 
-    });
-  }
 
   return (
     <nav 
@@ -111,52 +102,12 @@ export default function Navbar() {
                 e.currentTarget.style.color = 'var(--text-secondary)';
               }}
             >
-              <div
-                style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '50%',
-                  overflow: 'hidden',
-                  backgroundColor: 'var(--bg-tertiary)',
-                  border: '2px solid var(--border-primary)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  position: 'relative',
-                }}
-              >
-                {user?.avatar_url ? (
-                  <Image
-                    src={user.avatar_url}
-                    alt={user?.username || 'User'}
-                    width={32}
-                    height={32}
-                    unoptimized
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
-                    }}
-                  />
-                ) : (
-                  <div
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      backgroundColor: 'var(--bg-tertiary)',
-                      color: 'var(--text-tertiary)',
-                      fontSize: 'var(--font-sm)',
-                      fontWeight: 'var(--font-weight-bold)',
-                    }}
-                  >
-                    {(user?.username || 'U').charAt(0).toUpperCase()}
-                  </div>
-                )}
-              </div>
+              <Avatar
+                src={user?.avatar_url}
+                alt={user?.username || 'User'}
+                size={32}
+                username={user?.username}
+              />
               <span 
                 className="text-sm font-semibold hidden sm:inline" 
                 style={{ color: 'var(--text-primary)' }}

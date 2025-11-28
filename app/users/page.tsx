@@ -12,7 +12,7 @@ import { confirm } from '@/lib/hooks/use-toast';
 import FilterPanel, { FilterField } from '@/components/ui/FilterPanel';
 import FilterTags from '@/components/ui/FilterTags';
 import { Button, TextField, Checkbox, Loader, Badge } from '@/components/ui';
-import Image from 'next/image';
+import Avatar from '@/components/ui/Avatar';
 
 const roleLabels: Record<string, string> = {
   employee: 'Employee',
@@ -355,59 +355,12 @@ export default function UsersPage() {
                         </td>
                         <td>
                           <div className="flex items-center gap-2.5">
-                            <div
-                              style={{
-                                width: '32px',
-                                height: '32px',
-                                borderRadius: '50%',
-                                overflow: 'hidden',
-                                backgroundColor: 'var(--bg-tertiary)',
-                                border: '2px solid var(--border-primary)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                flexShrink: 0,
-                                position: 'relative',
-                              }}
-                            >
-                              {user.avatar_url ? (
-                                <Image
-                                  src={user.avatar_url}
-                                  alt={user.username}
-                                  width={32}
-                                  height={32}
-                                  unoptimized
-                                  style={{
-                                    width: '100%',
-                                    height: '100%',
-                                    objectFit: 'cover',
-                                  }}
-                                  onError={(e) => {
-                                    // Hide image on error and show fallback
-                                    const parent = e.currentTarget.parentElement;
-                                    if (parent) {
-                                      parent.innerHTML = `<div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background-color: var(--bg-tertiary); color: var(--text-tertiary); font-size: var(--font-xs); font-weight: var(--font-weight-bold);">${user.username.charAt(0).toUpperCase()}</div>`;
-                                    }
-                                  }}
-                                />
-                              ) : (
-                                <div
-                                  style={{
-                                    width: '100%',
-                                    height: '100%',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    backgroundColor: 'var(--bg-tertiary)',
-                                    color: 'var(--text-tertiary)',
-                                    fontSize: 'var(--font-xs)',
-                                    fontWeight: 'var(--font-weight-bold)',
-                                  }}
-                                >
-                                  {user.username.charAt(0).toUpperCase()}
-                                </div>
-                              )}
-                            </div>
+                            <Avatar
+                              src={user.avatar_url}
+                              alt={user.username}
+                              size={32}
+                              username={user.username}
+                            />
                             <div className="font-medium text-foreground">{user.username}</div>
                           </div>
                         </td>

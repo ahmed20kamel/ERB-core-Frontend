@@ -57,7 +57,17 @@ export default function NewUserPage() {
   const mutation = useMutation({
     mutationFn: usersApi.create,
     onSuccess: () => {
+      toast('User created successfully', 'success');
       router.push('/users');
+    },
+    onError: (error: any) => {
+      console.error('Error creating user:', error);
+      const errorMessage = error?.response?.data?.detail || 
+                          error?.response?.data?.message ||
+                          (typeof error?.response?.data === 'object' && error?.response?.data !== null
+                            ? Object.values(error.response.data).flat().join(', ')
+                            : 'Failed to create user. Please try again.');
+      toast(errorMessage, 'error');
     },
   });
 

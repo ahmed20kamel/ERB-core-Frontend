@@ -20,11 +20,22 @@ export default function PendingUsersPage() {
   const { data: pendingUsers, isLoading, error } = useQuery({
     queryKey: ['users', 'pending'],
     queryFn: async () => {
-      const data = await usersApi.getPending();
-      console.log('Pending users from API:', data);
-      return data;
+      try {
+        const data = await usersApi.getPending();
+        console.log('Pending users from API:', data);
+        return data;
+      } catch (err: any) {
+        console.error('Error fetching pending users:', err);
+        const errorMessage = err?.response?.data?.error || 
+                            err?.response?.data?.detail ||
+                            err?.message ||
+                            'Failed to fetch pending users';
+        toast(errorMessage, 'error');
+        throw err;
+      }
     },
     refetchInterval: 5000, // Refetch every 5 seconds to catch new registrations
+    retry: 2, // Retry twice on failure
   });
   
   // Debug: Log pending users
@@ -116,8 +127,23 @@ export default function PendingUsersPage() {
           </div>
         ) : error ? (
           <div className="card text-center py-12 border-destructive bg-destructive/10">
-            <p className="text-destructive text-sm">Error loading pending users</p>
-            <p className="text-xs mt-2 text-destructive/70">{String(error)}</p>
+            <p className="text-destructive text-sm font-medium mb-2">Error loading pending users</p>
+            <p className="text-xs mt-2 text-destructive/70">
+              {(error as any)?.response?.data?.error || 
+               (error as any)?.response?.data?.detail ||
+               (error as any)?.message ||
+               'An unexpected error occurred. Please try refreshing the page.'}
+            </p>
+            <Button
+              variant="secondary"
+              size="sm"
+              className="mt-4"
+              onClick={() => {
+                queryClient.invalidateQueries({ queryKey: ['users', 'pending'] });
+              }}
+            >
+              Retry
+            </Button>
           </div>
         ) : !pendingUsers || pendingUsers.length === 0 ? (
           <div className="card text-center py-12">

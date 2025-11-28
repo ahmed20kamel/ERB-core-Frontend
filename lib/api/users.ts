@@ -40,7 +40,7 @@ export const usersApi = {
       if (key === 'avatar' && value instanceof File) {
         formData.append('avatar', value);
         hasFile = true;
-      } else if (key !== 'avatar' && value !== undefined && value !== null) {
+      } else if (key !== 'avatar' && value !== undefined && value !== null && value !== '') {
         // Handle boolean values
         if (typeof value === 'boolean') {
           formData.append(key, value ? 'true' : 'false');
@@ -55,7 +55,11 @@ export const usersApi = {
       const response = await apiClient.post('/auth/users/', formData);
       return response.data;
     } else {
-      const response = await apiClient.post('/auth/users/', data);
+      // Clean up empty strings before sending JSON
+      const cleanedData = Object.fromEntries(
+        Object.entries(data).filter(([_, v]) => v !== undefined && v !== null && v !== '')
+      );
+      const response = await apiClient.post('/auth/users/', cleanedData);
       return response.data;
     }
   },

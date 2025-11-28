@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { ReactNode } from 'react';
+import React, { ReactNode } from 'react';
 
 interface EntityHeaderProps {
   title: string;
@@ -19,48 +19,10 @@ interface EntityHeaderProps {
   imageSize?: number;
 }
 
-const getDefaultImage = (entityType: 'product' | 'project' | 'supplier' | 'user'): string => {
-  switch (entityType) {
-    case 'product':
-      return '/images/default-product.png';
-    case 'project':
-      return '/images/default-project.png';
-    case 'supplier':
-      return '/images/default-supplier.png';
-    case 'user':
-      return '/images/default-avatar.png';
-    default:
-      return '/images/default-entity.png';
-  }
-};
+import { normalizeImageUrl } from '@/lib/utils/image-url';
 
-const getImageUrl = (image: string | null | undefined, defaultImage: string): string => {
-  if (!image || image === '' || image === 'null' || image === 'undefined') {
-    return defaultImage;
-  }
-  
-  // If image is a full URL, return it
-  if (image.startsWith('http://') || image.startsWith('https://')) {
-    return image;
-  }
-  
-  // If image starts with /, it's a relative path
-  if (image.startsWith('/')) {
-    return image;
-  }
-  
-  // If image already contains /media/, it's already a full path
-  if (image.includes('/media/')) {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-    if (image.startsWith('/media/')) {
-      return `${apiUrl}${image}`;
-    }
-    return `${apiUrl}/${image}`;
-  }
-  
-  // Otherwise, assume it's a media URL from backend
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-  return `${apiUrl}/media/${image}`;
+const getImageUrl = (image: string | null | undefined): string | null => {
+  return normalizeImageUrl(image);
 };
 
 export default function EntityHeader({
@@ -77,9 +39,9 @@ export default function EntityHeader({
   actions,
   imageSize = 120,
 }: EntityHeaderProps) {
-  const defaultImage = getDefaultImage(entityType);
-  const imageUrl = getImageUrl(image, defaultImage);
+  const imageUrl = getImageUrl(image);
   const isCircular = entityType === 'user';
+  const [imageError, setImageError] = React.useState(false);
 
   const getStatusBadgeClass = () => {
     switch (statusVariant) {
@@ -114,7 +76,7 @@ export default function EntityHeader({
             boxShadow: 'var(--shadow-md)',
           }}
         >
-          {imageUrl && imageUrl !== defaultImage ? (
+          {imageUrl && !imageError ? (
             <Image
               src={imageUrl}
               alt={imageAlt || title}
@@ -126,12 +88,8 @@ export default function EntityHeader({
                 height: '100%',
                 objectFit: 'cover',
               }}
-              onError={(e) => {
-                // Fallback to default image on error
-                const target = e.target as HTMLImageElement;
-                if (target.src !== defaultImage) {
-                  target.src = defaultImage;
-                }
+              onError={() => {
+                setImageError(true);
               }}
             />
           ) : (

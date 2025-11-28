@@ -12,6 +12,7 @@ import SearchableDropdown from '@/components/ui/SearchableDropdown';
 import { Button, PasswordField } from '@/components/ui';
 import Image from 'next/image';
 import { toast } from '@/lib/hooks/use-toast';
+import { normalizeImageUrl } from '@/lib/utils/image-url';
 
 const roles = [
   { 
@@ -250,7 +251,7 @@ export default function EditUserPage() {
               >
                 {avatarPreview || user?.avatar_url || user?.avatar ? (
                   <Image
-                    src={avatarPreview || user?.avatar_url || ''}
+                    src={avatarPreview || normalizeImageUrl(user?.avatar_url || user?.avatar) || ''}
                     alt={user?.username || 'User'}
                     width={80}
                     height={80}
@@ -259,6 +260,11 @@ export default function EditUserPage() {
                       width: '100%',
                       height: '100%',
                       objectFit: 'cover',
+                    }}
+                    onError={(e) => {
+                      // Fallback to default avatar on error
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
                     }}
                   />
                 ) : (
