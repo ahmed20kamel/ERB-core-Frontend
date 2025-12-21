@@ -113,6 +113,8 @@ export default function PurchaseOrderDetailPage() {
 
   return (
     <MainLayout>
+        <div className="lpo-print">
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-6)' }}>
         {/* Header Section - Unified */}
         <div>
@@ -519,6 +521,7 @@ export default function PurchaseOrderDetailPage() {
           title="Reject Purchase Order"
           message="Please provide a reason for rejecting this purchase order. This reason will be saved and visible to the creator."
         />
+      </div>
       </div>
     </MainLayout>
   );
