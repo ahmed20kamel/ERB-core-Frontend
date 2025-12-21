@@ -289,6 +289,7 @@ export interface PurchaseOrder {
   supplier: number | Supplier;
   order_date: string;
   delivery_date?: string;
+  delivery_address?: string;
   status: 'draft' | 'pending' | 'approved' | 'rejected' | 'completed' | 'cancelled';
   subtotal: number;
   tax_rate: number;
