@@ -113,11 +113,9 @@ export default function PurchaseOrderDetailPage() {
 
   return (
     <MainLayout>
-        <div className="lpo-print">
-
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-6)' }}>
-        {/* Header Section - Unified */}
-        <div>
+        {/* Header Section - داخل no-print */}
+        <div className="no-print">
           <Link
             href="/purchase-orders"
             className="text-sm mb-2 inline-block"
@@ -163,270 +161,259 @@ export default function PurchaseOrderDetailPage() {
           </div>
         </div>
 
-        {/* Linked Documents */}
-        <LinkedDocumentsSection
-          documents={{
-            purchaseRequest: typeof order.purchase_request === 'object' ? order.purchase_request : order.purchase_request ? { id: order.purchase_request } : null,
-            purchaseQuotation: typeof order.purchase_quotation === 'object' ? order.purchase_quotation : order.purchase_quotation ? { id: order.purchase_quotation } : null,
-            purchaseOrder: { id: order.id, order_number: order.order_number },
-          }}
-        />
+        {/* Linked Documents - داخل no-print */}
+        <div className="no-print">
+          <LinkedDocumentsSection
+            documents={{
+              purchaseRequest: typeof order.purchase_request === 'object' ? order.purchase_request : order.purchase_request ? { id: order.purchase_request } : null,
+              purchaseQuotation: typeof order.purchase_quotation === 'object' ? order.purchase_quotation : order.purchase_quotation ? { id: order.purchase_quotation } : null,
+              purchaseOrder: { id: order.id, order_number: order.order_number },
+            }}
+          />
+        </div>
 
-        {/* Details Card - Unified */}
-        <DetailCard title="Order Information">
-          <DetailField 
-            label="Supplier" 
-            value={typeof order.supplier === 'object' ? order.supplier.name : 'N/A'} 
-          />
-          <DetailField 
-            label="Order Date" 
-            value={new Date(order.order_date).toLocaleDateString('en-US')} 
-          />
-          {order.delivery_date && (
+        {/* المحتوى الرسمي للطباعة - داخل lpo-print */}
+        <div className="lpo-print">
+          {/* Details Card */}
+          <DetailCard title="Order Information" className="print-info-grid">
             <DetailField 
-              label="Delivery Date" 
-              value={new Date(order.delivery_date).toLocaleDateString('en-US')} 
+              label="Supplier" 
+              value={typeof order.supplier === 'object' ? order.supplier.name : 'N/A'} 
             />
-          )}
-          {order.delivery_method && (
             <DetailField 
-              label="Delivery Method" 
-              value={order.delivery_method === 'pickup' ? 'Pick Up' : 'Delivery'} 
+              label="Order Date" 
+              value={new Date(order.order_date).toLocaleDateString('en-US')} 
             />
-          )}
-          {order.purchase_request && (
-            <DetailField 
-              label="Purchase Request" 
-              value={
-                <Link
-                  href={`/purchase-requests/${typeof order.purchase_request === 'object' ? order.purchase_request.id : order.purchase_request}`}
-                  className="text-primary hover:text-orange-500 underline"
-                >
-                  {typeof order.purchase_request === 'object'
-                    ? order.purchase_request.code
-                    : 'N/A'}
-                </Link>
-              } 
-            />
-          )}
-          {order.approved_by_name && (
-            <DetailField 
-              label="Approved By" 
-              value={order.approved_by_name} 
-            />
-          )}
-          {order.approved_at && (
-            <DetailField 
-              label="Approved At" 
-              value={new Date(order.approved_at).toLocaleDateString('en-US')} 
-            />
-          )}
-          {order.payment_terms && (
-            <DetailField 
-              label="Payment Terms" 
-              value={order.payment_terms} 
-              span={3}
-            />
-          )}
-          {order.delivery_terms && (
-            <DetailField 
-              label="Delivery Terms" 
-              value={order.delivery_terms} 
-              span={3}
-            />
-          )}
-          {order.notes && (
-            <DetailField 
-              label="Notes" 
-              value={order.notes} 
-              span={3}
-            />
-          )}
-          {order.rejection_reason && (
-            <DetailField 
-              label="Rejection Reason" 
-              value={
-                <div className="p-3 rounded-md" style={{
-                  backgroundColor: 'var(--color-error-light)',
-                  border: '1px solid var(--color-error)',
-                }}>
-                  <p className="text-sm" style={{ color: '#991B1B', margin: 0 }}>
-                    {order.rejection_reason}
+            {order.delivery_date && (
+              <DetailField 
+                label="Delivery Date" 
+                value={new Date(order.delivery_date).toLocaleDateString('en-US')} 
+              />
+            )}
+            {order.delivery_method && (
+              <DetailField 
+                label="Delivery Method" 
+                value={order.delivery_method === 'pickup' ? 'Pick Up' : 'Delivery'} 
+              />
+            )}
+            {order.purchase_request && (
+              <DetailField 
+                label="Purchase Request" 
+                value={
+                  <span className="text-primary">
+                    {typeof order.purchase_request === 'object'
+                      ? order.purchase_request.code
+                      : 'N/A'}
+                  </span>
+                } 
+              />
+            )}
+            {order.approved_by_name && (
+              <DetailField 
+                label="Approved By" 
+                value={order.approved_by_name} 
+              />
+            )}
+            {order.approved_at && (
+              <DetailField 
+                label="Approved At" 
+                value={new Date(order.approved_at).toLocaleDateString('en-US')} 
+              />
+            )}
+            {order.payment_terms && (
+              <DetailField 
+                label="Payment Terms" 
+                value={order.payment_terms} 
+              />
+            )}
+            {order.delivery_terms && (
+              <DetailField 
+                label="Delivery Terms" 
+                value={order.delivery_terms} 
+              />
+            )}
+            {order.notes && (
+              <DetailField 
+                label="Notes" 
+                value={order.notes} 
+              />
+            )}
+            {order.rejection_reason && (
+              <DetailField 
+                label="Rejection Reason" 
+                value={order.rejection_reason} 
+              />
+            )}
+          </DetailCard>
+
+          {/* Items Section */}
+          <DetailCard title="Products" className="print-page-break-avoid">
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ pageBreakInside: 'avoid' }}>
+                <thead>
+                  <tr>
+                    <th>Product</th>
+                    <th>Qty</th>
+                    <th>Price</th>
+                    <th>Disc %</th>
+                    <th>Tax %</th>
+                    <th>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {order.items.map((item) => (
+                    <tr key={item.id} style={{ pageBreakInside: 'avoid' }}>
+                      <td>
+                        <div className="font-medium">
+                          {item.product?.name || 'N/A'}
+                        </div>
+                        <div className="text-xs text-secondary">
+                          {item.product?.code || ''}
+                        </div>
+                      </td>
+                      <td>{item.quantity}</td>
+                      <td className="text-secondary">{formatPrice(item.unit_price)}</td>
+                      <td className="text-secondary">{item.discount || 0}%</td>
+                      <td className="text-secondary">{item.tax_rate || 0}%</td>
+                      <td className="font-semibold">{formatPrice(item.total)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </DetailCard>
+
+          {/* Summary */}
+          <DetailCard title="Financial Summary" className="print-page-break-avoid">
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <div className="w-64 flex flex-col gap-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-secondary">Subtotal:</span>
+                  <span className="font-semibold">{formatPrice(order.subtotal)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-secondary">Discount:</span>
+                  <span className="font-semibold">{formatPrice(order.discount)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-secondary">Tax:</span>
+                  <span className="font-semibold">{formatPrice(order.tax_amount)}</span>
+                </div>
+                <div className="flex justify-between border-t border-primary pt-2 text-base">
+                  <span className="font-bold">Total:</span>
+                  <span className="font-bold">{formatPrice(order.total)}</span>
+                </div>
+              </div>
+            </div>
+          </DetailCard>
+
+          {/* Terms & Conditions Section */}
+          <div className="card print-page-break-avoid" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
+            <h2 
+              className="text-base font-semibold mb-5 pb-3 border-b"
+              style={{
+                color: 'var(--text-primary)',
+                borderColor: 'var(--border-primary)',
+              }}
+            >
+              Terms & Conditions
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {order.notes && (
+              <div className="col-span-3 mb-4">
+                <h4 className="text-base font-semibold mb-2">Notes:</h4>
+                <p className="text-sm whitespace-pre-wrap">{order.notes}</p>
+              </div>
+            )}
+
+            {order.terms_and_conditions && (() => {
+              const termsLines = (order.terms_and_conditions ?? '').split('\n');
+              return (
+                <div className="col-span-3 mb-4">
+                  <div className="text-sm leading-relaxed font-mono">
+                    {termsLines.map((line, index) => {
+                      if (!line.trim()) {
+                        return <div key={index} style={{ marginBottom: '0.5rem' }} />;
+                      }
+                      // Check if line contains Arabic characters
+                      const hasArabic = /[\u0600-\u06FF]/.test(line);
+                      return (
+                        <div
+                          key={index}
+                          style={{
+                            direction: hasArabic ? 'rtl' : 'ltr',
+                            textAlign: hasArabic ? 'right' : 'left',
+                            marginBottom: index < termsLines.length - 1 ? '0.5rem' : '0',
+                            whiteSpace: 'pre-wrap',
+                          }}
+                        >
+                          {line}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {order.payment_terms && (
+              <div className="col-span-3 mb-4">
+                <h4 className="text-base font-semibold mb-2">Payment Terms:</h4>
+                <p className="text-sm whitespace-pre-wrap">{order.payment_terms}</p>
+              </div>
+            )}
+
+            {order.delivery_terms && (
+              <div className="col-span-3 mb-4">
+                <h4 className="text-base font-semibold mb-2">Delivery Terms:</h4>
+                <p className="text-sm whitespace-pre-wrap">{order.delivery_terms}</p>
+              </div>
+            )}
+
+            {/* Signatures Section */}
+            <div className="col-span-3 mt-8 pt-6 border-t-2 border-primary grid grid-cols-3 gap-6">
+              <div>
+                <h4 className="text-base font-semibold mb-4">Submitted by</h4>
+                <div className="min-h-[80px] border border-primary rounded-md p-4 flex items-center justify-center bg-primary">
+                  <p className="text-sm text-secondary text-center m-0">
+                    {order.created_by_name || 'N/A'}
                   </p>
                 </div>
-              } 
-              span={3}
-            />
-          )}
-        </DetailCard>
-
-        {/* Items Section - Unified */}
-        <DetailCard title="Products">
-          <div className="col-span-3" style={{ overflowX: 'auto' }}>
-            <table>
-              <thead>
-                <tr>
-                  <th>Product</th>
-                  <th>Qty</th>
-                  <th>Price</th>
-                  <th>Disc %</th>
-                  <th>Tax %</th>
-                  <th>Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {order.items.map((item) => (
-                  <tr key={item.id}>
-                    <td>
-                      <div className="font-medium">
-                        {item.product?.name || 'N/A'}
-                      </div>
-                      <div className="text-xs text-secondary">
-                        {item.product?.code || ''}
-                      </div>
-                    </td>
-                    <td>{item.quantity}</td>
-                    <td className="text-secondary">{formatPrice(item.unit_price)}</td>
-                    <td className="text-secondary">{item.discount || 0}%</td>
-                    <td className="text-secondary">{item.tax_rate || 0}%</td>
-                    <td className="font-semibold">{formatPrice(item.total)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </DetailCard>
-
-        {/* Summary - Unified */}
-        <DetailCard title="Financial Summary">
-          <div className="col-span-3 flex justify-end">
-            <div className="w-64 flex flex-col gap-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-secondary">Subtotal:</span>
-                <span className="font-semibold">{formatPrice(order.subtotal)}</span>
+                <p className="text-xs text-secondary mt-2 text-center">
+                  {order.created_at && new Date(order.created_at).toLocaleDateString('en-US')}
+                </p>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-secondary">Discount:</span>
-                <span className="font-semibold">{formatPrice(order.discount)}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-secondary">Tax:</span>
-                <span className="font-semibold">{formatPrice(order.tax_amount)}</span>
-              </div>
-              <div className="flex justify-between border-t border-primary pt-2 text-base">
-                <span className="font-bold">Total:</span>
-                <span className="font-bold">{formatPrice(order.total)}</span>
-              </div>
-            </div>
-          </div>
-        </DetailCard>
 
-        {/* Terms & Conditions Section - For Printing */}
-        <div className="card" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
-          <h2 
-            className="text-base font-semibold mb-5 pb-3 border-b"
-            style={{
-              color: 'var(--text-primary)',
-              borderColor: 'var(--border-primary)',
-            }}
-          >
-            Terms & Conditions
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {order.notes && (
-            <div className="col-span-3 mb-4">
-              <h4 className="text-base font-semibold mb-2">Notes:</h4>
-              <p className="text-sm whitespace-pre-wrap">{order.notes}</p>
-            </div>
-          )}
-
-          {order.terms_and_conditions && (() => {
-            const termsLines = (order.terms_and_conditions ?? '').split('\n');
-            return (
-              <div className="col-span-3 mb-4">
-                <div className="text-sm leading-relaxed font-mono">
-                  {termsLines.map((line, index) => {
-                    if (!line.trim()) {
-                      return <div key={index} style={{ marginBottom: '0.5rem' }} />;
-                    }
-                    // Check if line contains Arabic characters
-                    const hasArabic = /[\u0600-\u06FF]/.test(line);
-                    return (
-                      <div
-                        key={index}
-                        style={{
-                          direction: hasArabic ? 'rtl' : 'ltr',
-                          textAlign: hasArabic ? 'right' : 'left',
-                          marginBottom: index < termsLines.length - 1 ? '0.5rem' : '0',
-                          whiteSpace: 'pre-wrap',
-                        }}
-                      >
-                        {line}
-                      </div>
-                    );
-                  })}
+              <div>
+                <h4 className="text-base font-semibold mb-4">Reviewed by</h4>
+                <div className="min-h-[80px] border border-primary rounded-md p-4 flex items-center justify-center bg-primary">
+                  <p className="text-sm text-secondary text-center m-0">
+                    {order.approved_by_name || 'Pending'}
+                  </p>
                 </div>
-              </div>
-            );
-          })()}
-
-          {order.payment_terms && (
-            <div className="col-span-3 mb-4">
-              <h4 className="text-base font-semibold mb-2">Payment Terms:</h4>
-              <p className="text-sm whitespace-pre-wrap">{order.payment_terms}</p>
-            </div>
-          )}
-
-          {order.delivery_terms && (
-            <div className="col-span-3 mb-4">
-              <h4 className="text-base font-semibold mb-2">Delivery Terms:</h4>
-              <p className="text-sm whitespace-pre-wrap">{order.delivery_terms}</p>
-            </div>
-          )}
-
-          {/* Signatures Section */}
-          <div className="col-span-3 mt-8 pt-6 border-t-2 border-primary grid grid-cols-3 gap-6">
-            <div>
-              <h4 className="text-base font-semibold mb-4">Submitted by</h4>
-              <div className="min-h-[80px] border border-primary rounded-md p-4 flex items-center justify-center bg-primary">
-                <p className="text-sm text-secondary text-center m-0">
-                  {order.created_by_name || 'N/A'}
+                <p className="text-xs text-secondary mt-2 text-center">
+                  {order.approved_at ? new Date(order.approved_at).toLocaleDateString('en-US') : '-'}
                 </p>
               </div>
-              <p className="text-xs text-secondary mt-2 text-center">
-                {order.created_at && new Date(order.created_at).toLocaleDateString('en-US')}
-              </p>
-            </div>
 
-            <div>
-              <h4 className="text-base font-semibold mb-4">Reviewed by</h4>
-              <div className="min-h-[80px] border border-primary rounded-md p-4 flex items-center justify-center bg-primary">
-                <p className="text-sm text-secondary text-center m-0">
-                  {order.approved_by_name || 'Pending'}
+              <div>
+                <h4 className="text-base font-semibold mb-4">Approved by</h4>
+                <div className="min-h-[80px] border border-primary rounded-md p-4 flex items-center justify-center bg-primary">
+                  <p className="text-sm text-secondary text-center m-0">
+                    {order.approved_by_name || 'Pending'}
+                  </p>
+                </div>
+                <p className="text-xs text-secondary mt-2 text-center">
+                  {order.approved_at ? new Date(order.approved_at).toLocaleDateString('en-US') : '-'}
                 </p>
               </div>
-              <p className="text-xs text-secondary mt-2 text-center">
-                {order.approved_at ? new Date(order.approved_at).toLocaleDateString('en-US') : '-'}
-              </p>
             </div>
-
-            <div>
-              <h4 className="text-base font-semibold mb-4">Approved by</h4>
-              <div className="min-h-[80px] border border-primary rounded-md p-4 flex items-center justify-center bg-primary">
-                <p className="text-sm text-secondary text-center m-0">
-                  {order.approved_by_name || 'Pending'}
-                </p>
-              </div>
-              <p className="text-xs text-secondary mt-2 text-center">
-                {order.approved_at ? new Date(order.approved_at).toLocaleDateString('en-US') : '-'}
-              </p>
             </div>
-          </div>
           </div>
         </div>
 
-        {/* Actions - Unified */}
-        <div className="flex gap-3">
+        {/* Actions - داخل no-print */}
+        <div className="no-print flex gap-3">
           <button
             onClick={() => window.print()}
             className="btn btn-secondary"
@@ -522,8 +509,8 @@ export default function PurchaseOrderDetailPage() {
           message="Please provide a reason for rejecting this purchase order. This reason will be saved and visible to the creator."
         />
       </div>
-      </div>
+
+
     </MainLayout>
   );
 }
-

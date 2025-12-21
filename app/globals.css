@@ -711,233 +711,85 @@ table tbody tr:hover {
 /* ===============================
    PRINT STYLES (LPO) – FINAL
    =============================== */
-@media print {
 
-  /* ===============================
-     PAGE SETUP
-     =============================== */
-  @page {
-    size: A4;
-    margin: 15mm;
-  }
+        @media print 
+        {
+          /* إخفاء كل العناصر غير المطبوعة */
+          .no-print {
+            display: none !important;
+          }
 
-  body {
-    margin: 0;
-    padding: 0;
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 11px;
-    color: #000;
-    background: #fff;
-  }
+          /* إظهار المحتوى المطبوع فقط */
+          body * {
+            visibility: hidden;
+          }
 
-  /* ===============================
-     RESET SYSTEM UI
-     =============================== */
-  nav,
-  aside,
-  header:not(.lpo-header),
-  footer,
-  .sidebar,
-  .topbar,
-  button,
-  .btn {
-    display: none !important;
-  }
+          .lpo-print,
+          .lpo-print * {
+            visibility: visible;
+          }
 
-  /* ===============================
-     SHOW ONLY LPO
-     =============================== */
-  body * {
-    visibility: hidden;
-  }
+          .lpo-print {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: white;
+          }
 
-  .lpo-print,
-  .lpo-print * {
-    visibility: visible;
-  }
+          /* إخفاء العناصر الأخرى من الواجهة */
+          nav,
+          aside,
+          header,
+          footer,
+          .sidebar,
+          .topbar {
+            display: none !important;
+          }
 
-  .lpo-print {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-  }
+          /* تنسيق Order Information ليكون 2 أعمدة */
+          .print-info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px 16px;
+          }
 
-  /* ===============================
-     HEADER
-     =============================== */
-  .lpo-header {
-    display: grid;
-    grid-template-columns: 120px 1fr 180px;
-    align-items: center;
-    border-bottom: 2px solid #000;
-    padding-bottom: 6px;
-    margin-bottom: 10px;
-  }
+          /* منع انكسار الصفحة داخل العناصر المهمة */
+          .print-page-break-avoid,
+          .print-page-break-avoid * {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
 
-  .lpo-logo img {
-    max-width: 100px;
-  }
+          table {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
 
-  .lpo-company {
-    text-align: center;
-    line-height: 1.4;
-  }
+          .card {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            border: 1px solid #ddd !important;
+            margin-bottom: 12px !important;
+          }
 
-  .company-ar {
-    font-size: 14px;
-    font-weight: bold;
-    direction: rtl;
-  }
+          /* تحسين الطباعة */
+          @page {
+            size: A4;
+            margin: 15mm;
+          }
 
-  .company-en {
-    font-size: 13px;
-    font-weight: bold;
-  }
+          body {
+            font-size: 12px;
+            line-height: 1.4;
+            color: #000 !important;
+          }
 
-  .lpo-title {
-    font-size: 16px;
-    font-weight: bold;
-    margin-top: 4px;
-    text-transform: uppercase;
-  }
+          h1, h2, h3, h4 {
+            color: #000 !important;
+          }
 
-  .lpo-meta {
-    text-align: right;
-    font-size: 11px;
-    line-height: 1.6;
-  }
-
-  /* ===============================
-     INFO TABLE
-     =============================== */
-  .info-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 10px;
-  }
-
-  .info-table td {
-    border: 1px solid #000;
-    padding: 4px;
-    vertical-align: top;
-  }
-
-  .label {
-    width: 140px;
-    font-weight: bold;
-    white-space: nowrap;
-  }
-
-  /* ===============================
-     ITEMS TABLE
-     =============================== */
-  table.items {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 8px;
-  }
-
-  table.items th,
-  table.items td {
-    border: 1px solid #000;
-    padding: 5px;
-  }
-
-  table.items th {
-    text-align: center;
-    font-weight: bold;
-  }
-
-  .num {
-    text-align: right;
-    white-space: nowrap;
-  }
-
-  tr {
-    page-break-inside: avoid;
-  }
-
-  /* ===============================
-     SUMMARY
-     =============================== */
-  .summary {
-    width: 40%;
-    margin-left: auto;
-    margin-top: 10px;
-    border-collapse: collapse;
-  }
-
-  .summary td {
-    border: 1px solid #000;
-    padding: 5px;
-  }
-
-  .summary .total {
-    font-weight: bold;
-    font-size: 12px;
-  }
-
-  /* ===============================
-     NOTES
-     =============================== */
-  .notes {
-    margin-top: 10px;
-    border: 1px solid #000;
-    padding: 6px;
-    min-height: 50px;
-  }
-
-  /* ===============================
-     CONDITIONS
-     =============================== */
-  .conditions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    margin-top: 15px;
-    font-size: 10px;
-  }
-
-  .conditions-ar {
-    direction: rtl;
-    text-align: right;
-  }
-
-  /* ===============================
-     SIGNATURES
-     =============================== */
-  .signatures {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 40px;
-  }
-
-  .signature-box {
-    width: 30%;
-    text-align: center;
-  }
-
-  .signature-line {
-    border-top: 1px solid #000;
-    margin-top: 35px;
-    padding-top: 4px;
-    font-weight: bold;
-  }
-
-  /* ===============================
-     REMOVE UI STYLES
-     =============================== */
-  * {
-    background: transparent !important;
-    box-shadow: none !important;
-    color: #000 !important;
-  }
-
-  .card {
-    border: 1px solid #000;
-    border-radius: 0;
-    margin-bottom: 12px;
-    page-break-inside: avoid;
-  }
-}
+          .badge {
+            display: none !important;
+          }
+        }
