@@ -37,6 +37,7 @@ const units = [
   { value: 'ls', label: 'Lump Sum' },
   { value: 'set', label: 'Set' },
   { value: 'ream', label: 'Ream' },
+  { value: 'bundle', label: 'Bundle' },
 ];
 
 const discountTypes = [
