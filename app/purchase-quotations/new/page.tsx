@@ -19,6 +19,7 @@ import { formatBackendError, validateRequired, validatePositiveNumber, validateD
 import { formatPrice } from '@/lib/utils/format';
 import RouteGuard from '@/components/auth/RouteGuard';
 import { useAuth } from '@/lib/hooks/use-auth';
+import { useT } from '@/lib/i18n/useT';
 
 type PurchaseQuotationFormItem = Omit<PurchaseQuotationItem, 'product' | 'total' | 'created_at'> & {
   _product?: Product | null;
@@ -36,6 +37,7 @@ export default function NewPurchaseQuotationPage() {
 }
 
 function NewPurchaseQuotationPageContent() {
+  const t = useT();
   const router = useRouter();
   const searchParams = useSearchParams();
   const quotationRequestId = searchParams.get('quotation_request_id');
@@ -113,10 +115,7 @@ function NewPurchaseQuotationPageContent() {
           // Get product_id (handle both object and number)
           const productId = item.product?.id || item.product_id;
           
-          if (!productId) {
-            console.warn('Item missing product_id:', item);
-            return null;
-          }
+          if (!productId) return null;
           
           return {
             product_id: productId,
@@ -332,7 +331,7 @@ function NewPurchaseQuotationPageContent() {
               e.currentTarget.style.color = 'var(--text-secondary)';
             }}
           >
-            ← Back to Purchase Quotations
+            ← {t('btn', 'back')} {t('page', 'purchaseQuotations')}
           </Link>
           <h1 style={{ 
             fontSize: 'var(--font-2xl)',
@@ -341,7 +340,7 @@ function NewPurchaseQuotationPageContent() {
             margin: 0,
             marginBottom: 'var(--spacing-1)',
           }}>
-            Create Purchase Quotation
+            {t('page', 'newQuotation')}
           </h1>
           <p style={{ 
             fontSize: 'var(--font-sm)',
@@ -397,6 +396,25 @@ function NewPurchaseQuotationPageContent() {
           </div>
         )}
 
+        {/* Validation Error Summary */}
+        {Object.keys(errors).length > 0 && (
+          <div style={{
+            backgroundColor: 'var(--color-error-light)',
+            border: '1px solid var(--color-error)',
+            borderRadius: 'var(--radius-md)',
+            padding: 'var(--spacing-4)',
+          }}>
+            <p style={{ fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-error)', marginBottom: 'var(--spacing-2)' }}>
+              Please fix the following errors:
+            </p>
+            <ul style={{ margin: 0, paddingInlineStart: '1.25rem', display: 'flex', flexDirection: 'column', gap: 'var(--spacing-1)' }}>
+              {Object.entries(errors).map(([key, msg]) => msg ? (
+                <li key={key} style={{ fontSize: 'var(--font-sm)', color: 'var(--color-error)' }}>{msg}</li>
+              ) : null)}
+            </ul>
+          </div>
+        )}
+
         {/* Form Card - Unified */}
         <form onSubmit={handleSubmit} className="card">
           {/* Form Fields Grid - Unified Spacing */}
@@ -407,7 +425,7 @@ function NewPurchaseQuotationPageContent() {
             marginBottom: 'var(--spacing-6)',
           }}>
             <FormField
-              label="Supplier"
+              label={t('col', 'supplier')}
               required
               error={errors.supplier_id}
               fieldName="supplier_id"
@@ -577,7 +595,7 @@ function NewPurchaseQuotationPageContent() {
                 color: 'var(--text-primary)',
                 margin: 0,
               }}>
-                Products
+                {t('col', 'product')}
               </h3>
               {errors.items && (
                 <span style={{ 
@@ -595,13 +613,13 @@ function NewPurchaseQuotationPageContent() {
                   <table>
                     <thead>
                       <tr>
-                        <th>Product</th>
-                        <th>Qty</th>
-                        <th>Price</th>
+                        <th>{t('col', 'product')}</th>
+                        <th>{t('col', 'quantity')}</th>
+                        <th>{t('col', 'unitPrice')}</th>
                         <th>Disc %</th>
                         <th>Tax %</th>
-                        <th>Total</th>
-                        <th>Actions</th>
+                        <th>{t('col', 'total')}</th>
+                        <th>{t('col', 'actions')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -681,9 +699,10 @@ function NewPurchaseQuotationPageContent() {
                               <input
                                 type="number"
                                 min="0"
+                                max="100"
                                 step="0.01"
                                 value={item.discount ?? 0}
-                                onChange={(e) => handleUpdateItem(index, 'discount', Number(e.target.value))}
+                                onChange={(e) => handleUpdateItem(index, 'discount', Math.min(100, Number(e.target.value)))}
                                 className="input"
                                 style={{ width: '80px' }}
                               />
@@ -692,9 +711,10 @@ function NewPurchaseQuotationPageContent() {
                               <input
                                 type="number"
                                 min="0"
+                                max="100"
                                 step="0.01"
                                 value={item.tax_rate ?? 0}
-                                onChange={(e) => handleUpdateItem(index, 'tax_rate', Number(e.target.value))}
+                                onChange={(e) => handleUpdateItem(index, 'tax_rate', Math.min(100, Number(e.target.value)))}
                                 className="input"
                                 style={{ width: '80px' }}
                               />
@@ -726,7 +746,7 @@ function NewPurchaseQuotationPageContent() {
                                   e.currentTarget.style.borderColor = 'var(--color-error)';
                                 }}
                               >
-                                Delete
+                                {t('btn', 'delete')}
                               </button>
                             </td>
                           </tr>
@@ -807,11 +827,11 @@ function NewPurchaseQuotationPageContent() {
                   paddingTop: 'var(--spacing-2)',
                   fontSize: 'var(--font-base)',
                 }}>
-                  <span style={{ 
+                  <span style={{
                     fontWeight: 'var(--font-weight-bold)',
                     color: 'var(--text-primary)',
                   }}>
-                    Total:
+                    {t('col', 'total')}:
                   </span>
                   <span style={{ 
                     fontWeight: 'var(--font-weight-bold)',
@@ -831,10 +851,10 @@ function NewPurchaseQuotationPageContent() {
               disabled={mutation.isPending}
               className="btn btn-primary"
             >
-              {mutation.isPending ? 'Creating...' : 'Create Quotation'}
+              {mutation.isPending ? t('btn', 'loading') : t('page', 'newQuotation')}
             </button>
             <Link href="/purchase-quotations" className="btn btn-secondary">
-              Cancel
+              {t('btn', 'cancel')}
             </Link>
           </div>
         </form>

@@ -8,6 +8,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import Link from 'next/link';
 import SearchableDropdown from '@/components/ui/SearchableDropdown';
 import FormField from '@/components/ui/FormField';
+import { useT } from '@/lib/i18n/useT';
 
 const currencies = [
   { value: 'AED', label: 'AED - UAE Dirham' },
@@ -27,9 +28,11 @@ const countries = [
 ];
 
 export default function NewSupplierPage() {
+  const t = useT();
   const router = useRouter();
   const [formData, setFormData] = useState({
     business_name: '',
+    business_name_ar: '',
     supplier_number: '',
     first_name: '',
     last_name: '',
@@ -84,7 +87,7 @@ export default function NewSupplierPage() {
               e.currentTarget.style.color = 'var(--text-secondary)';
             }}
           >
-            ← Back to Suppliers
+            ← {t('btn','back')} {t('page','suppliers')}
           </Link>
           <h1 style={{ 
             fontSize: 'var(--font-2xl)',
@@ -93,7 +96,7 @@ export default function NewSupplierPage() {
             margin: 0,
             marginBottom: 'var(--spacing-1)',
           }}>
-            Add New Supplier
+            {t('page', 'newSupplier')}
           </h1>
           <p style={{ 
             fontSize: 'var(--font-sm)',
@@ -122,13 +125,17 @@ export default function NewSupplierPage() {
               gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
               gap: 'var(--spacing-4)',
             }}>
-              <FormField label="Business Name" required>
-                <input
-                  type="text"
-                  required
+              <FormField label={t('field', 'businessNameEn')} required>
+                <input type="text" required className="input"
                   value={formData.business_name}
                   onChange={(e) => setFormData({ ...formData, business_name: e.target.value })}
-                  className="input"
+                />
+              </FormField>
+
+              <FormField label="اسم الشركة بالعربي">
+                <input type="text" className="input" dir="rtl" placeholder="اسم المورد بالعربي"
+                  value={formData.business_name_ar}
+                  onChange={(e) => setFormData({ ...formData, business_name_ar: e.target.value })}
                 />
               </FormField>
 
@@ -350,13 +357,13 @@ export default function NewSupplierPage() {
                   onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
                   style={{ width: '16px', height: '16px', cursor: 'pointer' }}
                 />
-                <label style={{ 
+                <label style={{
                   fontSize: 'var(--font-sm)',
                   fontWeight: 'var(--font-weight-medium)',
                   color: 'var(--text-primary)',
                   cursor: 'pointer',
                 }}>
-                  Active
+                  {t('col', 'active')}
                 </label>
               </div>
             </div>
@@ -369,10 +376,10 @@ export default function NewSupplierPage() {
               disabled={mutation.isPending}
               className="btn btn-primary"
             >
-              {mutation.isPending ? 'Saving...' : 'Save Supplier'}
+              {mutation.isPending ? t('btn', 'saving') : t('btn', 'save')}
             </button>
             <Link href="/suppliers" className="btn btn-secondary">
-              Cancel
+              {t('btn', 'cancel')}
             </Link>
           </div>
         </form>

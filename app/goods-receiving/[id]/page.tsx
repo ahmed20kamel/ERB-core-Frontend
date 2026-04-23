@@ -4,6 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { goodsReceivingApi } from '@/lib/api/goods-receiving';
 import MainLayout from '@/components/layout/MainLayout';
+import PageHeader from '@/components/ui/PageHeader';
 import Link from 'next/link';
 import { formatPrice } from '@/lib/utils/format';
 import LinkedDocumentsSection from '@/components/ui/LinkedDocumentsSection';
@@ -13,19 +14,13 @@ import { useAuth } from '@/lib/hooks/use-auth';
 import { usePermissions } from '@/lib/hooks/use-permissions';
 import { Button } from '@/components/ui';
 import Image from 'next/image';
+import { useT } from '@/lib/i18n/useT';
 
 const statusColors: Record<string, string> = {
   draft: 'badge-info',
   partial: 'badge-warning',
   completed: 'badge-success',
   cancelled: 'badge-error',
-};
-
-const statusLabels: Record<string, string> = {
-  draft: 'Draft',
-  partial: 'Partially Received',
-  completed: 'Fully Received',
-  cancelled: 'Cancelled',
 };
 
 const qualityStatusColors: Record<string, string> = {
@@ -35,13 +30,6 @@ const qualityStatusColors: Record<string, string> = {
   missing: 'badge-warning',
 };
 
-const qualityStatusLabels: Record<string, string> = {
-  good: 'Good',
-  damaged: 'Damaged',
-  defective: 'Defective',
-  missing: 'Missing',
-};
-
 export default function GRNDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -49,6 +37,19 @@ export default function GRNDetailPage() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { hasPermission } = usePermissions();
+  const t = useT();
+  const statusLabels: Record<string, string> = {
+    draft: t('status', 'draft'),
+    partial: t('status', 'partial'),
+    completed: t('status', 'completed'),
+    cancelled: t('status', 'cancelled'),
+  };
+  const qualityStatusLabels: Record<string, string> = {
+    good: t('status', 'good'),
+    damaged: t('status', 'damaged'),
+    defective: t('status', 'defective'),
+    missing: t('empty', 'notFound'),
+  };
   
   // Check if user can mark invoice as delivered (Procurement Officer or Super Admin)
   const isSuperuser = user?.is_superuser ?? false;
@@ -82,7 +83,7 @@ export default function GRNDetailPage() {
       <MainLayout>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-6)' }}>
           <div className="card" style={{ textAlign: 'center', padding: 'var(--spacing-12)' }}>
-            <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Loading...</p>
+            <p style={{ color: 'var(--text-secondary)', margin: 0 }}>{t('btn', 'loading')}</p>
           </div>
         </div>
       </MainLayout>
@@ -94,9 +95,9 @@ export default function GRNDetailPage() {
       <MainLayout>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-6)' }}>
           <div className="card" style={{ textAlign: 'center', padding: 'var(--spacing-12)' }}>
-            <p style={{ color: 'var(--text-secondary)', margin: 0 }}>GRN not found</p>
-            <Link href="/goods-receiving" className="btn btn-primary" style={{ marginTop: 'var(--spacing-4)' }}>
-              Back to GRN List
+            <p style={{ color: 'var(--text-secondary)', margin: 0 }}>{t('empty', 'notFound')}</p>
+            <Link href="/goods-receiving" style={{ marginTop: 'var(--spacing-4)', display: 'inline-block' }}>
+              <Button variant="primary">{t('btn', 'back')} {t('page', 'goodsReceiving')}</Button>
             </Link>
           </div>
         </div>
@@ -109,54 +110,19 @@ export default function GRNDetailPage() {
   return (
     <MainLayout>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-6)' }}>
-        {/* Header Section - Unified */}
-        <div>
-          <Link 
-            href="/goods-receiving" 
-            className="text-sm mb-2 inline-block"
-            style={{ 
-              color: 'var(--text-secondary)',
-              textDecoration: 'none',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = 'var(--text-primary)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'var(--text-secondary)';
-            }}
-          >
-            ← Back to Goods Receiving
-          </Link>
-          <div style={{ 
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}>
-            <div>
-              <h1 style={{ 
-                fontSize: 'var(--font-2xl)',
-                fontWeight: 'var(--font-weight-semibold)',
-                color: 'var(--text-primary)',
-                margin: 0,
-                marginBottom: 'var(--spacing-1)',
-              }}>
-                GRN: {grn.grn_number}
-              </h1>
-              <p style={{ 
-                fontSize: 'var(--font-sm)',
-                color: 'var(--text-secondary)',
-                margin: 0,
-              }}>
-                Goods Received Note Details
-              </p>
-            </div>
-            {grn.status && (
-              <span className={`badge ${statusColors[grn.status] || 'badge-info'}`}>
-                {statusLabels[grn.status] || grn.status}
-              </span>
-            )}
-          </div>
-        </div>
+        {/* Header */}
+        <PageHeader
+          backHref="/goods-receiving"
+          backLabel={`${t('btn', 'back')} ${t('page', 'goodsReceiving')}`}
+          title={`GRN: ${grn.grn_number}`}
+          subtitle={t('page', 'grnSubtitle')}
+          status={grn.status}
+          statusColors={statusColors}
+          statusLabels={statusLabels}
+          actions={[
+            { label: `🖨 ${t('btn', 'printGRN')}`, variant: 'print', onClick: () => window.open(`/print/grn/${id}`, '_blank') },
+          ]}
+        />
 
         {/* Linked Documents */}
         <LinkedDocumentsSection
@@ -181,7 +147,7 @@ export default function GRNDetailPage() {
                 color: 'var(--text-secondary)',
                 marginBottom: 'var(--spacing-2)',
               }}>
-                Purchase Order
+                {t('page', 'purchaseOrders')}
               </label>
               <p style={{ 
                 fontSize: 'var(--font-base)',
@@ -207,7 +173,7 @@ export default function GRNDetailPage() {
                     e.currentTarget.style.color = 'var(--text-primary)';
                   }}
                 >
-                  View Purchase Order
+                  {t('btn', 'view')} {t('page', 'purchaseOrders')}
                 </Link>
               )}
             </div>
@@ -219,7 +185,7 @@ export default function GRNDetailPage() {
                 color: 'var(--text-secondary)',
                 marginBottom: 'var(--spacing-2)',
               }}>
-                Receipt Date
+                {t('field', 'receiptDate')}
               </label>
               <p style={{ 
                 fontSize: 'var(--font-base)',
@@ -237,7 +203,7 @@ export default function GRNDetailPage() {
                 color: 'var(--text-secondary)',
                 marginBottom: 'var(--spacing-2)',
               }}>
-                Received By
+                {t('col', 'createdBy')}
               </label>
               <p style={{ 
                 fontSize: 'var(--font-base)',
@@ -256,7 +222,7 @@ export default function GRNDetailPage() {
                   color: 'var(--text-secondary)',
                   marginBottom: 'var(--spacing-2)',
                 }}>
-                  Notes
+                  {t('col', 'notes')}
                 </label>
                 <p style={{ 
                   fontSize: 'var(--font-base)',
@@ -280,7 +246,7 @@ export default function GRNDetailPage() {
               margin: 0,
               marginBottom: 'var(--spacing-4)',
             }}>
-              Material Photos & Supplier Invoice
+              {t('section', 'receiptInfo')}
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-4)' }}>
               {/* Material Images */}
@@ -293,7 +259,7 @@ export default function GRNDetailPage() {
                     color: 'var(--text-secondary)',
                     marginBottom: 'var(--spacing-2)',
                   }}>
-                    Material Photos (Proof of Delivery)
+                    {t('section', 'receiptInfo')}
                   </label>
                   <div style={{ display: 'flex', gap: 'var(--spacing-2)', flexWrap: 'wrap' }}>
                     {grn.material_images.map((imageObj: any, index: number) => (
@@ -326,17 +292,12 @@ export default function GRNDetailPage() {
                     color: 'var(--text-secondary)',
                     marginBottom: 'var(--spacing-2)',
                   }}>
-                    Supplier Invoice
+                    {t('col', 'supplier')}
                   </label>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)' }}>
                     {grn.supplier_invoice_file_url.endsWith('.pdf') ? (
-                      <a
-                        href={grn.supplier_invoice_file_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="btn btn-primary"
-                      >
-                        View PDF Invoice
+                      <a href={grn.supplier_invoice_file_url} target="_blank" rel="noopener noreferrer">
+                        <Button variant="primary">{t('btn', 'view')} PDF</Button>
                       </a>
                     ) : (
                       <img
@@ -365,13 +326,13 @@ export default function GRNDetailPage() {
                   color: 'var(--text-secondary)',
                   marginBottom: 'var(--spacing-2)',
                 }}>
-                  Invoice Delivery Status
+                  {t('col', 'invoiceDelivery')}
                 </label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-3)' }}>
                   <span className={`badge ${grn.invoice_delivery_status === 'delivered' ? 'badge-success' : 'badge-warning'}`}>
                     {grn.invoice_delivery_status === 'delivered' 
-                      ? 'Invoice Delivered to Office' 
-                      : 'Invoice Not Delivered to Office'}
+                      ? t('status', 'delivered')
+                      : t('status', 'notDelivered')}
                   </span>
                   {grn.invoice_delivery_status === 'not_delivered' && canMarkInvoice && (
                     <Button
@@ -379,7 +340,7 @@ export default function GRNDetailPage() {
                       onClick={() => markInvoiceDeliveredMutation.mutate()}
                       disabled={markInvoiceDeliveredMutation.isPending}
                     >
-                      {markInvoiceDeliveredMutation.isPending ? 'Processing...' : 'Mark Invoice as Delivered to Office'}
+                      {markInvoiceDeliveredMutation.isPending ? t('btn', 'loading') : t('status', 'delivered')}
                     </Button>
                   )}
                 </div>
@@ -397,18 +358,18 @@ export default function GRNDetailPage() {
             margin: 0,
             marginBottom: 'var(--spacing-4)',
           }}>
-            Received Items
+            {t('section', 'receivedItems')}
           </h3>
           <div style={{ overflowX: 'auto' }}>
             <table>
               <thead>
                 <tr>
-                  <th>Product</th>
-                  <th>Ordered Qty</th>
-                  <th>Received Qty</th>
-                  <th>Rejected Qty</th>
-                  <th>Quality Status</th>
-                  <th>Notes</th>
+                  <th>{t('col', 'product')}</th>
+                  <th>{t('col', 'orderedQty')}</th>
+                  <th>{t('col', 'receivedQty')}</th>
+                  <th>{t('col', 'rejectedQty')}</th>
+                  <th>{t('col', 'qualityStatus')}</th>
+                  <th>{t('col', 'notes')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -465,7 +426,7 @@ export default function GRNDetailPage() {
                       color: 'var(--text-secondary)',
                       padding: 'var(--spacing-4)',
                     }}>
-                      No items found
+                      {t('empty', 'noResults')}
                     </td>
                   </tr>
                 )}
@@ -489,7 +450,7 @@ export default function GRNDetailPage() {
                 color: 'var(--text-secondary)',
                 marginBottom: 'var(--spacing-2)',
               }}>
-                Total Items
+                {t('col', 'qty')}
               </label>
               <p style={{ 
                 fontSize: 'var(--font-2xl)',
@@ -508,7 +469,7 @@ export default function GRNDetailPage() {
                 color: 'var(--text-secondary)',
                 marginBottom: 'var(--spacing-2)',
               }}>
-                Total Received Quantity
+                {t('col', 'receivedQty')}
               </label>
               <p style={{ 
                 fontSize: 'var(--font-2xl)',
@@ -540,36 +501,25 @@ export default function GRNDetailPage() {
           </div>
         </div>
 
-        {/* Actions - Unified */}
-        <div className="flex gap-3">
+        {/* Actions */}
+        <div className="flex gap-3 flex-wrap">
           {grn.invoices && grn.invoices.length > 0 ? (
-            <Link 
-              href={`/purchase-invoices/${grn.invoices[0].id}`}
-              className="btn btn-primary"
-            >
-              View Invoice
+            <Link href={`/purchase-invoices/${grn.invoices[0].id}`}>
+              <Button variant="primary">View Invoice</Button>
             </Link>
           ) : (
             purchaseOrder && purchaseOrder.status === 'approved' && canCreateInvoicePerm && (
-              <button
+              <Button
+                variant="primary"
                 onClick={() => {
                   const guard = canCreateInvoice(purchaseOrder.status);
-                  if (!guard.canProceed) {
-                    toast(guard.reason || 'Cannot create invoice', 'error');
-                    return;
-                  }
-                  if (guard.warning) {
-                    if (!confirm(guard.warning + '\n\nDo you want to continue?')) {
-                      return;
-                    }
-                  }
+                  if (!guard.canProceed) { toast(guard.reason || 'Cannot create invoice', 'error'); return; }
+                  if (guard.warning && !confirm(guard.warning + '\n\nDo you want to continue?')) return;
                   router.push(`/purchase-invoices/new?purchase_order_id=${purchaseOrder.id}&grn_id=${id}`);
                 }}
-                className="btn btn-primary"
-                title={!canCreateInvoicePerm ? 'You do not have permission to create invoice' : ''}
               >
                 Create Invoice
-              </button>
+              </Button>
             )
           )}
         </div>

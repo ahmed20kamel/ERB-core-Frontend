@@ -69,13 +69,17 @@ export default function NotificationsDropdown() {
   const { data: notifications } = useQuery({
     queryKey: ['notifications', 'dropdown'],
     queryFn: () => notificationsApi.getAll({ page: 1, is_read: false }),
-    // Remove refetchInterval - WebSocket handles real-time updates
+    staleTime: 2 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 
   const { data: unreadCount } = useQuery({
     queryKey: ['notifications', 'unread-count'],
     queryFn: () => notificationsApi.getUnreadCount(),
-    // Remove refetchInterval - WebSocket handles real-time updates
+    staleTime: 2 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 
   const markAsReadMutation = useMutation({

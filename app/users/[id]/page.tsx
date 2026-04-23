@@ -56,6 +56,7 @@ export default function EditUserPage() {
     email: '',
     first_name: '',
     last_name: '',
+    full_name_ar: '',
     phone: '',
     role: 'site_engineer',
     password: '',
@@ -74,6 +75,7 @@ export default function EditUserPage() {
         email: user.email || '',
         first_name: user.first_name || '',
         last_name: user.last_name || '',
+        full_name_ar: user.full_name_ar || '',
         phone: user.phone || '',
         role: user.role || 'site_engineer',
         password: '',
@@ -139,7 +141,6 @@ export default function EditUserPage() {
     onError: (error: any) => {
       const message = error?.response?.data?.error || error?.message || 'Failed to update user';
       toast(message, 'error');
-      console.error('Update user error:', error);
     },
   });
 
@@ -165,21 +166,10 @@ export default function EditUserPage() {
       delete submitData.password;
       delete submitData.password2;
     } else {
-      // Remove password2 before sending, but keep password
       delete submitData.password2;
-      console.log('Password will be changed:', submitData.password ? 'Yes' : 'No');
     }
-    
-    if (avatarFile) {
-      submitData.avatar = avatarFile;
-      console.log('Uploading avatar file:', avatarFile.name, avatarFile.size, avatarFile.type);
-    }
-    console.log('Submitting data:', { 
-      ...submitData, 
-      avatar: avatarFile ? 'File object' : 'No file', 
-      password: changePassword && submitData.password ? '***' : 'not changing',
-      changePassword 
-    });
+
+    if (avatarFile) submitData.avatar = avatarFile;
     mutation.mutate(submitData);
   };
 
@@ -382,6 +372,20 @@ export default function EditUserPage() {
                 type="text"
                 value={formData.last_name}
                 onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                className="w-full"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                الاسم الكامل بالعربي
+              </label>
+              <input
+                type="text"
+                dir="rtl"
+                placeholder="الاسم الكامل بالعربي"
+                value={formData.full_name_ar}
+                onChange={(e) => setFormData({ ...formData, full_name_ar: e.target.value })}
                 className="w-full"
               />
             </div>

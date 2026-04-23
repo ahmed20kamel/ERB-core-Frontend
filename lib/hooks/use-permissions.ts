@@ -1,41 +1,44 @@
-import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { permissionsApi } from '@/lib/api/permissions';
-import { useAuth } from './use-auth';
+import { useAuthStore } from '@/lib/store/auth-store';
+
+export const PERMISSIONS_QUERY_KEY = ['user-permissions', 'me'] as const;
 
 export function usePermissions() {
-  const { user } = useAuth();
+  const user = useAuthStore((s) => s.user);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
   const { data, isLoading } = useQuery({
-    queryKey: ['user-permissions', 'me'],
+    queryKey: PERMISSIONS_QUERY_KEY,
     queryFn: () => permissionsApi.getMyPermissions(),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: isAuthenticated && !!user,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    retry: false,
+    refetchOnWindowFocus: false,
   });
 
-  const permissions = data?.permissions || [];
-  const permissionSet = data?.permission_set;
+  const permissions = data?.permissions ?? [];
+  const permissionSet = data?.permission_set ?? null;
+
+  const isAdmin = !!(user?.is_superuser || user?.is_staff);
 
   const hasPermission = (category: string, action: string): boolean => {
-    // Superuser has all permissions
-    if (user?.is_superuser) {
-      return true;
-    }
-    return permissions.some(
-      (p) => p.category === category && p.action === action
-    );
+    if (user?.is_superuser) return true;
+    return permissions.some((p) => p.category === category && p.action === action);
   };
 
-  const hasAnyPermission = (checks: Array<{ category: string; action: string }>): boolean => {
-    return checks.some((check) => hasPermission(check.category, check.action));
-  };
+  const hasAnyPermission = (checks: Array<{ category: string; action: string }>): boolean =>
+    checks.some((c) => hasPermission(c.category, c.action));
 
-  const hasAllPermissions = (checks: Array<{ category: string; action: string }>): boolean => {
-    return checks.every((check) => hasPermission(check.category, check.action));
-  };
+  const hasAllPermissions = (checks: Array<{ category: string; action: string }>): boolean =>
+    checks.every((c) => hasPermission(c.category, c.action));
 
   return {
     permissions,
     permissionSet,
-    isLoading,
+    isLoading: isAuthenticated ? isLoading : false,
+    isAdmin,
     hasPermission,
     hasAnyPermission,
     hasAllPermissions,
@@ -47,3 +50,8 @@ export function useHasPermission(category: string, action: string): boolean {
   return hasPermission(category, action);
 }
 
+/** Call this after any permission change to force a fresh fetch. */
+export function useInvalidatePermissions() {
+  const queryClient = useQueryClient();
+  return () => queryClient.invalidateQueries({ queryKey: PERMISSIONS_QUERY_KEY });
+}

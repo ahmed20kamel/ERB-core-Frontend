@@ -17,35 +17,28 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
             ref={ref}
             type="checkbox"
             className={cn(
-              'w-4 h-4 rounded',
-              'bg-white',
-              'text-[#F97316]',
-              'focus:ring-2 focus:ring-[#F97316]/18 focus:ring-offset-0',
+              'w-4 h-4 rounded cursor-pointer',
               'disabled:opacity-50 disabled:cursor-not-allowed',
-              'cursor-pointer',
-              error && 'border-red-500',
               className
             )}
             style={{
-              borderColor: error ? '#EF4444' : '#E5E7EB',
+              accentColor: 'var(--color-orange-500)',
+              borderColor: error ? 'var(--color-error)' : 'var(--input-border)',
             }}
             {...props}
           />
           {label && (
-            <span 
-              className={cn(
-                'text-sm',
-                props.disabled && 'opacity-50 cursor-not-allowed'
-              )}
-              style={{ color: '#1E293B' }}
+            <span
+              className={cn('text-sm', props.disabled && 'opacity-50 cursor-not-allowed')}
+              style={{ color: 'var(--text-primary)' }}
             >
               {label}
-              {props.required && <span className="text-red-500 ml-1">*</span>}
+              {props.required && <span style={{ color: 'var(--color-error)', marginLeft: 4 }}>*</span>}
             </span>
           )}
         </label>
         {error && (
-          <p className="mt-1.5 text-xs" style={{ color: '#EF4444' }}>{error}</p>
+          <p className="mt-1.5 text-xs" style={{ color: 'var(--color-error)' }}>{error}</p>
         )}
       </div>
     );
@@ -53,4 +46,3 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
 );
 
 Checkbox.displayName = 'Checkbox';
-

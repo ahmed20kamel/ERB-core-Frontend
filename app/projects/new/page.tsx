@@ -4,11 +4,13 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import { projectsApi } from '@/lib/api/projects';
+import { Button } from '@/components/ui';
 import MainLayout from '@/components/layout/MainLayout';
 import Link from 'next/link';
 import { toast } from '@/lib/hooks/use-toast';
 import SearchableDropdown from '@/components/ui/SearchableDropdown';
 import FormField from '@/components/ui/FormField';
+import { useT } from '@/lib/i18n/useT';
 
 const statusOptions = [
   { value: 'on_going', label: 'On Going' },
@@ -18,10 +20,12 @@ const statusOptions = [
 ];
 
 export default function NewProjectPage() {
+  const t = useT();
   const router = useRouter();
   const [formData, setFormData] = useState({
     code: '',
     name: '',
+    name_ar: '',
     location: '',
     contact_person: '',
     mobile_number: '',
@@ -68,7 +72,7 @@ export default function NewProjectPage() {
               e.currentTarget.style.color = 'var(--text-secondary)';
             }}
           >
-            ← Back to Projects
+            ← {t('btn', 'back')} {t('page', 'projects')}
           </Link>
           <h1 style={{ 
             fontSize: 'var(--font-2xl)',
@@ -77,7 +81,7 @@ export default function NewProjectPage() {
             margin: 0,
             marginBottom: 'var(--spacing-1)',
           }}>
-            Add New Project
+            {t('page', 'newProject')}
           </h1>
           <p style={{ 
             fontSize: 'var(--font-sm)',
@@ -99,14 +103,14 @@ export default function NewProjectPage() {
               margin: 0,
               marginBottom: 'var(--spacing-4)',
             }}>
-              Basic Information
+              {t('section', 'basicInfo')}
             </h2>
             <div style={{ 
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
               gap: 'var(--spacing-4)',
             }}>
-              <FormField label="Project Code" required>
+              <FormField label={t('field', 'projectCode')} required>
                 <input
                   type="text"
                   required
@@ -117,7 +121,7 @@ export default function NewProjectPage() {
               </FormField>
 
               <div style={{ gridColumn: 'span 2' }}>
-                <FormField label="Project Name" required>
+                <FormField label={t('field', 'projectName')} required>
                   <input
                     type="text"
                     required
@@ -128,8 +132,17 @@ export default function NewProjectPage() {
                 </FormField>
               </div>
 
+              <div style={{ gridColumn: 'span 2' }}>
+                <FormField label="اسم المشروع بالعربي">
+                  <input type="text" className="input" dir="rtl" placeholder="اسم المشروع بالعربي"
+                    value={formData.name_ar}
+                    onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
+                  />
+                </FormField>
+              </div>
+
               <div style={{ gridColumn: '1 / -1' }}>
-                <FormField label="Location">
+                <FormField label={t('field', 'location')}>
                   <input
                     type="text"
                     value={formData.location}
@@ -161,7 +174,7 @@ export default function NewProjectPage() {
               margin: 0,
               marginBottom: 'var(--spacing-4)',
             }}>
-              Contact Information
+              {t('section', 'contactInfo')}
             </h2>
             <div style={{ 
               display: 'grid',
@@ -199,7 +212,7 @@ export default function NewProjectPage() {
               margin: 0,
               marginBottom: 'var(--spacing-4)',
             }}>
-              Project Details
+              {t('section', 'projectDetails')}
             </h2>
             <div style={{ 
               display: 'grid',
@@ -286,17 +299,11 @@ export default function NewProjectPage() {
           </div>
 
           {/* Form Actions - Unified */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--spacing-3)' }}>
-            <Link href="/projects" className="btn btn-secondary">
-              Cancel
-            </Link>
-            <button
-              type="submit"
-              disabled={mutation.isPending}
-              className="btn btn-primary"
-            >
-              {mutation.isPending ? 'Creating...' : 'Create Project'}
-            </button>
+          <div className="flex justify-end gap-3">
+            <Link href="/projects"><Button variant="secondary">{t('btn', 'cancel')}</Button></Link>
+            <Button type="submit" variant="primary" disabled={mutation.isPending} isLoading={mutation.isPending}>
+              {t('btn', 'create')}
+            </Button>
           </div>
         </form>
       </div>

@@ -15,8 +15,10 @@ import ProductSelector from '@/components/ui/ProductSelector';
 import QuantityInput from '@/components/ui/QuantityInput';
 import SearchableDropdown, { DropdownOption } from '@/components/ui/SearchableDropdown';
 import FormField from '@/components/ui/FormField';
+import AIProcurementChat from '@/components/ui/AIProcurementChat';
 import { formatPrice } from '@/lib/utils/format';
 import RouteGuard from '@/components/auth/RouteGuard';
+import { useT } from '@/lib/i18n/useT';
 
 export default function NewPurchaseRequestPage() {
   return (
@@ -30,6 +32,7 @@ export default function NewPurchaseRequestPage() {
 }
 
 function NewPurchaseRequestPageContent() {
+  const t = useT();
   const router = useRouter();
   const [formData, setFormData] = useState<PurchaseRequestFormData>({
     project_id: undefined,
@@ -158,7 +161,35 @@ function NewPurchaseRequestPageContent() {
     { value: 'set', label: 'Set' },
     { value: 'ream', label: 'Ream' },
     { value: 'bundle', label: 'Bundle' },
+    { value: 'nos', label: 'Nos / Number' },
+    { value: 'mtr', label: 'Metre' },
+    { value: 'qty', label: 'Quantity' },
+    { value: 'pair', label: 'Pair' },
+    { value: 'can', label: 'Can' },
+    { value: 'gal', label: 'Gallon' },
+    { value: 'day', label: 'Day' },
+    { value: 'hour', label: 'Hour' },
+    { value: 'month', label: 'Month' },
   ];
+
+  const handleAIAddItems = (aiItems: Array<{
+    product_id: number; product?: Product; quantity: number;
+    unit: string; reason: string; notes: string; project_site: string;
+  }>) => {
+    setItems((prev) => {
+      const next = [...prev];
+      for (const ai of aiItems) {
+        const existing = next.findIndex((x) => x.product_id === ai.product_id);
+        if (existing >= 0) {
+          next[existing] = { ...next[existing], quantity: next[existing].quantity + ai.quantity };
+        } else {
+          next.push(ai);
+        }
+      }
+      return next;
+    });
+    toast(`AI added ${aiItems.length} item(s) to the list`, 'success');
+  };
 
   const handleProductSelect = (product: Product | null) => {
     setSelectedProduct(product);
@@ -262,7 +293,7 @@ function NewPurchaseRequestPageContent() {
               e.currentTarget.style.color = 'var(--text-secondary)';
             }}
           >
-            ← Back to Purchase Requests
+            ← {t('btn', 'back')} {t('page', 'purchaseRequests')}
           </Link>
           <h1 style={{ 
             fontSize: 'var(--font-2xl)',
@@ -271,7 +302,7 @@ function NewPurchaseRequestPageContent() {
             margin: 0,
             marginBottom: 'var(--spacing-1)',
           }}>
-            Create New Purchase Request
+            {t('page', 'newPR')}
           </h1>
           <p style={{ 
             fontSize: 'var(--font-sm)',
@@ -293,7 +324,7 @@ function NewPurchaseRequestPageContent() {
           }}>
             {/* Project Selection */}
             <FormField
-              label="Project"
+              label={t('field', 'project')}
               required
             >
               <SearchableDropdown
@@ -327,7 +358,7 @@ function NewPurchaseRequestPageContent() {
 
             {/* Title */}
             <FormField
-              label="Title"
+              label={t('field', 'title')}
               required
             >
               <input
@@ -342,7 +373,7 @@ function NewPurchaseRequestPageContent() {
 
             {/* Request Date */}
             <FormField
-              label="Request Date"
+              label={t('field', 'requestDate')}
               required
             >
               <input
@@ -356,7 +387,7 @@ function NewPurchaseRequestPageContent() {
 
             {/* Required By */}
             <FormField
-              label="Required By"
+              label={t('field', 'requiredBy')}
               required
             >
               <input
@@ -371,7 +402,7 @@ function NewPurchaseRequestPageContent() {
             {/* General Notes - Full Width */}
             <div style={{ gridColumn: '1 / -1' }}>
               <FormField
-                label="General Notes"
+                label={t('field', 'notes')}
               >
                 <textarea
                   value={formData.notes}
@@ -406,15 +437,17 @@ function NewPurchaseRequestPageContent() {
 
           {/* Items Section - Unified */}
           <div style={{ marginBottom: 'var(--spacing-6)' }}>
-            <h3 style={{ 
-              fontSize: 'var(--font-lg)',
-              fontWeight: 'var(--font-weight-semibold)',
-              color: 'var(--text-primary)',
-              margin: 0,
-              marginBottom: 'var(--spacing-4)',
-            }}>
-              Required Products
-            </h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--spacing-4)' }}>
+              <h3 style={{
+                fontSize: 'var(--font-lg)',
+                fontWeight: 'var(--font-weight-semibold)',
+                color: 'var(--text-primary)',
+                margin: 0,
+              }}>
+                {t('section', 'requestedItems')}
+              </h3>
+              <AIProcurementChat onAddItems={handleAIAddItems} />
+            </div>
             
             {/* Add Item Form - Unified Card */}
             <div className="card" style={{ marginBottom: 'var(--spacing-4)' }}>
@@ -430,27 +463,27 @@ function NewPurchaseRequestPageContent() {
 
               {/* Product Details Form */}
               {selectedProduct && (
-                <div style={{ 
+                <div style={{
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: 'var(--spacing-4)',
-                  paddingTop: 'var(--spacing-4)',
+                  gap: 8,
+                  paddingTop: 10,
                   borderTop: `1px solid var(--border-primary)`,
                 }}>
-                  <div style={{ 
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                    gap: 'var(--spacing-4)',
-                  }}>
-                    <FormField label="Quantity" required>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+                    {/* Qty — compact fixed width */}
+                    <div style={{ flexShrink: 0 }}>
+                      <label style={{ fontSize: 11, color: 'var(--text-secondary)', display: 'block', marginBottom: 3 }}>{t('col', 'quantity')} <span style={{ color: '#ef4444' }}>*</span></label>
                       <QuantityInput
                         value={currentItem.quantity}
                         onChange={(value) => setCurrentItem({ ...currentItem, quantity: Math.floor(value) })}
                         min={1}
                         step={1}
                       />
-                    </FormField>
-                    <FormField label="Unit">
+                    </div>
+                    {/* Unit */}
+                    <div style={{ width: 140, flexShrink: 0 }}>
+                      <label style={{ fontSize: 11, color: 'var(--text-secondary)', display: 'block', marginBottom: 3 }}>{t('col', 'unit')}</label>
                       <SearchableDropdown
                         options={unitOptions}
                         value={currentItem.unit}
@@ -459,32 +492,29 @@ function NewPurchaseRequestPageContent() {
                         searchPlaceholder="Search unit..."
                         allowClear
                       />
-                    </FormField>
-                  </div>
-
-                  <div style={{ 
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                    gap: 'var(--spacing-4)',
-                  }}>
-                    <FormField label="Reason/Purpose">
-                      <textarea
+                    </div>
+                    {/* Reason */}
+                    <div style={{ flex: 1 }}>
+                      <label style={{ fontSize: 11, color: 'var(--text-secondary)', display: 'block', marginBottom: 3 }}>{t('field', 'reason')}</label>
+                      <input
+                        className="input"
+                        style={{ width: '100%' }}
                         placeholder="Why is this needed?"
                         value={currentItem.reason}
                         onChange={(e) => setCurrentItem({ ...currentItem, reason: e.target.value })}
-                        rows={2}
-                        className="input"
                       />
-                    </FormField>
-                    <FormField label="Notes">
-                      <textarea
+                    </div>
+                    {/* Notes */}
+                    <div style={{ flex: 1 }}>
+                      <label style={{ fontSize: 11, color: 'var(--text-secondary)', display: 'block', marginBottom: 3 }}>{t('col', 'notes')}</label>
+                      <input
+                        className="input"
+                        style={{ width: '100%' }}
                         placeholder="Additional notes"
                         value={currentItem.notes}
                         onChange={(e) => setCurrentItem({ ...currentItem, notes: e.target.value })}
-                        rows={2}
-                        className="input"
                       />
-                    </FormField>
+                    </div>
                   </div>
 
                   <div style={{ display: 'flex', gap: 'var(--spacing-3)', paddingTop: 'var(--spacing-2)' }}>
@@ -493,7 +523,7 @@ function NewPurchaseRequestPageContent() {
                       onClick={handleAddItem}
                       className="btn btn-primary"
                     >
-                      Add Product
+                      {t('btn', 'addProduct')}
                     </button>
                     <button
                       type="button"
@@ -509,7 +539,7 @@ function NewPurchaseRequestPageContent() {
                       }}
                       className="btn btn-secondary"
                     >
-                      Cancel
+                      {t('btn', 'cancel')}
                     </button>
                   </div>
                 </div>
@@ -523,12 +553,12 @@ function NewPurchaseRequestPageContent() {
                   <table>
                     <thead>
                       <tr>
-                        <th>Product</th>
-                        <th>Qty</th>
-                        <th>Unit</th>
-                        <th>Purpose</th>
-                        <th>Notes</th>
-                        <th>Actions</th>
+                        <th>{t('col', 'product')}</th>
+                        <th>{t('col', 'quantity')}</th>
+                        <th>{t('col', 'unit')}</th>
+                        <th>{t('field', 'reason')}</th>
+                        <th>{t('col', 'notes')}</th>
+                        <th>{t('col', 'actions')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -621,7 +651,7 @@ function NewPurchaseRequestPageContent() {
                                   e.currentTarget.style.borderColor = 'var(--color-error)';
                                 }}
                               >
-                                Delete
+                                {t('btn', 'delete')}
                               </button>
                             </td>
                           </tr>
@@ -641,10 +671,10 @@ function NewPurchaseRequestPageContent() {
               disabled={mutation.isPending}
               className="btn btn-primary"
             >
-              {mutation.isPending ? 'Saving...' : 'Save Purchase Request'}
+              {mutation.isPending ? t('btn', 'saving') : t('btn', 'save')}
             </button>
             <Link href="/purchase-requests" className="btn btn-secondary">
-              Cancel
+              {t('btn', 'cancel')}
             </Link>
           </div>
         </form>

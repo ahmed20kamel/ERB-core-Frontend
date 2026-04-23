@@ -9,6 +9,15 @@ const apiClient = axios.create({
   },
 });
 
+// Queue of requests waiting for token refresh
+let isRefreshing = false;
+let refreshQueue: ((token: string) => void)[] = [];
+
+function processRefreshQueue(newToken: string) {
+  refreshQueue.forEach((resolve) => resolve(newToken));
+  refreshQueue = [];
+}
+
 // Request interceptor to add auth token
 apiClient.interceptors.request.use(
   (config) => {
@@ -22,12 +31,10 @@ apiClient.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Response interceptor to handle token refresh
+// Response interceptor to handle token refresh with race condition protection
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -36,24 +43,42 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
+      if (isRefreshing) {
+        // Another request is already refreshing — queue this one
+        return new Promise((resolve) => {
+          refreshQueue.push((newToken: string) => {
+            originalRequest.headers.Authorization = `Bearer ${newToken}`;
+            resolve(apiClient(originalRequest));
+          });
+        });
+      }
+
+      isRefreshing = true;
+
       try {
         const refreshToken = localStorage.getItem('refresh_token');
-        if (refreshToken) {
-          const response = await axios.post(`${API_BASE_URL}/auth/token/refresh/`, {
-            refresh: refreshToken,
-          });
+        if (!refreshToken) throw new Error('No refresh token');
 
-          const { access } = response.data;
-          localStorage.setItem('access_token', access);
-          originalRequest.headers.Authorization = `Bearer ${access}`;
+        const response = await axios.post(`${API_BASE_URL}/auth/token/refresh/`, {
+          refresh: refreshToken,
+        });
 
-          return apiClient(originalRequest);
-        }
-      } catch (refreshError) {
+        const { access } = response.data;
+        localStorage.setItem('access_token', access);
+        // Keep cookie in sync so middleware can read it
+        const exp = new Date(Date.now() + 864e5).toUTCString();
+        document.cookie = `access_token=${access};expires=${exp};path=/;SameSite=Strict`;
+        processRefreshQueue(access);
+
+        originalRequest.headers.Authorization = `Bearer ${access}`;
+        return apiClient(originalRequest);
+      } catch {
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
         window.location.href = '/login';
-        return Promise.reject(refreshError);
+        return Promise.reject(error);
+      } finally {
+        isRefreshing = false;
       }
     }
 
@@ -62,4 +87,3 @@ apiClient.interceptors.response.use(
 );
 
 export default apiClient;
-

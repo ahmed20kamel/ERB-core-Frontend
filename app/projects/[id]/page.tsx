@@ -4,10 +4,12 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { projectsApi } from '@/lib/api/projects';
+import { Button } from '@/components/ui';
 import MainLayout from '@/components/layout/MainLayout';
 import Link from 'next/link';
 import { toast } from '@/lib/hooks/use-toast';
 import SearchableDropdown from '@/components/ui/SearchableDropdown';
+import { useT } from '@/lib/i18n/useT';
 
 const statusOptions = [
   { value: 'on_going', label: 'On Going' },
@@ -17,6 +19,7 @@ const statusOptions = [
 ];
 
 export default function EditProjectPage() {
+  const t = useT();
   const router = useRouter();
   const params = useParams();
   const id = Number(params.id);
@@ -30,6 +33,7 @@ export default function EditProjectPage() {
   const [formData, setFormData] = useState({
     code: '',
     name: '',
+    name_ar: '',
     location: '',
     contact_person: '',
     mobile_number: '',
@@ -46,6 +50,7 @@ export default function EditProjectPage() {
       setFormData({
         code: project.code || '',
         name: project.name || '',
+        name_ar: project.name_ar || '',
         location: project.location || '',
         contact_person: project.contact_person || '',
         mobile_number: project.mobile_number || '',
@@ -81,7 +86,7 @@ export default function EditProjectPage() {
       <MainLayout>
         <div className="space-y-6">
           <div className="card text-center py-12">
-            <p className="text-muted-foreground">Loading...</p>
+            <p className="text-muted-foreground">{t('btn', 'loading')}</p>
           </div>
         </div>
       </MainLayout>
@@ -93,7 +98,7 @@ export default function EditProjectPage() {
       <MainLayout>
         <div className="space-y-6">
           <div className="card text-center py-12">
-            <p className="text-muted-foreground">Project not found</p>
+            <p className="text-muted-foreground">{t('page', 'projects')} {t('empty', 'notFound')}</p>
           </div>
         </div>
       </MainLayout>
@@ -105,9 +110,9 @@ export default function EditProjectPage() {
       <div className="space-y-6">
         <div>
           <Link href="/projects" className="text-sm text-muted-foreground hover:text-foreground mb-2 inline-block">
-            ← Back to Projects
+            ← {t('btn', 'back')} {t('page', 'projects')}
           </Link>
-          <h1 className="text-2xl font-semibold text-foreground">Edit Project</h1>
+          <h1 className="text-2xl font-semibold text-foreground">{t('page', 'editProject')}</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Update project information
           </p>
@@ -116,14 +121,14 @@ export default function EditProjectPage() {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Basic Information */}
           <div className="card">
-            <h2 className="text-lg font-semibold mb-4 text-foreground">Basic Information</h2>
+            <h2 className="text-lg font-semibold mb-4 text-foreground">{t('section', 'basicInfo')}</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label 
                   className="block text-xs font-medium mb-1.5"
                   style={{ color: 'var(--foreground)' }}
                 >
-                  Project Code *
+                  {t('field', 'projectCode')} *
                 </label>
                 <input
                   type="text"
@@ -150,8 +155,25 @@ export default function EditProjectPage() {
                 />
               </div>
 
+              <div>
+                <label
+                  className="block text-xs font-medium mb-1.5"
+                  style={{ color: 'var(--foreground)' }}
+                >
+                  اسم المشروع بالعربي
+                </label>
+                <input
+                  type="text"
+                  dir="rtl"
+                  placeholder="اسم المشروع بالعربي"
+                  value={formData.name_ar}
+                  onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
+                  className="w-full"
+                />
+              </div>
+
               <div className="md:col-span-3">
-                <label 
+                <label
                   className="block text-xs font-medium mb-1.5"
                   style={{ color: 'var(--foreground)' }}
                 >
@@ -307,16 +329,10 @@ export default function EditProjectPage() {
 
           {/* Actions */}
           <div className="flex items-center justify-end gap-3">
-            <Link href="/projects" className="btn btn-secondary">
-              Cancel
-            </Link>
-            <button
-              type="submit"
-              disabled={mutation.isPending}
-              className="btn btn-primary"
-            >
-              {mutation.isPending ? 'Updating...' : 'Update Project'}
-            </button>
+            <Link href="/projects"><Button variant="secondary">Cancel</Button></Link>
+            <Button type="submit" variant="primary" disabled={mutation.isPending} isLoading={mutation.isPending}>
+              Update Project
+            </Button>
           </div>
         </form>
       </div>

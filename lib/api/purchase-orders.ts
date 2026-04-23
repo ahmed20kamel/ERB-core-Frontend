@@ -76,5 +76,10 @@ export const purchaseOrdersApi = {
     const response = await apiClient.post(`/purchase-orders/${id}/reject/`, { rejection_reason });
     return response.data;
   },
+
+  cancel: async (id: number, cancel_reason: string): Promise<PurchaseOrder> => {
+    const response = await apiClient.post(`/purchase-orders/${id}/cancel/`, { cancel_reason });
+    return response.data;
+  },
 };
 

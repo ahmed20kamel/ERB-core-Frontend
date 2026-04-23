@@ -14,6 +14,7 @@ import FilterPanel, { FilterField } from '@/components/ui/FilterPanel';
 import FilterTags from '@/components/ui/FilterTags';
 import { Button, TextField, Checkbox, Loader } from '@/components/ui';
 import { formatPrice } from '@/lib/utils/format';
+import { useT } from '@/lib/i18n/useT';
 
 const statusColors: Record<string, string> = {
   pending: 'badge-warning',
@@ -37,6 +38,7 @@ export default function PurchaseQuotationsPage() {
   const [selectMode, setSelectMode] = useState<'page' | 'all'>('page');
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const t = useT();
   const { hasPermission } = usePermissions();
   const isAdmin = user?.role === 'super_admin' || user?.is_staff;
   
@@ -193,7 +195,7 @@ export default function PurchaseQuotationsPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold text-foreground">Purchase Quotations</h1>
+            <h1 className="text-2xl font-semibold text-foreground">{t('page', 'purchaseQuotations')}</h1>
             <p className="text-sm text-muted-foreground mt-1">
               View and manage supplier quotations
             </p>
@@ -246,7 +248,7 @@ export default function PurchaseQuotationsPage() {
         <div className="card flex items-center gap-4">
           <TextField
             type="text"
-            placeholder="Search quotations..."
+            placeholder={`${t('btn', 'search')} ${t('page', 'purchaseQuotations').toLowerCase()}...`}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="flex-1 max-w-md"
@@ -274,7 +276,7 @@ export default function PurchaseQuotationsPage() {
         {isLoading ? (
           <div className="card text-center py-12">
             <Loader className="mx-auto mb-4" />
-            <p className="text-muted-foreground">Loading...</p>
+            <p className="text-muted-foreground">{t('btn', 'loading')}</p>
           </div>
         ) : error ? (
           <div className="card border-destructive bg-destructive/10">
@@ -282,7 +284,7 @@ export default function PurchaseQuotationsPage() {
           </div>
         ) : !data || !data.results || data.results.length === 0 ? (
           <div className="card text-center py-12">
-            <p className="text-muted-foreground">No purchase quotations found</p>
+            <p className="text-muted-foreground">{t('empty', 'noPQ')}</p>
           </div>
         ) : (
           <>
@@ -304,15 +306,15 @@ export default function PurchaseQuotationsPage() {
                           />
                         </th>
                       )}
-                      <th>Quotation Number</th>
-                      <th>Status</th>
-                      <th>Related PR</th>
-                      <th>Related QR</th>
-                      <th>Supplier</th>
-                      <th>Date</th>
-                      <th>Delivery Method</th>
-                      <th>Total Amount</th>
-                      <th>Actions</th>
+                      <th>{t('col', 'quotationNumber')}</th>
+                      <th>{t('col', 'status')}</th>
+                      <th>PR</th>
+                      <th>QR</th>
+                      <th>{t('col', 'supplier')}</th>
+                      <th>{t('col', 'requestDate')}</th>
+                      <th>{t('col', 'deliveryMethod')}</th>
+                      <th>{t('col', 'totalAmount')}</th>
+                      <th>{t('col', 'actions')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -426,7 +428,7 @@ export default function PurchaseQuotationsPage() {
                           <div className="flex items-center gap-2">
                             {canView && (
                               <Link href={`/purchase-quotations/${quotation.id}`}>
-                                <Button variant="view" size="sm">View</Button>
+                                <Button variant="view" size="sm">{t('btn', 'view')}</Button>
                               </Link>
                             )}
                             {canDelete && (
@@ -467,14 +469,14 @@ export default function PurchaseQuotationsPage() {
                     onClick={() => setPage(p => Math.max(1, p - 1))}
                     disabled={!data.previous || page === 1}
                   >
-                    Previous
+                    {t('btn', 'previous')}
                   </Button>
                   <Button
                     variant="secondary"
                     onClick={() => setPage(p => p + 1)}
                     disabled={!data.next}
                   >
-                    Next
+                    {t('btn', 'next')}
                   </Button>
                 </div>
               </div>

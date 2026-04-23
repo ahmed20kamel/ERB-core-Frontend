@@ -13,6 +13,7 @@ import { usePermissions } from '@/lib/hooks/use-permissions';
 import FilterPanel, { FilterField } from '@/components/ui/FilterPanel';
 import FilterTags from '@/components/ui/FilterTags';
 import { Button, TextField, Checkbox, Loader } from '@/components/ui';
+import { useT } from '@/lib/i18n/useT';
 
 export default function QuotationRequestsPage() {
   const [page, setPage] = useState(1);
@@ -22,6 +23,7 @@ export default function QuotationRequestsPage() {
   const [selectMode, setSelectMode] = useState<'page' | 'all'>('page');
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const t = useT();
   const { hasPermission } = usePermissions();
   const isAdmin = user?.role === 'super_admin' || user?.is_staff;
   
@@ -171,7 +173,7 @@ export default function QuotationRequestsPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold text-foreground">Quotation Requests</h1>
+            <h1 className="text-2xl font-semibold text-foreground">{t('page', 'quotationRequests')}</h1>
             <p className="text-sm text-muted-foreground mt-1">
               Manage quotation requests from suppliers
             </p>
@@ -224,7 +226,7 @@ export default function QuotationRequestsPage() {
         <div className="card flex items-center gap-4">
           <TextField
             type="text"
-            placeholder="Search quotation requests..."
+            placeholder={`${t('btn', 'search')} ${t('page', 'quotationRequests').toLowerCase()}...`}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="flex-1 max-w-md"
@@ -252,7 +254,7 @@ export default function QuotationRequestsPage() {
         {isLoading ? (
           <div className="card text-center py-12">
             <Loader className="mx-auto mb-4" />
-            <p className="text-muted-foreground">Loading...</p>
+            <p className="text-muted-foreground">{t('btn', 'loading')}</p>
           </div>
         ) : error ? (
           <div className="card border-destructive bg-destructive/10">
@@ -260,7 +262,7 @@ export default function QuotationRequestsPage() {
           </div>
         ) : !data || !data.results || data.results.length === 0 ? (
           <div className="card text-center py-12">
-            <p className="text-muted-foreground">No quotation requests found</p>
+            <p className="text-muted-foreground">{t('empty', 'noQR')}</p>
           </div>
         ) : (
           <>
@@ -282,10 +284,10 @@ export default function QuotationRequestsPage() {
                           />
                         </th>
                       )}
-                      <th>Purchase Request</th>
-                      <th>Supplier</th>
-                      <th>Date</th>
-                      <th>Actions</th>
+                      <th>{t('col', 'code')}</th>
+                      <th>{t('col', 'supplier')}</th>
+                      <th>{t('col', 'requestDate')}</th>
+                      <th>{t('col', 'actions')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -326,7 +328,7 @@ export default function QuotationRequestsPage() {
                           <div className="flex items-center gap-2">
                             {canView && (
                               <Link href={`/quotation-requests/${request.id}`}>
-                                <Button variant="view" size="sm">View</Button>
+                                <Button variant="view" size="sm">{t('btn', 'view')}</Button>
                               </Link>
                             )}
                             {canDelete && (
@@ -367,14 +369,14 @@ export default function QuotationRequestsPage() {
                     onClick={() => setPage(p => Math.max(1, p - 1))}
                     disabled={!data.previous || page === 1}
                   >
-                    Previous
+                    {t('btn', 'previous')}
                   </Button>
                   <Button
                     variant="secondary"
                     onClick={() => setPage(p => p + 1)}
                     disabled={!data.next}
                   >
-                    Next
+                    {t('btn', 'next')}
                   </Button>
                 </div>
               </div>

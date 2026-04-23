@@ -7,6 +7,7 @@ import { suppliersApi } from '@/lib/api/suppliers';
 import MainLayout from '@/components/layout/MainLayout';
 import Link from 'next/link';
 import SearchableDropdown from '@/components/ui/SearchableDropdown';
+import { useT } from '@/lib/i18n/useT';
 
 const currencies = [
   { value: 'AED', label: 'AED - UAE Dirham' },
@@ -26,6 +27,7 @@ export default function EditSupplierPage() {
   const params = useParams();
   const id = Number(params.id);
   const queryClient = useQueryClient();
+  const t = useT();
 
   const { data: supplier, isLoading } = useQuery({
     queryKey: ['suppliers', id],
@@ -34,6 +36,7 @@ export default function EditSupplierPage() {
 
   const [formData, setFormData] = useState({
     business_name: '',
+    business_name_ar: '',
     supplier_number: '',
     first_name: '',
     last_name: '',
@@ -61,6 +64,7 @@ export default function EditSupplierPage() {
     if (supplier) {
       setFormData({
         business_name: supplier.business_name || supplier.name || '',
+        business_name_ar: supplier.business_name_ar || '',
         supplier_number: supplier.supplier_number || '',
         first_name: supplier.first_name || '',
         last_name: supplier.last_name || '',
@@ -104,7 +108,7 @@ export default function EditSupplierPage() {
       <MainLayout>
         <div className="space-y-6">
           <div className="card text-center py-12">
-            <p className="text-muted-foreground">Loading...</p>
+            <p className="text-muted-foreground">{t('btn', 'loading')}</p>
           </div>
         </div>
       </MainLayout>
@@ -116,9 +120,9 @@ export default function EditSupplierPage() {
       <div className="space-y-6">
         <div>
           <Link href="/suppliers" className="text-sm text-muted-foreground hover:text-foreground mb-2 inline-block">
-            ← Back to Suppliers
+            ← {t('btn', 'back')} {t('page', 'suppliers')}
           </Link>
-          <h1 className="text-2xl font-semibold text-foreground">Edit Supplier</h1>
+          <h1 className="text-2xl font-semibold text-foreground">{t('page', 'editSupplier')}</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Update supplier information
           </p>
@@ -138,6 +142,20 @@ export default function EditSupplierPage() {
                   required
                   value={formData.business_name}
                   onChange={(e) => setFormData({ ...formData, business_name: e.target.value })}
+                  className="w-full"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  اسم الشركة بالعربي
+                </label>
+                <input
+                  type="text"
+                  dir="rtl"
+                  placeholder="اسم المورد بالعربي"
+                  value={formData.business_name_ar}
+                  onChange={(e) => setFormData({ ...formData, business_name_ar: e.target.value })}
                   className="w-full"
                 />
               </div>
@@ -417,7 +435,7 @@ export default function EditSupplierPage() {
               disabled={mutation.isPending}
               className="btn btn-primary"
             >
-              {mutation.isPending ? 'Saving...' : 'Save Changes'}
+              {mutation.isPending ? t('btn', 'loading') : t('btn', 'saveChanges')}
             </button>
             <Link href="/suppliers" className="btn btn-secondary">
               Cancel

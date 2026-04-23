@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { purchaseQuotationsApi } from '@/lib/api/purchase-quotations';
 import MainLayout from '@/components/layout/MainLayout';
+import PageHeader from '@/components/ui/PageHeader';
 import Link from 'next/link';
 import { formatPrice } from '@/lib/utils/format';
 import LinkedDocumentsSection from '@/components/ui/LinkedDocumentsSection';
@@ -12,6 +13,7 @@ import { toast } from '@/lib/hooks/use-toast';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { usePermissions } from '@/lib/hooks/use-permissions';
 import { canAwardQuotation, canCreatePurchaseOrder } from '@/lib/utils/workflow-guards';
+import { useT } from '@/lib/i18n/useT';
 
 const statusColors: Record<string, string> = {
   pending: 'badge-warning',
@@ -20,17 +22,18 @@ const statusColors: Record<string, string> = {
   expired: 'badge-info',
 };
 
-const statusLabels: Record<string, string> = {
-  pending: 'Pending',
-  awarded: 'Awarded',
-  rejected: 'Rejected',
-  expired: 'Expired',
-};
-
 export default function PurchaseQuotationDetailPage() {
+  const t = useT();
   const params = useParams();
   const router = useRouter();
   const id = Number(params.id);
+
+  const statusLabels: Record<string, string> = {
+    pending: t('status', 'pending'),
+    awarded: t('status', 'awarded'),
+    rejected: t('status', 'rejected'),
+    expired: t('status', 'expired'),
+  };
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
@@ -85,7 +88,7 @@ export default function PurchaseQuotationDetailPage() {
       <MainLayout>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-6)' }}>
           <div className="card" style={{ textAlign: 'center', padding: 'var(--spacing-12)' }}>
-            <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Loading...</p>
+            <p style={{ color: 'var(--text-secondary)', margin: 0 }}>{t('btn', 'loading')}</p>
           </div>
         </div>
       </MainLayout>
@@ -97,7 +100,7 @@ export default function PurchaseQuotationDetailPage() {
       <MainLayout>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-6)' }}>
           <div className="card" style={{ textAlign: 'center', padding: 'var(--spacing-12)' }}>
-            <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Quotation not found</p>
+            <p style={{ color: 'var(--text-secondary)', margin: 0 }}>{t('empty', 'notFound')}</p>
           </div>
         </div>
       </MainLayout>
@@ -118,54 +121,16 @@ export default function PurchaseQuotationDetailPage() {
   return (
     <MainLayout>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-6)' }}>
-        {/* Header Section - Unified */}
-        <div>
-          <Link 
-            href="/purchase-quotations" 
-            className="text-sm mb-2 inline-block"
-            style={{ 
-              color: 'var(--text-secondary)',
-              textDecoration: 'none',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = 'var(--text-primary)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'var(--text-secondary)';
-            }}
-          >
-            ← Back to Purchase Quotations
-          </Link>
-          <div style={{ 
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}>
-            <div>
-              <h1 style={{ 
-                fontSize: 'var(--font-2xl)',
-                fontWeight: 'var(--font-weight-semibold)',
-                color: 'var(--text-primary)',
-                margin: 0,
-                marginBottom: 'var(--spacing-1)',
-              }}>
-                Quotation: {quotation.quotation_number}
-              </h1>
-              <p style={{ 
-                fontSize: 'var(--font-sm)',
-                color: 'var(--text-secondary)',
-                margin: 0,
-              }}>
-                View quotation details and pricing
-              </p>
-            </div>
-          {quotationStatus && (
-            <span className={`badge ${statusColors[quotationStatus] || 'badge-info'}`}>
-              {statusLabels[quotationStatus] || quotationStatus}
-              </span>
-            )}
-          </div>
-        </div>
+        {/* Header */}
+        <PageHeader
+          backHref="/purchase-quotations"
+          backLabel={`${t('btn', 'back')} ${t('page', 'purchaseQuotations')}`}
+          title={`Quotation: ${quotation.quotation_number}`}
+          subtitle="View quotation details and pricing"
+          status={quotationStatus}
+          statusColors={statusColors}
+          statusLabels={statusLabels}
+        />
 
         {/* Linked Documents */}
         <LinkedDocumentsSection
@@ -197,7 +162,7 @@ export default function PurchaseQuotationDetailPage() {
                 color: 'var(--text-secondary)',
                 marginBottom: 'var(--spacing-2)',
               }}>
-                Supplier
+                {t('col', 'supplier')}
               </label>
               <p style={{ 
                 fontSize: 'var(--font-base)',
@@ -295,9 +260,9 @@ export default function PurchaseQuotationDetailPage() {
                   color: 'var(--text-secondary)',
                   marginBottom: 'var(--spacing-2)',
                 }}>
-                  Notes
+                  {t('col', 'notes')}
                 </label>
-                <p style={{ 
+                <p style={{
                   fontSize: 'var(--font-base)',
                   color: 'var(--text-primary)',
                   margin: 0,
@@ -358,18 +323,18 @@ export default function PurchaseQuotationDetailPage() {
             margin: 0,
             marginBottom: 'var(--spacing-4)',
           }}>
-            Products
+            {t('col', 'product')}
           </h3>
           <div style={{ overflowX: 'auto' }}>
             <table>
               <thead>
                 <tr>
-                  <th>Product</th>
-                  <th>Qty</th>
-                  <th>Price</th>
+                  <th>{t('col', 'product')}</th>
+                  <th>{t('col', 'quantity')}</th>
+                  <th>{t('col', 'unitPrice')}</th>
                   <th>Disc</th>
                   <th>Tax</th>
-                  <th>Total</th>
+                  <th>{t('col', 'total')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -482,11 +447,11 @@ export default function PurchaseQuotationDetailPage() {
                 paddingTop: 'var(--spacing-2)',
                 fontSize: 'var(--font-base)',
               }}>
-                <span style={{ 
+                <span style={{
                   fontWeight: 'var(--font-weight-bold)',
                   color: 'var(--text-primary)',
                 }}>
-                  Total:
+                  {t('col', 'total')}:
                 </span>
                 <span style={{ 
                   fontWeight: 'var(--font-weight-bold)',
@@ -533,7 +498,7 @@ export default function PurchaseQuotationDetailPage() {
                         : ''
                   }
                 >
-                  {awardMutation.isPending ? 'Processing...' : 'Award Supplier'}
+                  {awardMutation.isPending ? t('btn', 'loading') : t('btn', 'approve')}
                 </button>
               )}
               {quotation.has_awarded_quotation && (
@@ -552,7 +517,7 @@ export default function PurchaseQuotationDetailPage() {
                   className="btn btn-destructive"
                   title={!canReject ? 'You do not have permission to reject' : ''}
                 >
-                  {rejectMutation.isPending ? 'Processing...' : 'Reject'}
+                  {rejectMutation.isPending ? t('btn', 'loading') : t('btn', 'reject')}
                 </button>
               )}
             </>

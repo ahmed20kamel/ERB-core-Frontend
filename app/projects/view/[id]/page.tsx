@@ -3,6 +3,7 @@
 import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { projectsApi } from '@/lib/api/projects';
+import { Button } from '@/components/ui';
 import MainLayout from '@/components/layout/MainLayout';
 import Link from 'next/link';
 import EntityHeader from '@/components/ui/EntityHeader';
@@ -89,9 +90,7 @@ export default function ProjectDetailPage() {
           backLabel="Back to Projects"
           actions={
             <>
-              <Link href={`/projects/${id}`} className="btn btn-edit">
-                Edit
-              </Link>
+              <Link href={`/projects/${id}`}><Button variant="edit">Edit</Button></Link>
             </>
           }
         />

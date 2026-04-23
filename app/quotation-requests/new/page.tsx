@@ -17,6 +17,7 @@ import { canCreateQuotationRequest } from '@/lib/utils/workflow-guards';
 import RouteGuard from '@/components/auth/RouteGuard';
 import { usePermissions } from '@/lib/hooks/use-permissions';
 import { useAuth } from '@/lib/hooks/use-auth';
+import { useT } from '@/lib/i18n/useT';
 
 export default function NewQuotationRequestPage() {
   return (
@@ -30,6 +31,7 @@ export default function NewQuotationRequestPage() {
 }
 
 function NewQuotationRequestPageContent() {
+  const t = useT();
   const router = useRouter();
   const searchParams = useSearchParams();
   const purchaseRequestId = searchParams.get('purchase_request_id');
@@ -179,7 +181,7 @@ function NewQuotationRequestPageContent() {
           <div className="card" style={{ textAlign: 'center', padding: 'var(--spacing-12)' }}>
             <p style={{ color: 'var(--text-secondary)', marginBottom: 'var(--spacing-4)' }}>No purchase request selected</p>
             <Link href="/purchase-requests" className="btn btn-primary">
-              Back to Purchase Requests
+              {t('btn', 'back')} {t('page', 'purchaseRequests')}
             </Link>
           </div>
         </div>
@@ -205,7 +207,7 @@ function NewQuotationRequestPageContent() {
               </p>
             </div>
             <Link href={`/purchase-requests/${purchaseRequest.id}`} className="btn btn-secondary">
-              Back to Purchase Request
+              {t('btn', 'back')} {t('page', 'purchaseRequests')}
             </Link>
           </div>
         </div>
@@ -232,7 +234,7 @@ function NewQuotationRequestPageContent() {
               e.currentTarget.style.color = 'var(--text-secondary)';
             }}
           >
-            ← Back to Quotation Requests
+            ← {t('btn', 'back')} {t('page', 'quotationRequests')}
           </Link>
           <h1 style={{ 
             fontSize: 'var(--font-2xl)',
@@ -241,7 +243,7 @@ function NewQuotationRequestPageContent() {
             margin: 0,
             marginBottom: 'var(--spacing-1)',
           }}>
-            Create Quotation Request
+            {t('page', 'newQR')}
           </h1>
           {purchaseRequest && (
             <p style={{ 
@@ -305,7 +307,7 @@ function NewQuotationRequestPageContent() {
             marginBottom: 'var(--spacing-6)',
           }}>
             <FormField
-              label="Supplier"
+              label={t('col', 'supplier')}
               required
               error={errors.supplier_id}
               fieldName="supplier_id"
@@ -333,7 +335,7 @@ function NewQuotationRequestPageContent() {
 
             <div style={{ gridColumn: 'span 2' }}>
               <FormField
-                label="Notes"
+                label={t('col', 'notes')}
                 error={errors.notes}
                 fieldName="notes"
               >
@@ -368,7 +370,7 @@ function NewQuotationRequestPageContent() {
                   color: 'var(--text-primary)',
                   margin: 0,
                 }}>
-                  Products
+                  {t('col', 'product')}
                 </h3>
                 {errors.items && (
                   <span style={{ 
@@ -384,9 +386,9 @@ function NewQuotationRequestPageContent() {
                   <table>
                     <thead>
                       <tr>
-                        <th>Product</th>
-                        <th>Code</th>
-                        <th>Quantity</th>
+                        <th>{t('col', 'product')}</th>
+                        <th>{t('col', 'code')}</th>
+                        <th>{t('col', 'quantity')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -431,10 +433,10 @@ function NewQuotationRequestPageContent() {
               disabled={mutation.isPending}
               className="btn btn-primary"
             >
-              {mutation.isPending ? 'Creating...' : 'Create Quotation Request'}
+              {mutation.isPending ? t('btn', 'loading') : t('page', 'newQR')}
             </button>
             <Link href="/quotation-requests" className="btn btn-secondary">
-              Cancel
+              {t('btn', 'cancel')}
             </Link>
           </div>
         </form>

@@ -7,6 +7,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import Link from 'next/link';
 import RouteGuard from '@/components/auth/RouteGuard';
 import { Loader } from '@/components/ui';
+import { useT } from '@/lib/i18n/useT';
 
 const statusColors: Record<string, string> = {
   completed: '#10B981', // Green
@@ -82,6 +83,7 @@ function PurchaseRequestTrackingPageContent() {
   const params = useParams();
   const router = useRouter();
   const id = Number(params.id);
+  const t = useT();
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['purchase-request-tracking', id],
@@ -94,7 +96,7 @@ function PurchaseRequestTrackingPageContent() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-6)' }}>
           <div className="card" style={{ textAlign: 'center', padding: 'var(--spacing-12)' }}>
             <Loader className="mx-auto mb-4" />
-            <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Loading timeline...</p>
+            <p style={{ color: 'var(--text-secondary)', margin: 0 }}>{t('page', 'loadingTimeline')}</p>
           </div>
         </div>
       </MainLayout>
@@ -107,13 +109,13 @@ function PurchaseRequestTrackingPageContent() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-6)' }}>
           <div className="card" style={{ textAlign: 'center', padding: 'var(--spacing-12)' }}>
             <p style={{ color: 'var(--color-error)', margin: 0, marginBottom: 'var(--spacing-4)' }}>
-              Error loading timeline. Please try again.
+              {t('page', 'errorLoadingTimeline')}
             </p>
             <Link 
               href={`/purchase-requests/${id}`} 
               className="btn btn-primary"
             >
-              Back to Purchase Request
+              {t('page', 'backToPurchaseRequest')}
             </Link>
           </div>
         </div>
@@ -180,7 +182,7 @@ function PurchaseRequestTrackingPageContent() {
                   e.currentTarget.style.color = 'var(--text-secondary)';
                 }}
               >
-                ← Back to Purchase Request
+                {t('btn', 'back')} {t('page', 'backToPurchaseRequest')}
               </Link>
               <h1 style={{
                 fontSize: 'var(--font-3xl)',
@@ -190,7 +192,7 @@ function PurchaseRequestTrackingPageContent() {
                 marginBottom: 'var(--spacing-2)',
                 lineHeight: 1.2,
               }}>
-                Purchase Request Tracking
+                {t('page', 'purchaseRequestTracking')}
               </h1>
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-3)', flexWrap: 'wrap' }}>
                 <div style={{
@@ -224,7 +226,7 @@ function PurchaseRequestTrackingPageContent() {
                   textTransform: 'uppercase',
                   letterSpacing: '0.05em',
                 }}>
-                  Total Duration
+                  {t('page', 'totalDuration')}
                 </div>
                 <div style={{
                   fontSize: 'var(--font-xl)',
@@ -242,7 +244,7 @@ function PurchaseRequestTrackingPageContent() {
                   textTransform: 'uppercase',
                   letterSpacing: '0.05em',
                 }}>
-                  Progress
+                  {t('page', 'progress')}
                 </div>
                 <div style={{
                   fontSize: 'var(--font-lg)',
@@ -305,14 +307,14 @@ function PurchaseRequestTrackingPageContent() {
                 margin: 0,
                 marginBottom: 'var(--spacing-1)',
               }}>
-                Procurement Workflow Timeline
+                {t('page', 'procurementWorkflow')}
               </h2>
               <p style={{
                 fontSize: 'var(--font-sm)',
                 color: 'var(--text-secondary)',
                 margin: 0,
               }}>
-                Complete tracking of all stages from creation to payment
+                {t('page', 'completeTracking')}
               </p>
             </div>
           </div>
@@ -443,7 +445,7 @@ function PurchaseRequestTrackingPageContent() {
                                     textTransform: 'uppercase',
                                     letterSpacing: '0.05em',
                                   }}>
-                                    Performed By
+                                    {t('page', 'performedBy')}
                                   </div>
                                   <div style={{ 
                                     fontSize: 'var(--font-sm)', 
@@ -484,7 +486,7 @@ function PurchaseRequestTrackingPageContent() {
                                     textTransform: 'uppercase',
                                     letterSpacing: '0.05em',
                                   }}>
-                                    Date & Time
+                                    {t('page', 'dateTime')}
                                   </div>
                                   <div style={{ 
                                     fontSize: 'var(--font-sm)', 
@@ -522,7 +524,7 @@ function PurchaseRequestTrackingPageContent() {
                                     textTransform: 'uppercase',
                                     letterSpacing: '0.05em',
                                   }}>
-                                    Duration
+                                    {t('page', 'duration')}
                                   </div>
                                   <div style={{ 
                                     fontSize: 'var(--font-sm)', 
@@ -572,7 +574,7 @@ function PurchaseRequestTrackingPageContent() {
                             textTransform: 'uppercase',
                             letterSpacing: '0.05em',
                           }}>
-                            📝 Notes
+                            📝 {t('field', 'notes')}
                           </div>
                           <p style={{
                             fontSize: 'var(--font-sm)',
@@ -596,7 +598,7 @@ function PurchaseRequestTrackingPageContent() {
                             textTransform: 'uppercase',
                             letterSpacing: '0.05em',
                           }}>
-                            📎 Attachments ({item.documents.length})
+                            📎 {t('page', 'attachments')} ({item.documents.length})
                           </div>
                           <div style={{ 
                             display: 'flex', 
@@ -670,7 +672,7 @@ function PurchaseRequestTrackingPageContent() {
                             e.currentTarget.style.gap = 'var(--spacing-2)';
                           }}
                         >
-                          View Details
+                          {t('page', 'viewDetails')}
                           <span style={{ fontSize: 'var(--font-base)' }}>→</span>
                         </Link>
                       </div>
@@ -698,7 +700,7 @@ function PurchaseRequestTrackingPageContent() {
             gap: 'var(--spacing-2)',
           }}>
             <span>📊</span>
-            <span>Summary</span>
+            <span>{t('page', 'summary')}</span>
           </h3>
           <div style={{ 
             display: 'grid', 
@@ -719,7 +721,7 @@ function PurchaseRequestTrackingPageContent() {
                 letterSpacing: '0.05em',
                 fontWeight: 'var(--font-weight-semibold)',
               }}>
-                Current Stage
+                {t('page', 'currentStage')}
               </div>
               <div style={{ 
                 fontSize: 'var(--font-lg)', 
@@ -744,7 +746,7 @@ function PurchaseRequestTrackingPageContent() {
                 letterSpacing: '0.05em',
                 fontWeight: 'var(--font-weight-semibold)',
               }}>
-                Total Steps
+                {t('page', 'totalSteps')}
               </div>
               <div style={{ 
                 fontSize: 'var(--font-2xl)', 
@@ -768,7 +770,7 @@ function PurchaseRequestTrackingPageContent() {
                 letterSpacing: '0.05em',
                 fontWeight: 'var(--font-weight-semibold)',
               }}>
-                Completed
+                {t('page', 'completed')}
               </div>
               <div style={{ 
                 fontSize: 'var(--font-2xl)', 
@@ -792,7 +794,7 @@ function PurchaseRequestTrackingPageContent() {
                 letterSpacing: '0.05em',
                 fontWeight: 'var(--font-weight-semibold)',
               }}>
-                Total Duration
+                {t('page', 'totalDuration')}
               </div>
               <div style={{ 
                 fontSize: 'var(--font-lg)', 

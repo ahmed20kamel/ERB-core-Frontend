@@ -1,11 +1,6 @@
-/**
- * Unified Form Data Types
- * These types represent form state and are converted to API types before submission
- */
-
-import { 
-  Product, 
-  PurchaseOrder, 
+import {
+  Product,
+  PurchaseOrder,
   PurchaseOrderItem,
   PurchaseInvoice,
   PurchaseInvoiceItem,
@@ -16,9 +11,6 @@ import {
 } from '@/types';
 import { GRNItem } from '@/lib/api/goods-receiving';
 
-/**
- * Utility type to convert optional fields from null/empty string to undefined
- */
 export type CleanOptional<T> = {
   [K in keyof T]: T[K] extends string
     ? T[K] extends ''
@@ -31,11 +23,9 @@ export type CleanOptional<T> = {
     : T[K];
 };
 
-/**
- * Product Form Data
- */
 export interface ProductFormData {
   name: string;
+  name_ar: string;
   code: string;
   sku: string;
   barcode: string;
@@ -47,7 +37,7 @@ export interface ProductFormData {
   tags: string;
   unit: Product['unit'];
   supplier: number | undefined;
-  unit_price: number;
+  sell_price: number;
   buy_price: number;
   minimum_price: number;
   discount: number;
@@ -62,266 +52,306 @@ export interface ProductFormData {
   is_active: boolean;
 }
 
-/**
- * Purchase Order Form Data
- */
-export interface PurchaseOrderFormData {
-  purchase_request_id: number | null | undefined;
-  purchase_quotation_id: number | null | undefined;
-  supplier_id: number;
-  order_date: string;
-  delivery_date: string;
-  delivery_method: 'pickup' | 'delivery' | '';
-  payment_terms: string;
-  delivery_terms: string;
-  notes: string;
-  terms_and_conditions?: string;
-  tax_rate: number;
-  discount: number;
-  status: PurchaseOrder['status'];
-}
-
-/**
- * Purchase Order Update Data (for edit forms)
- */
-export interface PurchaseOrderUpdateFormData {
-  supplier_id?: number;
-  order_date?: string;
-  delivery_date?: string;
-  delivery_method?: 'pickup' | 'delivery' | '';
-  payment_terms?: string;
-  delivery_terms?: string;
-  notes?: string;
-  tax_rate?: number;
-  discount?: number;
-  status?: PurchaseOrder['status'];
-}
-
-/**
- * Purchase Invoice Form Data
- */
-export interface PurchaseInvoiceFormData {
-  purchase_order_id: number;
-  grn_id: number | undefined;
-  invoice_date: string;
-  due_date: string;
-  status: PurchaseInvoice['status'];
-  tax_rate: number;
-  discount: number;
-  notes: string;
-}
-
-/**
- * Purchase Request Form Data
- */
 export interface PurchaseRequestFormData {
-  project_id: number | undefined;
-  project_code: string;
   title: string;
+  project_id: number | undefined;
+  project_code?: string;
   request_date: string;
   required_by: string;
   notes: string;
+  items?: PurchaseRequestItemFormData[];
 }
 
-/**
- * Purchase Quotation Form Data
- */
+export function toPurchaseRequestCreateData(form: PurchaseRequestFormData, items?: PurchaseRequestItemFormData[]) {
+  const allItems = items ?? form.items ?? [];
+  return {
+    title: form.title,
+    project_id: form.project_id ?? null,
+    request_date: form.request_date,
+    required_by: form.required_by,
+    notes: form.notes,
+    items: allItems.map((item) => ({
+      product_id: item.product_id as number,
+      quantity: item.quantity,
+      unit: item.unit,
+      project_site: item.project_site,
+      reason: item.reason,
+      notes: item.notes,
+    })),
+  };
+}
+
+export interface PurchaseRequestItemFormData {
+  product_id: number | undefined;
+  product?: Product;
+  quantity: number;
+  unit: string;
+  project_site: string;
+  reason: string;
+  notes: string;
+}
+
+export interface PurchaseOrderFormData {
+  purchase_request_id: number | undefined;
+  purchase_quotation_id: number | undefined;
+  supplier_id: number | undefined;
+  order_date: string;
+  delivery_date: string;
+  payment_terms: string;
+  delivery_method: 'pickup' | 'delivery' | '';
+  delivery_terms: string;
+  tax_rate: number;
+  discount: number;
+  notes: string;
+  terms_and_conditions: string;
+  status?: string;
+  items?: PurchaseOrderItemFormData[];
+}
+
+export type PurchaseOrderUpdateFormData = Partial<PurchaseOrderFormData>;
+
+export function toPurchaseOrderCreateData(form: PurchaseOrderFormData, items?: Array<any>) {
+  const allItems = (items ?? form.items ?? []).map((item: any) => ({
+    product_id: item.product_id as number,
+    quantity: item.quantity,
+    unit_price: item.unit_price ?? 0,
+    discount: item.discount ?? 0,
+    tax_rate: item.tax_rate ?? 0,
+    notes: item.notes ?? '',
+  }));
+  return {
+    purchase_request_id: form.purchase_request_id ?? null,
+    purchase_quotation_id: form.purchase_quotation_id ?? null,
+    supplier_id: form.supplier_id as number,
+    order_date: form.order_date,
+    delivery_date: form.delivery_date || undefined,
+    payment_terms: form.payment_terms,
+    delivery_method: form.delivery_method || undefined,
+    delivery_terms: form.delivery_terms,
+    tax_rate: form.tax_rate,
+    discount: form.discount,
+    notes: form.notes,
+    terms_and_conditions: form.terms_and_conditions,
+    status: form.status,
+    items: allItems,
+  };
+}
+
+export function toPurchaseOrderUpdateData(form: PurchaseOrderUpdateFormData, items?: Array<any>) {
+  return toPurchaseOrderCreateData(form as PurchaseOrderFormData, items);
+}
+
+export interface PurchaseOrderItemFormData {
+  product_id: number | undefined;
+  product?: Product;
+  quantity: number;
+  unit_price: number;
+  discount: number;
+  tax_rate: number;
+  notes: string;
+}
+
 export interface PurchaseQuotationFormData {
   quotation_request_id: number | undefined;
-  purchase_request_id: number | undefined;
-  supplier_id: number;
+  purchase_request_id?: number | undefined;
+  supplier_id: number | undefined;
   quotation_number: string;
   quotation_date: string;
   valid_until: string;
   payment_terms: string;
-  delivery_terms: string;
   delivery_method: 'pickup' | 'delivery' | '';
-  notes: string;
+  delivery_terms: string;
   tax_rate: number;
   discount: number;
+  notes: string;
+  items?: PurchaseQuotationItemFormData[];
 }
 
-/**
- * GRN Form Data
- */
+export function toPurchaseQuotationCreateData(form: PurchaseQuotationFormData, items?: Array<any>) {
+  const allItems = (items ?? form.items ?? []).map((item: any) => ({
+    product_id: item.product_id as number,
+    quantity: item.quantity,
+    unit_price: item.unit_price ?? 0,
+    discount: item.discount ?? 0,
+    tax_rate: item.tax_rate ?? 0,
+    notes: item.notes ?? '',
+  }));
+  return {
+    quotation_request_id: form.quotation_request_id ?? null,
+    purchase_request_id: form.purchase_request_id ?? null,
+    supplier_id: form.supplier_id as number,
+    quotation_number: form.quotation_number || '',
+    quotation_date: form.quotation_date,
+    valid_until: form.valid_until || undefined,
+    payment_terms: form.payment_terms,
+    delivery_method: form.delivery_method || undefined,
+    delivery_terms: form.delivery_terms,
+    tax_rate: form.tax_rate,
+    discount: form.discount,
+    notes: form.notes,
+    items: allItems,
+  };
+}
+
+export interface PurchaseQuotationItemFormData {
+  product_id: number | undefined;
+  product?: Product;
+  quantity: number;
+  unit_price: number;
+  discount: number;
+  tax_rate: number;
+  notes: string;
+}
+
+export interface PurchaseInvoiceFormData {
+  purchase_order_id: number | undefined;
+  grn_id: number | undefined;
+  invoice_number?: string;
+  invoice_date: string;
+  due_date: string;
+  status?: string;
+  tax_rate: number;
+  discount: number;
+  notes: string;
+  items?: PurchaseInvoiceItemFormData[];
+}
+
+export function toPurchaseInvoiceCreateData(form: PurchaseInvoiceFormData, items?: Array<any>) {
+  const allItems = (items ?? form.items ?? []).map((item: any) => ({
+    purchase_order_item_id: item.purchase_order_item_id as number,
+    product_id: item.product_id as number,
+    quantity: item.quantity,
+    unit_price: item.unit_price ?? 0,
+    discount: item.discount ?? 0,
+    tax_rate: item.tax_rate ?? 0,
+    notes: item.notes ?? '',
+  }));
+  return {
+    purchase_order_id: form.purchase_order_id as number,
+    grn_id: form.grn_id || undefined,
+    invoice_number: form.invoice_number,
+    invoice_date: form.invoice_date,
+    due_date: form.due_date || undefined,
+    status: form.status as any,
+    tax_rate: form.tax_rate,
+    discount: form.discount,
+    notes: form.notes,
+    items: allItems,
+  };
+}
+
+export interface PurchaseInvoiceItemFormData {
+  purchase_order_item_id: number | undefined;
+  product_id: number | undefined;
+  product?: Product;
+  quantity: number;
+  unit_price: number;
+  discount: number;
+  tax_rate: number;
+  notes: string;
+}
+
 export interface GRNFormData {
-  purchase_order_id: number;
+  purchase_order_id: number | undefined;
   receipt_date: string;
   status: 'draft' | 'partial' | 'completed' | 'cancelled';
   notes: string;
+  invoice_delivery_status: 'not_delivered' | 'delivered';
+  items?: GRNItemFormData[];
+  material_images?: File[];
+  supplier_invoice_file?: File | null;
 }
 
-/**
- * Helper function to clean form data before API submission
- * Converts empty strings to undefined and null to undefined
- */
-export function cleanFormData<T extends Record<string, any>>(data: T): CleanOptional<T> {
-  const cleaned = { ...data };
-  
-  for (const key in cleaned) {
-    const value = cleaned[key];
-    
-    // Convert empty strings to undefined
-    if (value === '') {
-      (cleaned as any)[key] = undefined;
-    }
-    // Convert null to undefined
-    else if (value === null) {
-      (cleaned as any)[key] = undefined;
-    }
-    // Handle arrays
-    else if (Array.isArray(value)) {
-      (cleaned as any)[key] = value;
-    }
-  }
-  
-  return cleaned as CleanOptional<T>;
-}
-
-/**
- * Convert PurchaseOrderFormData to API format
- */
-export function toPurchaseOrderCreateData(
-  formData: PurchaseOrderFormData,
-  items: Omit<PurchaseOrderItem, 'product' | 'total' | 'created_at'>[]
-) {
-  return {
-    purchase_request_id: formData.purchase_request_id || undefined,
-    purchase_quotation_id: formData.purchase_quotation_id || undefined,
-    supplier_id: formData.supplier_id,
-    order_date: formData.order_date,
-    delivery_date: formData.delivery_date || undefined,
-    delivery_method: formData.delivery_method || undefined,
-    payment_terms: formData.payment_terms || undefined,
-    delivery_terms: formData.delivery_terms || undefined,
-    notes: formData.notes || undefined,
-    terms_and_conditions: formData.terms_and_conditions || undefined,
-    tax_rate: formData.tax_rate,
-    discount: formData.discount,
-    status: formData.status,
-    items,
-  };
-}
-
-/**
- * Convert PurchaseOrderUpdateFormData to API format
- */
-export function toPurchaseOrderUpdateData(
-  formData: PurchaseOrderUpdateFormData,
-  items?: Omit<PurchaseOrderItem, 'product' | 'total' | 'created_at'>[]
-): Partial<PurchaseOrder> {
-  const result: any = {};
-  
-  if (formData.supplier_id !== undefined) result.supplier_id = formData.supplier_id;
-  if (formData.order_date !== undefined) result.order_date = formData.order_date;
-  if (formData.delivery_date !== undefined) result.delivery_date = formData.delivery_date || undefined;
-  if (formData.delivery_method !== undefined) result.delivery_method = formData.delivery_method || undefined;
-  if (formData.payment_terms !== undefined) result.payment_terms = formData.payment_terms || undefined;
-  if (formData.delivery_terms !== undefined) result.delivery_terms = formData.delivery_terms || undefined;
-  if (formData.notes !== undefined) result.notes = formData.notes || undefined;
-  if (formData.tax_rate !== undefined) result.tax_rate = formData.tax_rate;
-  if (formData.discount !== undefined) result.discount = formData.discount;
-  if (formData.status !== undefined) result.status = formData.status;
-  if (items !== undefined) result.items = items;
-  
-  return result;
-}
-
-/**
- * Convert PurchaseInvoiceFormData to API format
- */
-export function toPurchaseInvoiceCreateData(
-  formData: PurchaseInvoiceFormData,
-  items: Omit<PurchaseInvoiceItem, 'id' | 'created_at' | 'product'>[]
-) {
-  return {
-    purchase_order_id: formData.purchase_order_id,
-    grn_id: formData.grn_id || undefined,
-    invoice_date: formData.invoice_date,
-    due_date: formData.due_date || undefined,
-    status: formData.status,
-    tax_rate: formData.tax_rate,
-    discount: formData.discount,
-    notes: formData.notes || undefined,
-    items,
-  };
-}
-
-/**
- * Convert PurchaseRequestFormData to API format
- */
-export function toPurchaseRequestCreateData(
-  formData: PurchaseRequestFormData,
-  items: Omit<PurchaseRequestItem, 'id' | 'created_at' | 'product'>[]
-) {
-  return {
-    project_id: formData.project_id || undefined,
-    title: formData.title,
-    request_date: formData.request_date,
-    required_by: formData.required_by,
-    notes: formData.notes || undefined,
-    items,
-  };
-}
-
-/**
- * Convert PurchaseQuotationFormData to API format
- */
-export function toPurchaseQuotationCreateData(
-  formData: PurchaseQuotationFormData,
-  items: Omit<PurchaseQuotationItem, 'id' | 'product' | 'total' | 'created_at'>[]
-) {
-  return {
-    quotation_request: formData.quotation_request_id || undefined,
-    purchase_request_id: formData.purchase_request_id || undefined,
-    supplier_id: formData.supplier_id,
-    quotation_number: formData.quotation_number,
-    quotation_date: formData.quotation_date,
-    valid_until: formData.valid_until,
-    payment_terms: formData.payment_terms || undefined,
-    delivery_terms: formData.delivery_terms || undefined,
-    delivery_method: formData.delivery_method || undefined,
-    notes: formData.notes || undefined,
-    tax_rate: formData.tax_rate,
-    discount: formData.discount,
-    items,
-  };
-}
-
-/**
- * Convert ProductFormData to API format
- */
-export function toProductCreateData(formData: ProductFormData): Partial<Product> {
-  return cleanFormData({
-    ...formData,
-    supplier: formData.supplier || undefined,
-    sku: formData.sku || undefined,
-    barcode: formData.barcode || undefined,
-    notes: formData.notes || undefined,
-    internal_notes: formData.internal_notes || undefined,
-    brand: formData.brand || undefined,
-    tags: formData.tags || undefined,
-  });
-}
-
-/**
- * Convert GRNFormData to API format
- */
 export function toGRNCreateData(
-  formData: GRNFormData & { invoice_delivery_status: 'not_delivered' | 'delivered' },
-  items: Omit<GRNItem, 'id' | 'created_at' | 'product'>[],
+  form: GRNFormData,
+  items?: GRNItemFormData[] | any[],
   materialImages?: File[],
-  supplierInvoiceFile?: File | null
+  supplierInvoiceFile?: File | null,
 ) {
+  const allItems = items ?? form.items ?? [];
   return {
-    purchase_order_id: formData.purchase_order_id,
-    receipt_date: formData.receipt_date,
-    status: formData.status,
-    notes: formData.notes || undefined,
-    invoice_delivery_status: formData.invoice_delivery_status,
-    items,
-    material_images: materialImages,
-    supplier_invoice_file: supplierInvoiceFile || undefined,
+    purchase_order_id: form.purchase_order_id!,
+    receipt_date: form.receipt_date,
+    status: form.status,
+    notes: form.notes,
+    invoice_delivery_status: form.invoice_delivery_status,
+    items: allItems.map((item: any) => ({
+      purchase_order_item_id: item.purchase_order_item_id ?? item.id,
+      product_id: item.product_id,
+      ordered_quantity: item.ordered_quantity,
+      received_quantity: item.received_quantity,
+      rejected_quantity: item.rejected_quantity,
+      quality_status: item.quality_status,
+      notes: item.notes ?? '',
+    })),
+    material_images: materialImages ?? form.material_images ?? [],
+    supplier_invoice_file: supplierInvoiceFile ?? form.supplier_invoice_file ?? null,
   };
 }
 
+export interface GRNItemFormData {
+  purchase_order_item_id: number | undefined;
+  product_id: number | undefined;
+  product?: Product;
+  ordered_quantity: number;
+  received_quantity: number;
+  rejected_quantity: number;
+  quality_status: GRNItem['quality_status'];
+  notes: string;
+}
+
+export interface SupplierFormData {
+  name: string;
+  business_name: string;
+  business_name_ar: string;
+  supplier_number: string;
+  contact_person: string;
+  email: string;
+  telephone: string;
+  phone: string;
+  mobile: string;
+  street_address_1: string;
+  street_address_2: string;
+  city: string;
+  state: string;
+  postal_code: string;
+  country: string;
+  address: string;
+  tax_id: string;
+  trn: string;
+  currency: string;
+  description: string;
+  status: 'SUPPLIER' | 'SUBCON';
+  bank_name: string;
+  bank_account: string;
+  notes: string;
+  is_active: boolean;
+}
+
+export interface ProjectFormData {
+  code: string;
+  name: string;
+  name_ar: string;
+  location: string;
+  contact_person: string;
+  mobile_number: string;
+  sector: string;
+  plot: string;
+  project_status: 'on_going' | 'completed' | 'on_hold' | 'cancelled';
+  consultant: string;
+  description: string;
+  is_active: boolean;
+}
+
+export interface UserFormData {
+  username: string;
+  email: string;
+  password: string;
+  password2: string;
+  first_name: string;
+  last_name: string;
+  full_name_ar: string;
+  phone: string;
+  role: 'site_engineer' | 'procurement_manager' | 'procurement_officer' | 'super_admin';
+  is_staff: boolean;
+}

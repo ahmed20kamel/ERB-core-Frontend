@@ -58,8 +58,8 @@ export default function UserDetailPage() {
           image={user.avatar_url || user.avatar || null}
           imageAlt={displayName}
           entityType="user"
-          statusBadge={user.is_staff ? 'Staff' : 'User'}
-          statusVariant={user.is_staff ? 'success' : 'info'}
+          statusBadge={user.is_active ? 'Active' : 'Inactive'}
+          statusVariant={user.is_active ? 'success' : 'error'}
           backHref="/users"
           backLabel="Back to Users"
           actions={
@@ -141,7 +141,12 @@ export default function UserDetailPage() {
                 user.role === 'procurement_officer' ? 'badge-info' :
                 'badge-success'
               }`}>
-                {user.role || 'employee'}
+                {{
+                  site_engineer: 'Site Engineer',
+                  procurement_manager: 'Procurement Manager',
+                  procurement_officer: 'Procurement Officer',
+                  super_admin: 'Super Admin',
+                }[user.role] || user.role}
               </span>
             </div>
             <div>
@@ -219,19 +224,35 @@ export default function UserDetailPage() {
               </p>
             </div>
             <div>
-              <label style={{ 
+              <label style={{
                 display: 'block',
                 fontSize: 'var(--font-sm)',
                 fontWeight: 'var(--font-weight-medium)',
                 color: 'var(--text-secondary)',
                 marginBottom: 'var(--spacing-2)',
               }}>
-                Staff Member
+                Account Status
               </label>
-              <span className={`badge ${user.is_staff ? 'badge-success' : 'badge-info'}`}>
-                {user.is_staff ? 'Yes' : 'No'}
+              <span className={`badge ${user.is_active ? 'badge-success' : 'badge-error'}`}>
+                {user.is_active ? 'Active' : 'Inactive'}
               </span>
             </div>
+            {(user.is_staff || user.is_superuser) && (
+              <div>
+                <label style={{
+                  display: 'block',
+                  fontSize: 'var(--font-sm)',
+                  fontWeight: 'var(--font-weight-medium)',
+                  color: 'var(--text-secondary)',
+                  marginBottom: 'var(--spacing-2)',
+                }}>
+                  System Access
+                </label>
+                <span className="badge badge-warning">
+                  {user.is_superuser ? 'Superuser' : 'Staff'}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </div>

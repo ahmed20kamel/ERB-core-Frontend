@@ -20,6 +20,7 @@ import { formatBackendError, validateRequired, validatePositiveNumber, validateD
 import { canCreatePurchaseOrder } from '@/lib/utils/workflow-guards';
 import RouteGuard from '@/components/auth/RouteGuard';
 import { useAuth } from '@/lib/hooks/use-auth';
+import { useT } from '@/lib/i18n/useT';
 
 export default function NewPurchaseOrderPage() {
   return (
@@ -33,6 +34,7 @@ export default function NewPurchaseOrderPage() {
 }
 
 function NewPurchaseOrderPageContent() {
+  const t = useT();
   const router = useRouter();
   const searchParams = useSearchParams();
   const purchaseRequestId = searchParams.get('purchase_request_id');
@@ -385,7 +387,7 @@ Terms & Conditions:
               e.currentTarget.style.color = 'var(--text-secondary)';
             }}
           >
-            ← Back to Purchase Requests
+            ← {t('btn', 'back')} {t('page', 'purchaseOrders')}
           </Link>
           <h1 style={{ 
             fontSize: 'var(--font-2xl)',
@@ -394,7 +396,7 @@ Terms & Conditions:
             margin: 0,
             marginBottom: 'var(--spacing-1)',
           }}>
-            Create New Purchase Order (LPO)
+            {t('page', 'newPO')}
           </h1>
           <p style={{ 
             fontSize: 'var(--font-sm)',
@@ -501,7 +503,7 @@ Terms & Conditions:
           }}>
             <div>
               <SearchableDropdown
-                label="Supplier"
+                label={t('col', 'supplier')}
                 required
                 options={
                   suppliers?.results.map((supplier) => ({
@@ -519,8 +521,8 @@ Terms & Conditions:
                   }
                   setFormData({ ...formData, supplier_id: val ? Number(val) : 0 });
                 }}
-                placeholder="Select Supplier"
-                searchPlaceholder="Search suppliers..."
+                placeholder={t('misc', 'selectSupplier')}
+                searchPlaceholder={t('misc', 'searchSuppliers')}
                 disabled={purchaseQuotation?.status === 'awarded'}
               />
               {purchaseQuotation?.status === 'awarded' && (
@@ -536,7 +538,7 @@ Terms & Conditions:
 
             <div>
               <label className="form-label">
-                Order Date <span className="text-red-500">*</span>
+                {t('col', 'orderDate')} <span className="text-red-500">*</span>
               </label>
               <input
                 type="date"
@@ -548,7 +550,7 @@ Terms & Conditions:
             </div>
 
             <FormField
-              label="Delivery Date (Optional)"
+              label={t('field', 'deliveryDate')}
               error={errors.delivery_date}
               fieldName="delivery_date"
             >
@@ -567,7 +569,7 @@ Terms & Conditions:
             </FormField>
 
             <FormField
-              label="Delivery Method (Optional)"
+              label={t('col', 'deliveryMethod')}
               fieldName="delivery_method"
             >
               <select
@@ -594,7 +596,7 @@ Terms & Conditions:
               margin: 0,
               marginBottom: 'var(--spacing-4)',
             }}>
-              Products
+              {t('section', 'orderItems')}
             </h3>
 
             {/* Add Item Form - Only show if NOT from quotation */}
@@ -619,7 +621,7 @@ Terms & Conditions:
               </div>
 
               <div>
-                <label className="form-label">Quantity</label>
+                <label className="form-label">{t('col', 'quantity')}</label>
                 <input
                   type="number"
                   min="0"
@@ -633,7 +635,7 @@ Terms & Conditions:
               </div>
 
               <div>
-                <label className="form-label">Unit Price</label>
+                <label className="form-label">{t('col', 'unitPrice')}</label>
                 <input
                   type="number"
                   min="0"
@@ -647,7 +649,7 @@ Terms & Conditions:
               </div>
 
               <div>
-                <label className="form-label">Discount (%)</label>
+                <label className="form-label">{t('col', 'discountPct')}</label>
                 <input
                   type="number"
                   min="0"
@@ -681,13 +683,13 @@ Terms & Conditions:
                   <table>
                     <thead>
                       <tr>
-                        <th>Product</th>
-                        <th>Quantity</th>
-                        <th>Unit Price</th>
-                        <th>Discount %</th>
-                        <th>Tax %</th>
-                        <th>Total</th>
-                        {!purchaseQuotation && <th>Actions</th>}
+                        <th>{t('col', 'product')}</th>
+                        <th>{t('col', 'quantity')}</th>
+                        <th>{t('col', 'unitPrice')}</th>
+                        <th>{t('col', 'discountPct')}</th>
+                        <th>{t('col', 'taxPct')}</th>
+                        <th>{t('col', 'total')}</th>
+                        {!purchaseQuotation && <th>{t('col', 'actions')}</th>}
                       </tr>
                     </thead>
                     <tbody>
@@ -808,7 +810,7 @@ Terms & Conditions:
                                   onClick={() => handleRemoveItem(index)}
                                   className="btn btn-destructive"
                                 >
-                                  Delete
+                                  {t('btn', 'delete')}
                                 </button>
                               </td>
                             )}
@@ -848,11 +850,11 @@ Terms & Conditions:
               margin: 0,
               marginBottom: 'var(--spacing-4)',
             }}>
-              Terms & Conditions
+              {t('section', 'termsConditions')}
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-4)' }}>
               <div>
-                <label className="form-label">Payment Terms</label>
+                <label className="form-label">{t('field', 'paymentTerms')}</label>
                 <textarea
                   value={formData.payment_terms}
                   onChange={(e) => setFormData({ ...formData, payment_terms: e.target.value })}
@@ -863,7 +865,7 @@ Terms & Conditions:
               </div>
 
               <div>
-                <label className="form-label">Delivery Terms</label>
+                <label className="form-label">{t('field', 'deliveryTerms')}</label>
                 <textarea
                   value={formData.delivery_terms}
                   onChange={(e) => setFormData({ ...formData, delivery_terms: e.target.value })}
@@ -874,7 +876,7 @@ Terms & Conditions:
               </div>
 
               <div>
-                <label className="form-label">Notes</label>
+                <label className="form-label">{t('col', 'notes')}</label>
                 <textarea
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
@@ -956,7 +958,7 @@ Terms & Conditions:
                   margin: 0,
                   marginBottom: 'var(--spacing-4)',
                 }}>
-                  Summary
+                  {t('section', 'orderInfo')}
                 </h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-2)' }}>
                   <div style={{ 
@@ -1030,10 +1032,10 @@ Terms & Conditions:
               disabled={mutation.isPending}
               className="btn btn-primary"
             >
-              {mutation.isPending ? 'Creating...' : 'Create Purchase Order'}
+              {mutation.isPending ? t('btn', 'creating') : t('btn', 'createPO')}
             </button>
             <Link href={purchaseRequestId ? `/purchase-requests/${purchaseRequestId}` : '/purchase-requests'} className="btn btn-secondary">
-              Cancel
+              {t('btn', 'cancel')}
             </Link>
           </div>
         </form>

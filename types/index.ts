@@ -1,3 +1,28 @@
+// Permission Types (declared before User so User can reference them)
+export interface Permission {
+  id: number;
+  name: string;
+  category: string;
+  action: string;
+  display_name?: string;
+  description?: string;
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface PermissionSet {
+  id: number;
+  name: string;
+  description?: string;
+  permissions: Permission[];
+  permissions_count: number;
+  is_active: boolean;
+  is_system: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
 // User Types
 export interface User {
   id: number;
@@ -5,6 +30,7 @@ export interface User {
   email: string;
   first_name: string;
   last_name: string;
+  full_name_ar?: string;
   role: 'site_engineer' | 'procurement_manager' | 'procurement_officer' | 'super_admin';
   phone: string;
   job_title?: string;
@@ -13,30 +39,10 @@ export interface User {
   is_staff: boolean;
   is_active: boolean;
   is_superuser?: boolean;
-  permission_set?: number;
-  permission_set_id?: number;
+  date_joined?: string;
+  /** Full PermissionSet object returned by the API */
+  permission_set?: PermissionSet | null;
   created_at?: string;
-}
-
-// Permission Types
-export interface Permission {
-  id: number;
-  category: string;
-  action: string;
-  name: string;
-  description?: string;
-}
-
-export interface PermissionSet {
-  id: number;
-  name: string;
-  description?: string;
-  permissions?: Permission[];
-  permissions_count?: number;
-  is_active?: boolean;
-  is_system?: boolean;
-  created_at?: string;
-  updated_at?: string;
 }
 
 export interface AuthResponse {
@@ -72,6 +78,7 @@ export interface Project {
   id: number;
   code: string;
   name: string;
+  name_ar?: string;
   image?: string;
   image_url?: string;
   location?: string;
@@ -92,6 +99,7 @@ export interface Supplier {
   id: number;
   name: string;
   business_name?: string;
+  business_name_ar?: string;
   supplier_number?: string;
   image?: string;
   image_url?: string;
@@ -127,21 +135,21 @@ export interface Supplier {
 export interface Product {
   id: number;
   name: string;
+  name_ar?: string;
   code: string;
   sku?: string;
   barcode?: string;
   image?: string;
   image_url?: string;
   description: string;
-  notes?: string;
   internal_notes?: string;
   brand?: string;
   category: string;
   tags?: string;
-  unit: 'piece' | 'pcs' | 'kg' | 'kl' | 'meter' | 'lm' | 'liter' | 'box' | 'pack' | 'pkt' | 'bag' | 'roll' | 'ctn' | 'ton' | 'trip' | 'sqm' | 'cbm' | 'pump' | 'sheet' | 'brd' | 'drm' | 'doz' | 'ls' | 'set' | 'ream' | 'bundle';
-  product_type?: number;
+  unit: 'piece' | 'pcs' | 'kg' | 'kl' | 'meter' | 'lm' | 'liter' | 'box' | 'pack' | 'pkt' | 'bag' | 'roll' | 'ctn' | 'ton' | 'trip' | 'sqm' | 'cbm' | 'pump' | 'sheet' | 'brd' | 'drm' | 'doz' | 'ls' | 'set' | 'ream' | 'bundle' | 'nos' | 'mtr' | 'qty' | 'pair' | 'can' | 'gal' | 'day' | 'hour' | 'month';
   supplier?: number | Supplier;
   unit_price?: number;
+  sell_price?: number;
   buy_price?: number;
   minimum_price?: number;
   average_cost?: number;
@@ -153,7 +161,6 @@ export interface Product {
   stock_balance?: number;
   low_stock_threshold?: number;
   profit_margin?: number;
-  service_duration_minutes?: number;
   status?: 'active' | 'inactive' | 'archived';
   is_active: boolean;
   created_at: string;
@@ -312,6 +319,42 @@ export interface PurchaseOrder {
   items: PurchaseOrderItem[];
 }
 
+// Goods Receiving Types
+export interface GRNItem {
+  id?: number;
+  purchase_order_item_id: number;
+  product_id: number;
+  product?: Product;
+  ordered_quantity: number;
+  received_quantity: number;
+  rejected_quantity: number;
+  quality_status: 'good' | 'damaged' | 'defective' | 'missing';
+  notes?: string;
+  created_at?: string;
+}
+
+export interface GoodsReceivedNote {
+  id: number;
+  purchase_order?: number | PurchaseOrder;
+  purchase_order_id: number;
+  grn_number: string;
+  receipt_date: string;
+  status: 'draft' | 'partial' | 'completed' | 'cancelled';
+  notes?: string;
+  items: GRNItem[];
+  received_by: number;
+  received_by_name?: string;
+  total_items?: number;
+  total_received_quantity?: number;
+  invoices?: Array<{ id: number; invoice_number: string; [key: string]: any }>;
+  material_images?: Array<{ id: number; image: string; image_url: string; created_at: string }>;
+  supplier_invoice_file?: string | null;
+  supplier_invoice_file_url?: string | null;
+  invoice_delivery_status?: 'not_delivered' | 'delivered';
+  created_at: string;
+  updated_at: string;
+}
+
 // Purchase Invoice Types
 export interface PurchaseInvoiceItem {
   id?: number;
@@ -322,7 +365,7 @@ export interface PurchaseInvoiceItem {
   unit_price: number;
   discount?: number;
   tax_rate?: number;
-  total: number;
+  total?: number;
   notes?: string;
   created_at?: string;
 }

@@ -56,5 +56,18 @@ export const productsApi = {
   delete: async (id: number): Promise<void> => {
     await apiClient.delete(`/products/${id}/`);
   },
-};
 
+  getCategories: async (): Promise<string[]> => {
+    const response = await apiClient.get('/products/categories/');
+    return response.data;
+  },
+
+  importExcel: async (file: File): Promise<{ created: number; updated: number; skipped: number; errors: string[]; total_in_db: number }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await apiClient.post('/products/import_excel/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+};

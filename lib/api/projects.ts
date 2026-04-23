@@ -41,5 +41,14 @@ export const projectsApi = {
   delete: async (id: number): Promise<void> => {
     await apiClient.delete(`/projects/${id}/`);
   },
+
+  importExcel: async (file: File): Promise<{ created: number; updated: number; skipped: number; errors: string[]; total_in_db: number }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await apiClient.post('/projects/import_excel/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
 };
 

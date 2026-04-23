@@ -2,35 +2,32 @@
 
 import { useAuth } from '@/lib/hooks/use-auth';
 import { useUIStore } from '@/lib/store/ui-store';
-import { MenuIcon, SearchIcon } from '@/components/icons';
+import { MenuIcon } from '@/components/icons';
+import GlobalSearch from '@/components/ui/GlobalSearch';
 import NotificationsDropdown from '@/components/ui/NotificationsDropdown';
 import DarkModeToggle from '@/components/ui/DarkModeToggle';
+import LocaleToggle from '@/components/ui/LocaleToggle';
 import Avatar from '@/components/ui/Avatar';
 import Link from 'next/link';
+import { useT } from '@/lib/i18n/useT';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
-  const { sidebarOpen, toggleSidebar } = useUIStore();
+  const { toggleSidebar } = useUIStore();
+  const t = useT();
 
   return (
-    <nav 
-      className="fixed top-0 left-0 right-0 z-30 h-14 border-b transition-all duration-200 lg:left-64"
-      style={{ 
-        backgroundColor: 'var(--navbar-bg)',
-        borderColor: 'var(--navbar-border)',
-        boxShadow: 'var(--shadow-sm)',
-      }}
-    >
-      <div className="flex h-full items-center justify-between px-4 lg:px-6">
-        {/* Left Section: Menu Button (Mobile) + Search */}
-        <div className="flex items-center gap-3 lg:gap-4">
-          {/* Mobile Menu Button */}
+    <nav className="app-navbar">
+      <div
+        className="flex h-full items-center justify-between"
+        style={{ padding: '0 1rem' }}
+      >
+        {/* ── Start: hamburger + search ── */}
+        <div className="flex items-center gap-3">
           <button
             onClick={toggleSidebar}
-            className="lg:hidden p-1.5 rounded-md transition-all duration-200"
-            style={{ 
-              color: 'var(--text-secondary)',
-            }}
+            className="lg:hidden p-1.5 rounded-md transition-colors duration-150"
+            style={{ color: 'var(--text-secondary)' }}
             onMouseEnter={(e) => {
               e.currentTarget.style.color = 'var(--text-primary)';
               e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)';
@@ -43,96 +40,53 @@ export default function Navbar() {
           >
             <MenuIcon className="w-5 h-5" />
           </button>
-          
-          {/* Search Bar - Modern Design */}
-          <div 
-            className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-200 cursor-text"
-            style={{ 
-              backgroundColor: 'var(--input-bg)',
-              border: '1px solid var(--input-border)',
-              width: '280px',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = 'var(--input-focus-border)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = 'var(--input-border)';
-            }}
-          >
-            <SearchIcon className="w-4 h-4 flex-shrink-0" />
-            <span className="text-sm" style={{ color: 'var(--input-placeholder)' }}>Search...</span>
-          </div>
+          <GlobalSearch />
         </div>
 
-        {/* Right Section: Dark Mode + Notifications + User */}
-        <div className="flex items-center gap-2.5">
-          {/* Dark Mode Toggle */}
+        {/* ── End: tools + user ── */}
+        <div className="flex items-center gap-2">
+          <LocaleToggle />
+          <div className="h-5 w-px" style={{ backgroundColor: 'var(--border-primary)' }} />
           <DarkModeToggle />
-          
-          {/* Separator */}
-          <div 
-            className="h-5 w-px" 
-            style={{ backgroundColor: 'var(--border-primary)' }} 
-          />
-          
-          {/* Notifications */}
+          <div className="h-5 w-px" style={{ backgroundColor: 'var(--border-primary)' }} />
           <NotificationsDropdown />
-          
-          {/* Separator */}
-          <div 
-            className="h-5 w-px" 
-            style={{ backgroundColor: 'var(--border-primary)' }} 
-          />
-          
-          {/* User Info */}
-          <div className="flex items-center gap-2.5">
-            {/* User Avatar */}
-            <Link
-              href="/profile"
-              className="flex items-center gap-2.5 px-2 py-1.5 rounded-md transition-all duration-200"
-              style={{ 
-                color: 'var(--text-secondary)',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)';
-                e.currentTarget.style.color = 'var(--text-primary)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = 'var(--text-secondary)';
-              }}
-            >
-              <Avatar
-                src={user?.avatar_url}
-                alt={user?.username || 'User'}
-                size={32}
-                username={user?.username}
-              />
-              <span 
-                className="text-sm font-semibold hidden sm:inline" 
-                style={{ color: 'var(--text-primary)' }}
-              >
-                {user?.username || 'User'}
-              </span>
-            </Link>
-            <button
-              onClick={logout}
-              className="px-3 py-1.5 text-sm font-semibold rounded-md transition-all duration-200"
-              style={{ 
-                color: 'var(--text-secondary)',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)';
-                e.currentTarget.style.color = 'var(--text-primary)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = 'var(--text-secondary)';
-              }}
-            >
-              Logout
-            </button>
-          </div>
+          <div className="h-5 w-px" style={{ backgroundColor: 'var(--border-primary)' }} />
+
+          {/* User */}
+          <Link
+            href="/profile"
+            className="flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors duration-150"
+            style={{ color: 'var(--text-secondary)' }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)';
+              e.currentTarget.style.color = 'var(--text-primary)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+              e.currentTarget.style.color = 'var(--text-secondary)';
+            }}
+          >
+            <Avatar src={user?.avatar_url} alt={user?.username || 'User'} size={30} username={user?.username} />
+            <span className="text-sm font-semibold hidden sm:inline" style={{ color: 'var(--text-primary)' }}>
+              {user?.username || 'User'}
+            </span>
+          </Link>
+
+          <button
+            onClick={logout}
+            className="px-3 py-1.5 text-sm font-semibold rounded-md transition-colors duration-150"
+            style={{ color: 'var(--text-secondary)' }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)';
+              e.currentTarget.style.color = 'var(--text-primary)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+              e.currentTarget.style.color = 'var(--text-secondary)';
+            }}
+          >
+            {t('nav', 'logout')}
+          </button>
         </div>
       </div>
     </nav>

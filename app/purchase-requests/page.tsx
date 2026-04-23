@@ -15,6 +15,7 @@ import FilterPanel, { FilterField } from '@/components/ui/FilterPanel';
 import FilterTags from '@/components/ui/FilterTags';
 import RejectionReasonDialog from '@/components/ui/RejectionReasonDialog';
 import { Button, TextField, Checkbox, Badge, Loader } from '@/components/ui';
+import { useT } from '@/lib/i18n/useT';
 
 const statusColors: Record<string, string> = {
   pending: 'badge-warning',
@@ -38,6 +39,7 @@ export default function PurchaseRequestsPage() {
   const [selectMode, setSelectMode] = useState<'page' | 'all'>('page');
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const t = useT();
   const { hasPermission } = usePermissions();
   const isAdmin = user?.role === 'super_admin' || user?.is_staff;
   
@@ -273,15 +275,15 @@ export default function PurchaseRequestsPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold text-foreground">Purchase Requests</h1>
+            <h1 className="text-2xl font-semibold text-foreground">{t('page', 'purchaseRequests')}</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Manage purchase requests and approvals
+              {t('page', 'prSubtitle')}
             </p>
           </div>
           <div className="flex items-center gap-2">
             {isAdmin && (
               <div className="flex items-center gap-2 border-r border-border pr-2 mr-2">
-                <span className="text-xs text-muted-foreground">Select:</span>
+                <span className="text-xs text-muted-foreground">{t('btn', 'selectAll')}:</span>
                 <Button
                   variant={selectMode === 'page' ? 'primary' : 'ghost'}
                   size="sm"
@@ -290,7 +292,7 @@ export default function PurchaseRequestsPage() {
                     setSelectedItems(new Set());
                   }}
                 >
-                  Page
+                  {t('btn', 'selectPage')}
                 </Button>
                 <Button
                   variant={selectMode === 'all' ? 'primary' : 'ghost'}
@@ -300,7 +302,7 @@ export default function PurchaseRequestsPage() {
                     setSelectedItems(new Set());
                   }}
                 >
-                  All
+                  {t('btn', 'selectAllSys')}
                 </Button>
               </div>
             )}
@@ -311,11 +313,11 @@ export default function PurchaseRequestsPage() {
                 disabled={bulkDeleteMutation.isPending}
                 isLoading={bulkDeleteMutation.isPending}
               >
-                {bulkDeleteMutation.isPending ? 'Deleting...' : `Delete ${selectedItems.size}`}
+                {bulkDeleteMutation.isPending ? t('btn', 'deleting') : `${t('btn', 'delete')} ${selectedItems.size}`}
               </Button>
             )}
             <Link href="/purchase-requests/new">
-              <Button variant="primary">New Request</Button>
+              <Button variant="primary">{t('btn', 'create')} {t('page', 'purchaseRequests')}</Button>
             </Link>
           </div>
         </div>
@@ -324,7 +326,7 @@ export default function PurchaseRequestsPage() {
         <div className="card flex items-center gap-4">
           <TextField
             type="text"
-            placeholder="Search by code or title..."
+            placeholder={t('misc', 'searchPR')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="flex-1 max-w-md"
@@ -352,15 +354,15 @@ export default function PurchaseRequestsPage() {
         {isLoading ? (
           <div className="card text-center py-12">
             <Loader className="mx-auto mb-4" />
-            <p className="text-muted-foreground">Loading...</p>
+            <p className="text-muted-foreground">{t('btn', 'loading')}</p>
           </div>
         ) : error ? (
           <div className="card border-destructive bg-destructive/10">
-            <p className="text-destructive text-sm">Error loading purchase requests. Please try again.</p>
+            <p className="text-destructive text-sm">{t('toast', 'saveFailed')}</p>
           </div>
         ) : !data || !data.results || data.results.length === 0 ? (
           <div className="card text-center py-12">
-            <p className="text-muted-foreground">No purchase requests found</p>
+            <p className="text-muted-foreground">{t('empty', 'noPR')}</p>
           </div>
         ) : (
           <>
@@ -382,14 +384,14 @@ export default function PurchaseRequestsPage() {
                           />
                         </th>
                       )}
-                      <th>Code</th>
-                      <th>Project</th>
-                      <th>Title</th>
-                      <th>Requester</th>
-                      <th>Request Date</th>
-                      <th>Required By</th>
-                      <th>Status</th>
-                      <th>Actions</th>
+                      <th>{t('col', 'code')}</th>
+                      <th>{t('col', 'project')}</th>
+                      <th>{t('col', 'title')}</th>
+                      <th>{t('col', 'requester')}</th>
+                      <th>{t('col', 'requestDate')}</th>
+                      <th>{t('col', 'requiredBy')}</th>
+                      <th>{t('col', 'status')}</th>
+                      <th>{t('col', 'actions')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -462,14 +464,14 @@ export default function PurchaseRequestsPage() {
                                 : 'info'
                             }
                           >
-                            {statusLabels[request.status] || request.status}
+                            {t('status', request.status as any) || statusLabels[request.status] || request.status}
                           </Badge>
                         </td>
                         <td>
                           <div className="flex items-center gap-2">
                             {canView && (
                               <Link href={`/purchase-requests/${request.id}`}>
-                                <Button variant="view" size="sm">View</Button>
+                                <Button variant="view" size="sm">{t('btn', 'view')}</Button>
                               </Link>
                             )}
                             {request.status === 'pending' && (
@@ -482,7 +484,7 @@ export default function PurchaseRequestsPage() {
                                     disabled={approveMutation.isPending}
                                     isLoading={approveMutation.isPending}
                                   >
-                                    Approve
+                                    {t('btn', 'approve')}
                                   </Button>
                                 )}
                                 {canReject && (
@@ -493,7 +495,7 @@ export default function PurchaseRequestsPage() {
                                     disabled={rejectMutation.isPending}
                                     isLoading={rejectMutation.isPending}
                                   >
-                                    Reject
+                                    {t('btn', 'reject')}
                                   </Button>
                                 )}
                               </>
@@ -506,7 +508,7 @@ export default function PurchaseRequestsPage() {
                                 disabled={deleteMutation.isPending}
                                 isLoading={deleteMutation.isPending}
                               >
-                                Delete
+                                {t('btn', 'delete')}
                               </Button>
                             )}
                           </div>
@@ -522,7 +524,7 @@ export default function PurchaseRequestsPage() {
             {data && data.count > 50 && (
               <div className="flex items-center justify-between card">
                 <div className="text-sm text-muted-foreground">
-                  Showing {((page - 1) * 50) + 1} to {Math.min(page * 50, data.count)} of {data.count} requests
+                  {t('misc', 'showing')} {((page - 1) * 50) + 1} {t('misc', 'pageTo')} {Math.min(page * 50, data.count)} {t('misc', 'pageOf')} {data.count}
                   {selectMode === 'all' && selectedItems.size > 0 && (
                     <span className="ml-2 text-foreground font-medium">
                       ({selectedItems.size} selected)
@@ -535,14 +537,14 @@ export default function PurchaseRequestsPage() {
                     onClick={() => setPage(p => Math.max(1, p - 1))}
                     disabled={!data.previous || page === 1}
                   >
-                    Previous
+                    {t('btn', 'previous')}
                   </Button>
                   <Button
                     variant="secondary"
                     onClick={() => setPage(p => p + 1)}
                     disabled={!data.next}
                   >
-                    Next
+                    {t('btn', 'next')}
                   </Button>
                 </div>
               </div>

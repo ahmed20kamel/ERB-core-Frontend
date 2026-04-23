@@ -1,10 +1,11 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { purchaseRequestsApi } from '@/lib/api/purchase-requests';
 import MainLayout from '@/components/layout/MainLayout';
-import Link from 'next/link';
+import PageHeader from '@/components/ui/PageHeader';
 import RejectionReasonDialog from '@/components/ui/RejectionReasonDialog';
 import DropdownButton from '@/components/ui/DropdownButton';
 import { useState } from 'react';
@@ -12,17 +13,12 @@ import { toast, confirm } from '@/lib/hooks/use-toast';
 import { canCreateQuotationRequest, canCreatePurchaseOrder } from '@/lib/utils/workflow-guards';
 import { usePermissions } from '@/lib/hooks/use-permissions';
 import { useAuth } from '@/lib/hooks/use-auth';
+import { useT } from '@/lib/i18n/useT';
 
 const statusColors: Record<string, string> = {
   pending: 'badge-warning',
   approved: 'badge-success',
   rejected: 'badge-error',
-};
-
-const statusLabels: Record<string, string> = {
-  pending: 'Pending',
-  approved: 'Approved',
-  rejected: 'Rejected',
 };
 
 export default function PurchaseRequestDetailPage() {
@@ -32,6 +28,12 @@ export default function PurchaseRequestDetailPage() {
   const queryClient = useQueryClient();
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const { hasPermission } = usePermissions();
+  const t = useT();
+  const statusLabels: Record<string, string> = {
+    pending: t('status', 'pending'),
+    approved: t('status', 'approved'),
+    rejected: t('status', 'rejected'),
+  };
 
   // Permission checks
   // Only Procurement Manager, Super Admin, and Superuser can approve/reject
@@ -81,7 +83,7 @@ export default function PurchaseRequestDetailPage() {
       <MainLayout>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-6)' }}>
           <div className="card" style={{ textAlign: 'center', padding: 'var(--spacing-12)' }}>
-            <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Loading...</p>
+            <p style={{ color: 'var(--text-secondary)', margin: 0 }}>{t('btn', 'loading')}</p>
           </div>
         </div>
       </MainLayout>
@@ -93,7 +95,7 @@ export default function PurchaseRequestDetailPage() {
       <MainLayout>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-6)' }}>
           <div className="card" style={{ textAlign: 'center', padding: 'var(--spacing-12)' }}>
-            <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Request not found</p>
+            <p style={{ color: 'var(--text-secondary)', margin: 0 }}>{t('empty', 'notFound')}</p>
           </div>
         </div>
       </MainLayout>
@@ -103,52 +105,19 @@ export default function PurchaseRequestDetailPage() {
   return (
     <MainLayout>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-6)' }}>
-        {/* Header Section - Unified */}
-        <div>
-          <Link
-            href="/purchase-requests"
-            className="text-sm mb-2 inline-block"
-            style={{ 
-              color: 'var(--text-secondary)',
-              textDecoration: 'none',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = 'var(--text-primary)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'var(--text-secondary)';
-            }}
-          >
-            ← Back to Purchase Requests
-          </Link>
-          <div style={{ 
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}>
-            <div>
-              <h1 style={{ 
-                fontSize: 'var(--font-2xl)',
-                fontWeight: 'var(--font-weight-semibold)',
-                color: 'var(--text-primary)',
-                margin: 0,
-                marginBottom: 'var(--spacing-1)',
-              }}>
-                Purchase Request: {request.code}
-              </h1>
-              <p style={{ 
-                fontSize: 'var(--font-sm)',
-                color: 'var(--text-secondary)',
-                margin: 0,
-              }}>
-                View and manage purchase request details
-              </p>
-            </div>
-            <span className={`badge ${statusColors[request.status] || 'badge-info'}`}>
-              {statusLabels[request.status] || request.status}
-            </span>
-          </div>
-        </div>
+        {/* Header */}
+        <PageHeader
+          backHref="/purchase-requests"
+          backLabel={`${t('btn', 'back')} ${t('page', 'purchaseRequests')}`}
+          title={`${t('page', 'purchaseRequests')}: ${request.code}`}
+          subtitle={t('page', 'prSubtitle')}
+          status={request.status}
+          statusColors={statusColors}
+          statusLabels={statusLabels}
+          actions={[
+            { label: `🖨 ${t('btn', 'printPR')}`, variant: 'print', onClick: () => window.open(`/print/pr/${id}`, '_blank') },
+          ]}
+        />
 
         {/* Details Card - Unified */}
         <div className="card">
@@ -165,7 +134,7 @@ export default function PurchaseRequestDetailPage() {
                 color: 'var(--text-secondary)',
                 marginBottom: 'var(--spacing-2)',
               }}>
-                Title
+                {t('col', 'title')}
               </label>
               <p style={{ 
                 fontSize: 'var(--font-base)',
@@ -184,7 +153,7 @@ export default function PurchaseRequestDetailPage() {
                 color: 'var(--text-secondary)',
                 marginBottom: 'var(--spacing-2)',
               }}>
-                Request Date
+                {t('col', 'requestDate')}
               </label>
               <p style={{ 
                 fontSize: 'var(--font-base)',
@@ -202,7 +171,7 @@ export default function PurchaseRequestDetailPage() {
                 color: 'var(--text-secondary)',
                 marginBottom: 'var(--spacing-2)',
               }}>
-                Required By
+                {t('col', 'requiredBy')}
               </label>
               <p style={{ 
                 fontSize: 'var(--font-base)',
@@ -220,7 +189,7 @@ export default function PurchaseRequestDetailPage() {
                 color: 'var(--text-secondary)',
                 marginBottom: 'var(--spacing-2)',
               }}>
-                Created By
+                {t('col', 'createdBy')}
               </label>
               <p style={{ 
                 fontSize: 'var(--font-base)',
@@ -239,7 +208,7 @@ export default function PurchaseRequestDetailPage() {
                   color: 'var(--text-secondary)',
                   marginBottom: 'var(--spacing-2)',
                 }}>
-                  Approved By
+                  {t('section', 'authorization')}
                 </label>
                 <p style={{ 
                   fontSize: 'var(--font-base)',
@@ -259,7 +228,7 @@ export default function PurchaseRequestDetailPage() {
                   color: 'var(--text-secondary)',
                   marginBottom: 'var(--spacing-2)',
                 }}>
-                  Notes
+                  {t('col', 'notes')}
                 </label>
                 <p style={{ 
                   fontSize: 'var(--font-base)',
@@ -279,7 +248,7 @@ export default function PurchaseRequestDetailPage() {
                   color: 'var(--text-secondary)',
                   marginBottom: 'var(--spacing-2)',
                 }}>
-                  Rejection Reason
+                  {t('confirm', 'rejectReason')}
                 </label>
                 <div style={{ 
                   padding: 'var(--spacing-3)',
@@ -311,14 +280,14 @@ export default function PurchaseRequestDetailPage() {
                 margin: 0,
                 marginBottom: 'var(--spacing-1)',
               }}>
-                Workflow Tracking
+                {t('page', 'purchaseRequests')} - {t('section', 'statusInfo')}
               </h3>
               <p style={{
                 fontSize: 'var(--font-sm)',
                 color: 'var(--text-secondary)',
                 margin: 0,
               }}>
-                View complete timeline of this purchase request from creation to invoice payment
+                {t('page', 'prSubtitle')}
               </p>
             </div>
             <Link
@@ -326,7 +295,7 @@ export default function PurchaseRequestDetailPage() {
               className="btn btn-primary"
               style={{ textDecoration: 'none' }}
             >
-              View Tracking Timeline →
+              {t('page', 'purchaseRequests')} →
             </Link>
           </div>
         </div>
@@ -340,18 +309,18 @@ export default function PurchaseRequestDetailPage() {
             margin: 0,
             marginBottom: 'var(--spacing-4)',
           }}>
-            Required Products
+            {t('section', 'requestedItems')}
           </h3>
           <div style={{ overflowX: 'auto' }}>
             <table>
               <thead>
                 <tr>
-                  <th>Product</th>
-                  <th>Quantity</th>
-                  <th>Unit</th>
-                  <th>Project/Site</th>
-                  <th>Reason</th>
-                  <th>Notes</th>
+                  <th>{t('col', 'product')}</th>
+                  <th>{t('col', 'quantity')}</th>
+                  <th>{t('col', 'unit')}</th>
+                  <th>{t('col', 'projectSite')}</th>
+                  <th>{t('col', 'purpose')}</th>
+                  <th>{t('col', 'notes')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -430,7 +399,7 @@ export default function PurchaseRequestDetailPage() {
                 }}
                 title={!canApprove ? 'You do not have permission to approve' : ''}
               >
-                {approveMutation.isPending ? 'Processing...' : 'Approve'}
+                {approveMutation.isPending ? t('btn', 'loading') : t('btn', 'approve')}
               </button>
             )}
             {canReject && (
@@ -453,7 +422,7 @@ export default function PurchaseRequestDetailPage() {
                 }}
                 title={!canReject ? 'You do not have permission to reject' : ''}
               >
-                {rejectMutation.isPending ? 'Processing...' : 'Reject'}
+                {rejectMutation.isPending ? t('btn', 'loading') : t('btn', 'reject')}
               </button>
             )}
           </div>
@@ -470,7 +439,7 @@ export default function PurchaseRequestDetailPage() {
                 disabled={undoApprovalMutation.isPending}
                 className="btn btn-secondary"
               >
-                {undoApprovalMutation.isPending ? 'Processing...' : 'Undo Approval'}
+                {undoApprovalMutation.isPending ? t('btn', 'loading') : t('btn', 'update')}
               </button>
             )}
             {/* Create Quotation Request / LPO - Only for Procurement Officer and Super Admin (NOT Procurement Manager) */}
@@ -479,11 +448,11 @@ export default function PurchaseRequestDetailPage() {
              !request.has_awarded_quotation && 
              !request.has_purchase_orders && (
               <DropdownButton
-                label="Create"
+                label={t('btn', 'create')}
                 variant="primary"
                 items={[
                   {
-                    label: 'Create Quotation Request',
+                    label: t('page', 'newQR'),
                     onClick: () => {
                       const canCreateQR = hasPermission('quotation_request', 'create') ?? false;
                       // Only Procurement Officer can create Quotation Request
@@ -510,7 +479,7 @@ export default function PurchaseRequestDetailPage() {
                     },
                   },
                   {
-                    label: 'Create LPO Directly (Skip Supplier Quotation)',
+                    label: t('page', 'newPO'),
                     onClick: async () => {
                       // Only Procurement Officer can create LPO
                       if (user?.role !== 'procurement_officer' && user?.role !== 'super_admin' && !user?.is_superuser) {
@@ -587,8 +556,8 @@ export default function PurchaseRequestDetailPage() {
           isOpen={rejectDialogOpen}
           onClose={() => setRejectDialogOpen(false)}
           onConfirm={(reason) => rejectMutation.mutate(reason)}
-          title="Reject Purchase Request"
-          message="Please provide a reason for rejecting this request. This reason will be saved and visible to the requester."
+          title={`${t('btn', 'reject')} ${t('page', 'purchaseRequests')}`}
+          message={t('confirm', 'rejectReason')}
         />
       </div>
     </MainLayout>

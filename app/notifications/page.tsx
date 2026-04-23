@@ -82,7 +82,9 @@ export default function NotificationsPage() {
       page,
       is_read: filter === 'unread' ? false : undefined,
     }),
-    // Remove refetchInterval - WebSocket handles real-time updates
+    staleTime: 30 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 
   const markAsReadMutation = useMutation({

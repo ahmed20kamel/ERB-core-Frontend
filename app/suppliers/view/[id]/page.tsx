@@ -7,8 +7,10 @@ import MainLayout from '@/components/layout/MainLayout';
 import Link from 'next/link';
 import EntityHeader from '@/components/ui/EntityHeader';
 import { useAuth } from '@/lib/hooks/use-auth';
+import { useT } from '@/lib/i18n/useT';
 
 export default function SupplierDetailPage() {
+  const t = useT();
   const params = useParams();
   const id = Number(params.id);
   const { user } = useAuth();
@@ -25,7 +27,7 @@ export default function SupplierDetailPage() {
       <MainLayout>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-6)' }}>
           <div className="card" style={{ textAlign: 'center', padding: 'var(--spacing-12)' }}>
-            <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Loading...</p>
+            <p style={{ color: 'var(--text-secondary)', margin: 0 }}>{t('btn', 'loading')}</p>
           </div>
         </div>
       </MainLayout>
@@ -37,7 +39,7 @@ export default function SupplierDetailPage() {
       <MainLayout>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-6)' }}>
           <div className="card" style={{ textAlign: 'center', padding: 'var(--spacing-12)' }}>
-            <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Supplier not found</p>
+            <p style={{ color: 'var(--text-secondary)', margin: 0 }}>{t('empty', 'notFound')}</p>
           </div>
         </div>
       </MainLayout>
@@ -54,14 +56,14 @@ export default function SupplierDetailPage() {
           image={supplier.image_url || supplier.image}
           imageAlt={supplier.business_name || supplier.name || 'Supplier'}
           entityType="supplier"
-          statusBadge={supplier.is_active ? 'Active' : 'Inactive'}
+          statusBadge={supplier.is_active ? t('status', 'active') : t('status', 'inactive')}
           statusVariant={supplier.is_active ? 'success' : 'error'}
           backHref="/suppliers"
-          backLabel="Back to Suppliers"
+          backLabel={`${t('btn','back')} ${t('page','suppliers')}`}
           actions={
             <>
               <Link href={`/suppliers/${id}`} className="btn btn-edit">
-                Edit
+                {t('btn', 'edit')}
               </Link>
             </>
           }
@@ -590,7 +592,7 @@ export default function SupplierDetailPage() {
                 Status
               </label>
               <span className={`badge ${supplier.is_active ? 'badge-success' : 'badge-error'}`}>
-                {supplier.is_active ? 'Active' : 'Inactive'}
+                {supplier.is_active ? t('status', 'active') : t('status', 'inactive')}
               </span>
             </div>
           </div>

@@ -14,6 +14,7 @@ import FilterPanel, { FilterField } from '@/components/ui/FilterPanel';
 import FilterTags from '@/components/ui/FilterTags';
 import { Button, TextField, Checkbox, Loader } from '@/components/ui';
 import { PurchaseInvoice } from '@/types';
+import { useT } from '@/lib/i18n/useT';
 
 const statusColors: Record<string, string> = {
   draft: 'badge-info',
@@ -41,6 +42,7 @@ export default function PurchaseInvoicesPage() {
   const [selectMode, setSelectMode] = useState<'page' | 'all'>('page');
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const t = useT();
   const { hasPermission } = usePermissions();
   const isAdmin = user?.role === 'super_admin' || user?.is_staff;
   
@@ -207,7 +209,7 @@ export default function PurchaseInvoicesPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold text-foreground">Purchase Invoices</h1>
+            <h1 className="text-2xl font-semibold text-foreground">{t('page', 'purchaseInvoices')}</h1>
             <p className="text-sm text-muted-foreground mt-1">
               Manage purchase invoices and payments
             </p>
@@ -260,7 +262,7 @@ export default function PurchaseInvoicesPage() {
         <div className="card flex items-center gap-4">
           <TextField
             type="text"
-            placeholder="Search by invoice number, PO number, or notes..."
+            placeholder={`${t('btn', 'search')}...`}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="flex-1 max-w-md"
@@ -288,7 +290,7 @@ export default function PurchaseInvoicesPage() {
         {isLoading ? (
           <div className="card text-center py-12">
             <Loader className="mx-auto mb-4" />
-            <p className="text-muted-foreground">Loading...</p>
+            <p className="text-muted-foreground">{t('btn', 'loading')}</p>
           </div>
         ) : error ? (
           <div className="card border-destructive bg-destructive/10">
@@ -296,7 +298,7 @@ export default function PurchaseInvoicesPage() {
           </div>
         ) : !data || !data.results || data.results.length === 0 ? (
           <div className="card text-center py-12">
-            <p className="text-muted-foreground">No invoices found</p>
+            <p className="text-muted-foreground">{t('empty', 'noInvoices')}</p>
           </div>
         ) : (
           <>
@@ -318,14 +320,14 @@ export default function PurchaseInvoicesPage() {
                           />
                         </th>
                       )}
-                      <th>Invoice Number</th>
-                      <th>Purchase Order</th>
-                      <th>Invoice Date</th>
-                      <th>Due Date</th>
-                      <th>Status</th>
-                      <th>Total</th>
-                      <th>Paid Amount</th>
-                      <th>Actions</th>
+                      <th>{t('col', 'invoiceNumber')}</th>
+                      <th>{t('col', 'relatedPO')}</th>
+                      <th>{t('col', 'invoiceDate')}</th>
+                      <th>{t('col', 'deliveryDate')}</th>
+                      <th>{t('col', 'status')}</th>
+                      <th>{t('col', 'total')}</th>
+                      <th>{t('misc', 'paidAmount')}</th>
+                      <th>{t('col', 'actions')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -388,7 +390,7 @@ export default function PurchaseInvoicesPage() {
                           <div className="flex items-center gap-2">
                             {canView && (
                               <Link href={`/purchase-invoices/${invoice.id}`}>
-                                <Button variant="view" size="sm">View</Button>
+                                <Button variant="view" size="sm">{t('btn', 'view')}</Button>
                               </Link>
                             )}
                             {canDelete && (
@@ -429,14 +431,14 @@ export default function PurchaseInvoicesPage() {
                     onClick={() => setPage(p => Math.max(1, p - 1))}
                     disabled={!data.previous || page === 1}
                   >
-                    Previous
+                    {t('btn', 'previous')}
                   </Button>
                   <Button
                     variant="secondary"
                     onClick={() => setPage(p => p + 1)}
                     disabled={!data.next}
                   >
-                    Next
+                    {t('btn', 'next')}
                   </Button>
                 </div>
               </div>

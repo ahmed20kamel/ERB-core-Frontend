@@ -6,6 +6,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { purchaseOrdersApi } from '@/lib/api/purchase-orders';
 import { goodsReceivingApi, GRNItem } from '@/lib/api/goods-receiving';
 import { GRNFormData, toGRNCreateData } from '@/lib/types/form-data';
+import { Button } from '@/components/ui';
 import MainLayout from '@/components/layout/MainLayout';
 import { formatPrice } from '@/lib/utils/format';
 import { toast } from '@/lib/hooks/use-toast';
@@ -14,6 +15,7 @@ import FormField from '@/components/ui/FormField';
 import { formatBackendError, validateRequired, validatePositiveNumber } from '@/lib/utils/validation';
 import { canCreateGRN } from '@/lib/utils/workflow-guards';
 import RouteGuard from '@/components/auth/RouteGuard';
+import { useT } from '@/lib/i18n/useT';
 
 export default function NewGRNPage() {
   return (
@@ -27,6 +29,7 @@ export default function NewGRNPage() {
 }
 
 function NewGRNPageContent() {
+  const t = useT();
   const router = useRouter();
   const searchParams = useSearchParams();
   const purchaseOrderId = searchParams.get('purchase_order_id');
@@ -64,15 +67,8 @@ function NewGRNPageContent() {
         quality_status: 'good' as const,
         notes: '',
       }));
-      console.log('Setting items from purchase order:', grnItems);
-      console.log('Items count:', grnItems.length);
       setItems(grnItems);
     } else {
-      console.warn('Purchase order items not found or empty:', purchaseOrder);
-      if (purchaseOrder) {
-        console.warn('Purchase order items:', purchaseOrder.items);
-        console.warn('Purchase order items length:', purchaseOrder.items?.length);
-      }
       setItems([]);
     }
   }, [purchaseOrder]);
@@ -98,10 +94,6 @@ function NewGRNPageContent() {
       }
     },
     onError: (error: any) => {
-      console.error('GRN creation error:', error);
-      console.error('Error response:', error?.response);
-      console.error('Error response data:', error?.response?.data);
-      
       const errorMessage = formatBackendError(error);
       toast(errorMessage, 'error');
       
@@ -119,8 +111,6 @@ function NewGRNPageContent() {
             });
           }
         });
-        console.error('Backend errors:', backendErrors);
-        console.error('Full error response data:', JSON.stringify(error.response.data, null, 2));
         setErrors(backendErrors);
       }
     },
@@ -203,16 +193,6 @@ function NewGRNPageContent() {
       notes: item.notes || '',
     }));
     
-    console.log('Sending GRN data:', {
-      ...formData,
-      items: formattedItems,
-      itemsCount: formattedItems.length,
-    });
-    console.log('Formatted items:', formattedItems);
-    console.log('Items type:', typeof formattedItems);
-    console.log('Items is array:', Array.isArray(formattedItems));
-    console.log('Items length:', formattedItems.length);
-    
     if (!formattedItems || formattedItems.length === 0) {
       toast('يجب إضافة منتج واحد على الأقل', 'error');
       return;
@@ -238,9 +218,7 @@ function NewGRNPageContent() {
         <div className="space-y-6">
           <div className="card text-center py-12">
             <p className="text-muted-foreground">Purchase Order ID is required</p>
-            <button onClick={() => router.back()} className="btn btn-primary mt-4">
-              Go Back
-            </button>
+            <Button variant="primary" className="mt-4" onClick={() => router.back()}>Go Back</Button>
           </div>
         </div>
       </MainLayout>
@@ -323,7 +301,7 @@ function NewGRNPageContent() {
               margin: 0,
               marginBottom: 'var(--spacing-4)',
             }}>
-              GRN Details
+              {t('section', 'requestDetails')}
             </h3>
             <div style={{ 
               display: 'grid',
@@ -484,17 +462,14 @@ function NewGRNPageContent() {
                         <p style={{ margin: 0, color: 'var(--text-primary)' }}>PDF: {supplierInvoiceFile?.name}</p>
                       </div>
                     )}
-                    <button
+                    <Button
                       type="button"
-                      onClick={() => {
-                        setSupplierInvoiceFile(null);
-                        setSupplierInvoicePreview(null);
-                      }}
-                      className="btn btn-secondary"
-                      style={{ marginTop: 'var(--spacing-2)' }}
+                      variant="secondary"
+                      className="mt-2"
+                      onClick={() => { setSupplierInvoiceFile(null); setSupplierInvoicePreview(null); }}
                     >
                       Remove
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
@@ -616,21 +591,11 @@ function NewGRNPageContent() {
           </div>
 
           {/* Form Actions - Unified */}
-          <div style={{ display: 'flex', gap: 'var(--spacing-3)' }}>
-            <button
-              type="submit"
-              disabled={mutation.isPending}
-              className="btn btn-primary"
-            >
-              {mutation.isPending ? 'Creating...' : 'Create GRN'}
-            </button>
-            <button
-              type="button"
-              onClick={() => router.back()}
-              className="btn btn-secondary"
-            >
-              Cancel
-            </button>
+          <div className="flex gap-3">
+            <Button type="submit" variant="primary" disabled={mutation.isPending} isLoading={mutation.isPending}>
+              Create GRN
+            </Button>
+            <Button type="button" variant="secondary" onClick={() => router.back()}>Cancel</Button>
           </div>
         </form>
       </div>

@@ -12,13 +12,15 @@ import { confirm } from '@/lib/hooks/use-toast';
 import FilterPanel, { FilterField } from '@/components/ui/FilterPanel';
 import FilterTags from '@/components/ui/FilterTags';
 import { Button, TextField, Checkbox, Loader, Badge } from '@/components/ui';
+import BilingualName from '@/components/ui/BilingualName';
 import Avatar from '@/components/ui/Avatar';
+import { useT } from '@/lib/i18n/useT';
 
-const roleLabels: Record<string, string> = {
-  employee: 'Employee',
-  manager: 'Manager',
-  procurement: 'Procurement',
-  admin: 'Admin',
+const roleLabelsEn: Record<string, string> = {
+  site_engineer: 'Site Engineer',
+  procurement_manager: 'Procurement Manager',
+  procurement_officer: 'Procurement Officer',
+  super_admin: 'Super Admin',
 };
 
 export default function UsersPage() {
@@ -29,6 +31,7 @@ export default function UsersPage() {
   const [selectMode, setSelectMode] = useState<'page' | 'all'>('page');
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
+  const t = useT();
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['users', page, search, filters],
@@ -102,6 +105,18 @@ export default function UsersPage() {
     setFilters({});
     setPage(1);
   };
+
+  const toggleActiveMutation = useMutation({
+    mutationFn: ({ id, isActive }: { id: number; isActive: boolean }) =>
+      usersApi.setActive(id, isActive),
+    onSuccess: (_, { isActive }) => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast(isActive ? 'User activated' : 'User deactivated', 'success');
+    },
+    onError: () => {
+      toast('Failed to update user status', 'error');
+    },
+  });
 
   const deleteMutation = useMutation({
     mutationFn: usersApi.delete,
@@ -206,7 +221,7 @@ export default function UsersPage() {
       <MainLayout>
         <div className="space-y-6">
           <div className="card border-destructive bg-destructive/10">
-            <p className="text-destructive text-sm">Access Denied. Admin access required.</p>
+            <p className="text-destructive text-sm">{t('toast', 'accessDenied')}</p>
           </div>
         </div>
       </MainLayout>
@@ -219,14 +234,14 @@ export default function UsersPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold text-foreground">Users Management</h1>
+            <h1 className="text-2xl font-semibold text-foreground">{t('page', 'users')}</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Manage system users and permissions
+              {t('page', 'usersSubtitle')}
             </p>
           </div>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-2 border-r border-border pr-2 mr-2">
-              <span className="text-xs text-muted-foreground">Select:</span>
+              <span className="text-xs text-muted-foreground">{t('btn', 'selectAll')}:</span>
               <Button
                 variant={selectMode === 'page' ? 'primary' : 'ghost'}
                 size="sm"
@@ -235,7 +250,7 @@ export default function UsersPage() {
                   setSelectedItems(new Set());
                 }}
               >
-                Page
+                {t('btn', 'selectPage')}
               </Button>
               <Button
                 variant={selectMode === 'all' ? 'primary' : 'ghost'}
@@ -245,7 +260,7 @@ export default function UsersPage() {
                   setSelectedItems(new Set());
                 }}
               >
-                All
+                {t('btn', 'selectAllSys')}
               </Button>
             </div>
             {selectedItems.size > 0 && (
@@ -255,7 +270,7 @@ export default function UsersPage() {
                 disabled={bulkDeleteMutation.isPending}
                 isLoading={bulkDeleteMutation.isPending}
               >
-                {bulkDeleteMutation.isPending ? 'Deleting...' : `Delete ${selectedItems.size}`}
+                {bulkDeleteMutation.isPending ? t('btn', 'deleting') : `${t('btn', 'delete')} ${selectedItems.size}`}
               </Button>
             )}
             <Link href="/users/pending">
@@ -269,7 +284,7 @@ export default function UsersPage() {
               </Button>
             </Link>
             <Link href="/users/new">
-              <Button variant="primary">Add User</Button>
+              <Button variant="primary">{t('btn', 'addUser')}</Button>
             </Link>
           </div>
         </div>
@@ -278,7 +293,7 @@ export default function UsersPage() {
         <div className="card flex items-center gap-4">
           <TextField
             type="text"
-            placeholder="Search users..."
+            placeholder={t('misc', 'searchUsers')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="flex-1 max-w-md"
@@ -306,15 +321,15 @@ export default function UsersPage() {
         {isLoading ? (
           <div className="card text-center py-12">
             <Loader className="mx-auto mb-4" />
-            <p className="text-muted-foreground">Loading...</p>
+            <p className="text-muted-foreground">{t('btn', 'loading')}</p>
           </div>
         ) : error ? (
           <div className="card border-destructive bg-destructive/10">
-            <p className="text-destructive text-sm">Error loading users. Please try again.</p>
+            <p className="text-destructive text-sm">{t('toast', 'saveFailed')}</p>
           </div>
         ) : !data || !data.results || data.results.length === 0 ? (
           <div className="card text-center py-12">
-            <p className="text-muted-foreground">No users found</p>
+            <p className="text-muted-foreground">{t('empty', 'noUsers')}</p>
           </div>
         ) : (
           <>
@@ -334,12 +349,12 @@ export default function UsersPage() {
                           title={selectMode === 'page' ? 'Select all in page' : 'Select all in system'}
                         />
                       </th>
-                      <th>User</th>
-                      <th>Email</th>
-                      <th>Name</th>
-                      <th>Role</th>
-                      <th>Status</th>
-                      <th>Actions</th>
+                      <th>{t('col', 'user')}</th>
+                      <th>{t('col', 'email')}</th>
+                      <th>{t('col', 'name')}</th>
+                      <th>{t('col', 'role')}</th>
+                      <th>{t('col', 'active')}</th>
+                      <th>{t('col', 'actions')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -368,28 +383,39 @@ export default function UsersPage() {
                           <div className="text-muted-foreground">{user.email}</div>
                         </td>
                         <td>
-                          <div className="text-muted-foreground">
-                            {user.first_name} {user.last_name}
-                          </div>
+                          <BilingualName
+                            nameEn={[user.first_name, user.last_name].filter(Boolean).join(' ') || user.username}
+                            nameAr={user.full_name_ar}
+                          />
                         </td>
                         <td>
-                          <Badge variant="info">
-                            {roleLabels[user.role] || user.role}
+                          <Badge variant={user.role === 'super_admin' ? 'warning' : 'info'}>
+                            {t('role', user.role as any) || roleLabelsEn[user.role] || user.role}
                           </Badge>
                         </td>
                         <td>
-                          <Badge variant={user.is_staff ? 'success' : 'info'}>
-                            {user.is_staff ? 'Staff' : 'Regular'}
+                          <Badge variant={user.is_active ? 'success' : 'error'}>
+                            {user.is_active ? t('status', 'active') : t('status', 'inactive')}
                           </Badge>
                         </td>
                         <td>
                           <div className="flex items-center gap-2">
                             <Link href={`/users/view/${user.id}`}>
-                              <Button variant="view" size="sm">View</Button>
+                              <Button variant="view" size="sm">{t('btn', 'view')}</Button>
                             </Link>
                             <Link href={`/users/${user.id}`}>
-                              <Button variant="edit" size="sm">Edit</Button>
+                              <Button variant="edit" size="sm">{t('btn', 'edit')}</Button>
                             </Link>
+                            {user.id !== currentUser?.id && currentUser?.is_superuser && (
+                              <Button
+                                variant={user.is_active ? 'secondary' : 'success'}
+                                size="sm"
+                                onClick={() => toggleActiveMutation.mutate({ id: user.id, isActive: !user.is_active })}
+                                disabled={toggleActiveMutation.isPending}
+                              >
+                                {user.is_active ? t('btn', 'deactivate') : t('btn', 'activate')}
+                              </Button>
+                            )}
                             {user.id !== currentUser?.id && currentUser?.is_superuser && (
                               <Button
                                 variant="delete"
@@ -398,7 +424,7 @@ export default function UsersPage() {
                                 disabled={deleteMutation.isPending}
                                 isLoading={deleteMutation.isPending}
                               >
-                                Delete
+                                {t('btn', 'delete')}
                               </Button>
                             )}
                           </div>
@@ -414,7 +440,7 @@ export default function UsersPage() {
             {data && data.count > 50 && (
               <div className="flex items-center justify-between card">
                 <div className="text-sm text-muted-foreground">
-                  Showing {((page - 1) * 50) + 1} to {Math.min(page * 50, data.count)} of {data.count} users
+                  {t('misc', 'showing')} {((page - 1) * 50) + 1} {t('misc', 'pageTo')} {Math.min(page * 50, data.count)} {t('misc', 'pageOf')} {data.count} {t('page', 'users').toLowerCase()}
                   {selectMode === 'all' && selectedItems.size > 0 && (
                     <span className="ml-2 text-foreground font-medium">
                       ({selectedItems.size} selected)
@@ -427,14 +453,14 @@ export default function UsersPage() {
                     onClick={() => setPage(p => Math.max(1, p - 1))}
                     disabled={!data.previous || page === 1}
                   >
-                    Previous
+                    {t('btn', 'previous')}
                   </Button>
                   <Button
                     variant="secondary"
                     onClick={() => setPage(p => p + 1)}
                     disabled={!data.next}
                   >
-                    Next
+                    {t('btn', 'next')}
                   </Button>
                 </div>
               </div>

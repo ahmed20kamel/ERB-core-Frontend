@@ -74,28 +74,20 @@ export const usersApi = {
       if (key === 'avatar' && value instanceof File) {
         formData.append('avatar', value);
         hasFile = true;
-        console.log('Adding avatar file to FormData:', value.name, value.size, value.type);
       } else if (key !== 'avatar' && value !== undefined && value !== null && value !== '') {
-        // Handle boolean values
         if (typeof value === 'boolean') {
           formData.append(key, value ? 'true' : 'false');
         } else {
           formData.append(key, value.toString());
-        }
-        if (key === 'password') {
-          console.log('Password included in update request');
         }
       }
     });
     
     // If there's a file OR password, use FormData, otherwise use JSON
     if (hasFile || data.password) {
-      console.log('Sending FormData', hasFile ? '(with avatar file)' : '(with password)');
       const response = await apiClient.patch(`/auth/users/${id}/`, formData);
-      console.log('Update response:', response.data);
       return response.data;
     } else {
-      console.log('Sending JSON data (no file, no password)');
       const response = await apiClient.patch(`/auth/users/${id}/`, data);
       return response.data;
     }
@@ -143,10 +135,8 @@ export const usersApi = {
   getPending: async (): Promise<User[]> => {
     try {
       const response = await apiClient.get('/auth/users/pending/');
-      console.log('Pending users API response:', response.data);
       return response.data;
     } catch (error: any) {
-      console.error('Error fetching pending users:', error);
       throw error;
     }
   },
@@ -155,6 +145,16 @@ export const usersApi = {
     const response = await apiClient.post(`/auth/users/${id}/approve/`, {
       permission_set_id: permissionSetId,
     });
+    return response.data;
+  },
+
+  reject: async (id: number): Promise<User> => {
+    const response = await apiClient.post(`/auth/users/${id}/reject/`);
+    return response.data;
+  },
+
+  setActive: async (id: number, isActive: boolean): Promise<User> => {
+    const response = await apiClient.patch(`/auth/users/${id}/`, { is_active: isActive });
     return response.data;
   },
 };

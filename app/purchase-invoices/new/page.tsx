@@ -7,6 +7,7 @@ import { purchaseOrdersApi } from '@/lib/api/purchase-orders';
 import { purchaseInvoicesApi } from '@/lib/api/purchase-invoices';
 import { PurchaseInvoiceItem } from '@/types';
 import { PurchaseInvoiceFormData, toPurchaseInvoiceCreateData } from '@/lib/types/form-data';
+import { Button } from '@/components/ui';
 import MainLayout from '@/components/layout/MainLayout';
 import { formatPrice } from '@/lib/utils/format';
 import { toast } from '@/lib/hooks/use-toast';
@@ -15,6 +16,7 @@ import FormField from '@/components/ui/FormField';
 import { formatBackendError, validateRequired, validatePositiveNumber, validateDateAfter } from '@/lib/utils/validation';
 import { canCreateInvoice } from '@/lib/utils/workflow-guards';
 import RouteGuard from '@/components/auth/RouteGuard';
+import { useT } from '@/lib/i18n/useT';
 
 export default function NewPurchaseInvoicePage() {
   return (
@@ -28,6 +30,7 @@ export default function NewPurchaseInvoicePage() {
 }
 
 function NewPurchaseInvoicePageContent() {
+  const t = useT();
   const router = useRouter();
   const searchParams = useSearchParams();
   const purchaseOrderId = searchParams.get('purchase_order_id');
@@ -138,8 +141,7 @@ function NewPurchaseInvoicePageContent() {
         toast(guard.reason || 'Cannot create invoice', 'error');
       }
       if (guard.warning) {
-        // Show warning but allow proceed
-        console.warn(guard.warning);
+        toast(guard.warning, 'warning');
       }
     }
     
@@ -244,9 +246,7 @@ function NewPurchaseInvoicePageContent() {
         <div className="space-y-6">
           <div className="card text-center py-12">
             <p className="text-muted-foreground">Purchase Order ID is required</p>
-            <button onClick={() => router.back()} className="btn btn-primary mt-4">
-              Go Back
-            </button>
+            <Button variant="primary" className="mt-4" onClick={() => router.back()}>Go Back</Button>
           </div>
         </div>
       </MainLayout>
@@ -265,7 +265,7 @@ function NewPurchaseInvoicePageContent() {
             margin: 0,
             marginBottom: 'var(--spacing-1)',
           }}>
-            Create Purchase Invoice
+            {t('page', 'newInvoice')}
           </h1>
           <p style={{ 
             fontSize: 'var(--font-sm)',
@@ -329,7 +329,7 @@ function NewPurchaseInvoicePageContent() {
               margin: 0,
               marginBottom: 'var(--spacing-4)',
             }}>
-              Invoice Details
+              {t('section', 'invoiceInfo')}
             </h3>
             <div style={{ 
               display: 'grid',
@@ -338,7 +338,7 @@ function NewPurchaseInvoicePageContent() {
             }}>
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  Invoice Date <span className="text-red-500">*</span>
+                  {t('field', 'invoiceDate')} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="date"
@@ -349,7 +349,7 @@ function NewPurchaseInvoicePageContent() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Due Date</label>
+                <label className="block text-sm font-medium text-foreground mb-2">{t('field', 'dueDate')}</label>
                 <input
                   type="date"
                   value={formData.due_date}
@@ -358,7 +358,7 @@ function NewPurchaseInvoicePageContent() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Tax Rate (%)</label>
+                <label className="block text-sm font-medium text-foreground mb-2">{t('col', 'taxPct')}</label>
                 <input
                   type="number"
                   step="0.01"
@@ -370,7 +370,7 @@ function NewPurchaseInvoicePageContent() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Discount</label>
+                <label className="block text-sm font-medium text-foreground mb-2">{t('col', 'discountPct')}</label>
                 <input
                   type="number"
                   step="0.01"
@@ -381,7 +381,7 @@ function NewPurchaseInvoicePageContent() {
                 />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-foreground mb-2">Notes</label>
+                <label className="block text-sm font-medium text-foreground mb-2">{t('field', 'notes')}</label>
                 <textarea
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
@@ -400,18 +400,18 @@ function NewPurchaseInvoicePageContent() {
               margin: 0,
               marginBottom: 'var(--spacing-4)',
             }}>
-              Invoice Items
+              {t('section', 'invoiceItems')}
             </h3>
             <div style={{ overflowX: 'auto' }}>
               <table>
                 <thead>
                   <tr>
-                    <th>Product</th>
-                    <th>Quantity</th>
-                    <th>Unit Price</th>
-                    <th>Discount %</th>
-                    <th>Tax %</th>
-                    <th>Total</th>
+                    <th>{t('col', 'product')}</th>
+                    <th>{t('col', 'quantity')}</th>
+                    <th>{t('col', 'unitPrice')}</th>
+                    <th>{t('col', 'discountPct')}</th>
+                    <th>{t('col', 'taxPct')}</th>
+                    <th>{t('col', 'total')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -488,21 +488,11 @@ function NewPurchaseInvoicePageContent() {
           </div>
 
           {/* Form Actions - Unified */}
-          <div style={{ display: 'flex', gap: 'var(--spacing-3)' }}>
-            <button
-              type="submit"
-              disabled={mutation.isPending}
-              className="btn btn-primary"
-            >
-              {mutation.isPending ? 'Creating...' : 'Create Invoice'}
-            </button>
-            <button
-              type="button"
-              onClick={() => router.back()}
-              className="btn btn-secondary"
-            >
-              Cancel
-            </button>
+          <div className="flex gap-3">
+            <Button type="submit" variant="primary" disabled={mutation.isPending} isLoading={mutation.isPending}>
+              {t('btn', 'create')}
+            </Button>
+            <Button type="button" variant="secondary" onClick={() => router.back()}>{t('btn', 'cancel')}</Button>
           </div>
         </form>
       </div>

@@ -38,12 +38,12 @@ export const purchaseQuotationsApi = {
   },
 
   create: async (data: {
-    quotation_request?: number | null;
+    quotation_request_id?: number | null;
     purchase_request_id?: number | null;
     supplier_id: number;
     quotation_number: string;
     quotation_date: string;
-    valid_until: string;
+    valid_until?: string;
     payment_terms?: string;
     delivery_terms?: string;
     notes?: string;

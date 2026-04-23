@@ -15,6 +15,8 @@ import SearchableDropdown from '@/components/ui/SearchableDropdown';
 import { formatPrice } from '@/lib/utils/format';
 import RouteGuard from '@/components/auth/RouteGuard';
 import { useAuth } from '@/lib/hooks/use-auth';
+import { Button } from '@/components/ui';
+import { useT } from '@/lib/i18n/useT';
 
 export default function EditPurchaseOrderPage() {
   const params = useParams();
@@ -31,6 +33,7 @@ export default function EditPurchaseOrderPage() {
 }
 
 function EditPurchaseOrderPageContent() {
+  const t = useT();
   const router = useRouter();
   const params = useParams();
   const id = Number(params.id);
@@ -50,6 +53,7 @@ function EditPurchaseOrderPageContent() {
     payment_terms: '',
     delivery_terms: '',
     notes: '',
+    terms_and_conditions: '',
     tax_rate: 0,
     discount: 0,
     status: 'draft',
@@ -88,6 +92,7 @@ function EditPurchaseOrderPageContent() {
         payment_terms: order.payment_terms || '',
         delivery_terms: order.delivery_terms || '',
         notes: order.notes || '',
+        terms_and_conditions: (order as any).terms_and_conditions || '',
         tax_rate: order.tax_rate || 0,
         discount: order.discount || 0,
         status: order.status,
@@ -108,7 +113,7 @@ function EditPurchaseOrderPageContent() {
 
   const mutation = useMutation({
     mutationFn: (data: PurchaseOrderUpdateFormData) =>
-      purchaseOrdersApi.update(id, toPurchaseOrderUpdateData(data, items) as Partial<PurchaseOrder>),
+      purchaseOrdersApi.update(id, toPurchaseOrderUpdateData(data, items) as unknown as Partial<PurchaseOrder>),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });
       toast('Purchase Order updated successfully!', 'success');
@@ -185,7 +190,7 @@ function EditPurchaseOrderPageContent() {
       <MainLayout>
         <div className="space-y-6">
           <div className="card text-center py-12">
-            <p className="text-muted-foreground">Loading...</p>
+            <p className="text-muted-foreground">{t('btn', 'loading')}</p>
           </div>
         </div>
       </MainLayout>
@@ -197,7 +202,7 @@ function EditPurchaseOrderPageContent() {
       <MainLayout>
         <div className="space-y-6">
           <div className="card text-center py-12">
-            <p className="text-muted-foreground">Purchase Order not found</p>
+            <p className="text-muted-foreground">{t('empty', 'notFound')}</p>
           </div>
         </div>
       </MainLayout>
@@ -213,8 +218,8 @@ function EditPurchaseOrderPageContent() {
             <p className="text-muted-foreground mb-4">
               This purchase order cannot be edited because it is {order.status}.
             </p>
-            <Link href={`/purchase-orders/${id}`} className="btn btn-primary">
-              Back to Order Details
+            <Link href={`/purchase-orders/${id}`}>
+              <Button variant="primary">{t('btn', 'back')} {t('page', 'purchaseOrders')}</Button>
             </Link>
           </div>
         </div>
@@ -230,10 +235,10 @@ function EditPurchaseOrderPageContent() {
             href={`/purchase-orders/${id}`}
             className="text-sm text-muted-foreground hover:text-foreground mb-2 inline-block"
           >
-            ← Back to Purchase Order
+            ← {t('btn', 'back')} {t('page', 'purchaseOrders')}
           </Link>
           <h1 className="text-2xl font-semibold text-foreground">
-            Edit Purchase Order: {order.order_number}
+            {t('page', 'editPO')}: {order.order_number}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Update purchase order details
@@ -244,7 +249,7 @@ function EditPurchaseOrderPageContent() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div>
               <SearchableDropdown
-                label="Supplier"
+                label={t('col', 'supplier')}
                 required
                 options={
                   suppliers?.results.map((supplier) => ({
@@ -255,14 +260,14 @@ function EditPurchaseOrderPageContent() {
                 }
                 value={formData.supplier_id}
                 onChange={(val) => setFormData({ ...formData, supplier_id: val ? Number(val) : 0 })}
-                placeholder="Select Supplier"
-                searchPlaceholder="Search suppliers..."
+                placeholder={t('misc', 'selectSupplier')}
+                searchPlaceholder={t('misc', 'searchSuppliers')}
               />
             </div>
 
             <div>
               <label className="form-label">
-                Order Date <span className="text-red-500">*</span>
+                {t('col', 'orderDate')} <span className="text-red-500">*</span>
               </label>
               <input
                 type="date"
@@ -274,7 +279,7 @@ function EditPurchaseOrderPageContent() {
             </div>
 
             <div>
-              <label className="form-label">Delivery Date (Optional)</label>
+              <label className="form-label">{t('field', 'deliveryDate')}</label>
               <input
                 type="date"
                 value={formData.delivery_date}
@@ -284,7 +289,7 @@ function EditPurchaseOrderPageContent() {
             </div>
 
             <div>
-              <label className="form-label">Delivery Method (Optional)</label>
+              <label className="form-label">{t('col', 'deliveryMethod')}</label>
               <select
                 value={formData.delivery_method}
                 onChange={(e) => setFormData({ ...formData, delivery_method: e.target.value as 'pickup' | 'delivery' | '' })}
@@ -297,7 +302,7 @@ function EditPurchaseOrderPageContent() {
             </div>
 
             <div>
-              <label className="form-label">Status</label>
+              <label className="form-label">{t('col', 'status')}</label>
               <select
                 value={formData.status}
                 onChange={(e) =>
@@ -308,17 +313,17 @@ function EditPurchaseOrderPageContent() {
                 }
                 className="form-input"
               >
-                <option value="draft">Draft</option>
-                <option value="pending">Pending</option>
-                <option value="rejected">Rejected</option>
-                <option value="cancelled">Cancelled</option>
+                <option value="draft">{t('status', 'draft')}</option>
+                <option value="pending">{t('status', 'pending')}</option>
+                <option value="rejected">{t('status', 'rejected')}</option>
+                <option value="cancelled">{t('status', 'cancelled')}</option>
               </select>
             </div>
           </div>
 
           {/* Items Section */}
           <div className="mb-6">
-            <h3 className="text-lg font-semibold mb-4 text-foreground">Products</h3>
+            <h3 className="text-lg font-semibold mb-4 text-foreground">{t('section', 'orderItems')}</h3>
 
             {/* Add Item Form */}
             <div className="grid grid-cols-1 md:grid-cols-6 gap-3 mb-4 p-4 bg-[var(--muted)] rounded-md">
@@ -341,7 +346,7 @@ function EditPurchaseOrderPageContent() {
               </div>
 
               <div>
-                <label className="form-label">Quantity</label>
+                <label className="form-label">{t('col', 'quantity')}</label>
                 <input
                   type="number"
                   min="0"
@@ -355,7 +360,7 @@ function EditPurchaseOrderPageContent() {
               </div>
 
               <div>
-                <label className="form-label">Unit Price</label>
+                <label className="form-label">{t('col', 'unitPrice')}</label>
                 <input
                   type="number"
                   min="0"
@@ -369,7 +374,7 @@ function EditPurchaseOrderPageContent() {
               </div>
 
               <div>
-                <label className="form-label">Discount (%)</label>
+                <label className="form-label">{t('col', 'discountPct')}</label>
                 <input
                   type="number"
                   min="0"
@@ -384,14 +389,15 @@ function EditPurchaseOrderPageContent() {
               </div>
 
               <div className="flex items-end">
-                <button
+                <Button
                   type="button"
+                  variant="primary"
+                  className="w-full"
                   onClick={handleAddItem}
                   disabled={!currentItem.product_id || currentItem.quantity <= 0 || currentItem.unit_price <= 0}
-                  className="btn btn-primary w-full"
                 >
                   Add
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -401,13 +407,13 @@ function EditPurchaseOrderPageContent() {
                 <table>
                   <thead>
                     <tr>
-                      <th>Product</th>
-                      <th>Quantity</th>
-                      <th>Unit Price</th>
-                      <th>Discount %</th>
-                      <th>Tax %</th>
-                      <th>Total</th>
-                      <th>Actions</th>
+                      <th>{t('col', 'product')}</th>
+                      <th>{t('col', 'quantity')}</th>
+                      <th>{t('col', 'unitPrice')}</th>
+                      <th>{t('col', 'discountPct')}</th>
+                      <th>{t('col', 'taxPct')}</th>
+                      <th>{t('col', 'total')}</th>
+                      <th>{t('col', 'actions')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -481,13 +487,14 @@ function EditPurchaseOrderPageContent() {
                             </div>
                           </td>
                           <td>
-                            <button
+                            <Button
                               type="button"
+                              variant="destructive"
+                              size="sm"
                               onClick={() => handleRemoveItem(index)}
-                              className="btn btn-ghost text-red-600 hover:text-red-700"
                             >
-                              Remove
-                            </button>
+                              {t('btn', 'delete')}
+                            </Button>
                           </td>
                         </tr>
                       );
@@ -502,7 +509,7 @@ function EditPurchaseOrderPageContent() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div className="space-y-4">
               <div>
-                <label className="form-label">Payment Terms</label>
+                <label className="form-label">{t('field', 'paymentTerms')}</label>
                 <textarea
                   value={formData.payment_terms}
                   onChange={(e) => setFormData({ ...formData, payment_terms: e.target.value })}
@@ -513,7 +520,7 @@ function EditPurchaseOrderPageContent() {
               </div>
 
               <div>
-                <label className="form-label">Delivery Terms (Optional)</label>
+                <label className="form-label">{t('field', 'deliveryTerms')}</label>
                 <textarea
                   value={formData.delivery_terms}
                   onChange={(e) => setFormData({ ...formData, delivery_terms: e.target.value })}
@@ -524,7 +531,7 @@ function EditPurchaseOrderPageContent() {
               </div>
 
               <div>
-                <label className="form-label">Notes</label>
+                <label className="form-label">{t('col', 'notes')}</label>
                 <textarea
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
@@ -533,11 +540,22 @@ function EditPurchaseOrderPageContent() {
                   placeholder="Enter any additional notes..."
                 />
               </div>
+
+              <div>
+                <label className="form-label">{t('section', 'termsConditions')}</label>
+                <textarea
+                  value={formData.terms_and_conditions}
+                  onChange={(e) => setFormData({ ...formData, terms_and_conditions: e.target.value })}
+                  className="form-input"
+                  rows={4}
+                  placeholder="Enter terms and conditions..."
+                />
+              </div>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="form-label">Discount (%)</label>
+                <label className="form-label">{t('col', 'discountPct')}</label>
                 <input
                   type="number"
                   min="0"
@@ -550,7 +568,7 @@ function EditPurchaseOrderPageContent() {
               </div>
 
               <div>
-                <label className="form-label">Tax Rate (%)</label>
+                <label className="form-label">{t('field', 'taxRate')}</label>
                 <input
                   type="number"
                   min="0"
@@ -592,15 +610,16 @@ function EditPurchaseOrderPageContent() {
           </div>
 
           <div className="flex gap-3">
-            <button
+            <Button
               type="submit"
+              variant="primary"
               disabled={mutation.isPending}
-              className="btn btn-primary"
+              isLoading={mutation.isPending}
             >
-              {mutation.isPending ? 'Updating...' : 'Update Purchase Order'}
-            </button>
-            <Link href={`/purchase-orders/${id}`} className="btn btn-secondary">
-              Cancel
+              {t('btn', 'update')} {t('page', 'purchaseOrders')}
+            </Button>
+            <Link href={`/purchase-orders/${id}`}>
+              <Button variant="secondary">Cancel</Button>
             </Link>
           </div>
         </form>

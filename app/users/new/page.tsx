@@ -14,23 +14,23 @@ import { Button } from '@/components/ui';
 import Image from 'next/image';
 
 const roles = [
-  { 
-    value: 'site_engineer', 
+  {
+    value: 'site_engineer',
     label: 'Site Engineer - مهندس الموقع',
     description: 'Create purchase requests, receive materials (GRN), add notes'
   },
-  { 
-    value: 'procurement_manager', 
+  {
+    value: 'procurement_manager',
     label: 'Procurement Manager - مدير المشتريات',
     description: 'الموافقة على الطلبات، اختيار أفضل سعر، الموافقة على LPO'
   },
-  { 
-    value: 'procurement_officer', 
+  {
+    value: 'procurement_officer',
     label: 'Procurement Officer - موظف المشتريات',
     description: 'إعداد Quotation Requests، إدخال الأسعار، إنشاء LPO و Invoice'
   },
-  { 
-    value: 'super_admin', 
+  {
+    value: 'super_admin',
     label: 'Super Admin - المدير الرئيسي',
     description: 'جميع الصلاحيات بما فيها الحذف وإدارة النظام'
   },
@@ -47,6 +47,7 @@ export default function NewUserPage() {
     password2: '',
     first_name: '',
     last_name: '',
+    full_name_ar: '',
     phone: '',
     role: 'site_engineer',
     is_staff: false,
@@ -61,8 +62,7 @@ export default function NewUserPage() {
       router.push('/users');
     },
     onError: (error: any) => {
-      console.error('Error creating user:', error);
-      const errorMessage = error?.response?.data?.detail || 
+      const errorMessage = error?.response?.data?.detail ||
                           error?.response?.data?.message ||
                           (typeof error?.response?.data === 'object' && error?.response?.data !== null
                             ? Object.values(error.response.data).flat().join(', ')
@@ -74,21 +74,15 @@ export default function NewUserPage() {
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file type
       if (!file.type.startsWith('image/')) {
         toast('Please select an image file', 'error');
         return;
       }
-      
-      // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         toast('Image size must be less than 5MB', 'error');
         return;
       }
-      
       setAvatarFile(file);
-      
-      // Create preview
       const reader = new FileReader();
       reader.onloadend = () => {
         setAvatarPreview(reader.result as string);
@@ -117,11 +111,11 @@ export default function NewUserPage() {
     return (
       <MainLayout>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-6)' }}>
-          <div className="card" style={{ 
+          <div className="card" style={{
             borderColor: 'var(--color-error)',
             backgroundColor: 'var(--color-error-light)',
           }}>
-            <p style={{ 
+            <p style={{
               color: 'var(--color-error)',
               fontSize: 'var(--font-sm)',
               margin: 0,
@@ -137,12 +131,12 @@ export default function NewUserPage() {
   return (
     <MainLayout>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-6)' }}>
-        {/* Header Section - Unified */}
+        {/* Header Section */}
         <div>
-          <Link 
-            href="/users" 
+          <Link
+            href="/users"
             className="text-sm mb-2 inline-block"
-            style={{ 
+            style={{
               color: 'var(--text-secondary)',
               textDecoration: 'none',
             }}
@@ -155,7 +149,7 @@ export default function NewUserPage() {
           >
             ← Back to Users
           </Link>
-          <h1 style={{ 
+          <h1 style={{
             fontSize: 'var(--font-2xl)',
             fontWeight: 'var(--font-weight-semibold)',
             color: 'var(--text-primary)',
@@ -164,7 +158,7 @@ export default function NewUserPage() {
           }}>
             Add New User
           </h1>
-          <p style={{ 
+          <p style={{
             fontSize: 'var(--font-sm)',
             color: 'var(--text-secondary)',
             margin: 0,
@@ -173,7 +167,7 @@ export default function NewUserPage() {
           </p>
         </div>
 
-        {/* Form Card - Unified */}
+        {/* Form Card */}
         <form onSubmit={handleSubmit} className="card">
           {/* Avatar Upload Section */}
           <div style={{ marginBottom: 'var(--spacing-6)' }}>
@@ -262,8 +256,8 @@ export default function NewUserPage() {
             </div>
           </div>
 
-          {/* Form Fields Grid - Unified Spacing */}
-          <div style={{ 
+          {/* Form Fields Grid */}
+          <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
             gap: 'var(--spacing-4)',
@@ -355,6 +349,13 @@ export default function NewUserPage() {
               />
             </FormField>
 
+            <FormField label="الاسم الكامل بالعربي">
+              <input type="text" className="input" dir="rtl" placeholder="الاسم الكامل بالعربي"
+                value={formData.full_name_ar}
+                onChange={(e) => setFormData({ ...formData, full_name_ar: e.target.value })}
+              />
+            </FormField>
+
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)' }}>
               <input
                 type="checkbox"
@@ -362,7 +363,7 @@ export default function NewUserPage() {
                 onChange={(e) => setFormData({ ...formData, is_staff: e.target.checked })}
                 style={{ width: '16px', height: '16px', cursor: 'pointer' }}
               />
-              <label style={{ 
+              <label style={{
                 fontSize: 'var(--font-sm)',
                 fontWeight: 'var(--font-weight-medium)',
                 color: 'var(--text-primary)',
@@ -373,7 +374,7 @@ export default function NewUserPage() {
             </div>
           </div>
 
-          {/* Form Actions - Unified */}
+          {/* Form Actions */}
           <div style={{ display: 'flex', gap: 'var(--spacing-3)' }}>
             <button
               type="submit"

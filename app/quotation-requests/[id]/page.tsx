@@ -5,6 +5,8 @@ import { useQuery } from '@tanstack/react-query';
 import { quotationRequestsApi } from '@/lib/api/quotation-requests';
 import MainLayout from '@/components/layout/MainLayout';
 import Link from 'next/link';
+import DetailCard, { DetailField } from '@/components/ui/DetailCard';
+import { Button } from '@/components/ui';
 import { useAuth } from '@/lib/hooks/use-auth';
 
 export default function QuotationRequestDetailPage() {
@@ -12,7 +14,7 @@ export default function QuotationRequestDetailPage() {
   const id = Number(params.id);
   const { user } = useAuth();
 
-  const { data: request, isLoading } = useQuery({
+  const { data: qr, isLoading } = useQuery({
     queryKey: ['quotation-requests', id],
     queryFn: () => quotationRequestsApi.getById(id),
   });
@@ -20,214 +22,91 @@ export default function QuotationRequestDetailPage() {
   if (isLoading) {
     return (
       <MainLayout>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-6)' }}>
-          <div className="card" style={{ textAlign: 'center', padding: 'var(--spacing-12)' }}>
-            <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Loading...</p>
-          </div>
+        <div className="card text-center py-12">
+          <p className="text-muted-foreground">Loading...</p>
         </div>
       </MainLayout>
     );
   }
 
-  if (!request) {
+  if (!qr) {
     return (
       <MainLayout>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-6)' }}>
-          <div className="card" style={{ textAlign: 'center', padding: 'var(--spacing-12)' }}>
-            <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Quotation request not found</p>
-          </div>
+        <div className="card text-center py-12">
+          <p className="text-muted-foreground">Quotation Request not found</p>
         </div>
       </MainLayout>
     );
   }
+
+  const supplier = typeof qr.supplier === 'object' ? qr.supplier : null;
+  const pr = typeof qr.purchase_request === 'object' ? qr.purchase_request : null;
+  const prId = typeof qr.purchase_request === 'number' ? qr.purchase_request : pr?.id;
 
   return (
     <MainLayout>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-6)' }}>
-        {/* Header Section - Unified */}
+      <div className="space-y-6">
         <div>
-          <Link 
-            href="/quotation-requests" 
-            className="text-sm mb-2 inline-block"
-            style={{ 
-              color: 'var(--text-secondary)',
-              textDecoration: 'none',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = 'var(--text-primary)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'var(--text-secondary)';
-            }}
-          >
+          <Link href="/quotation-requests" className="text-sm text-muted-foreground hover:text-foreground mb-2 inline-block">
             ← Back to Quotation Requests
           </Link>
-          <h1 style={{ 
-            fontSize: 'var(--font-2xl)',
-            fontWeight: 'var(--font-weight-semibold)',
-            color: 'var(--text-primary)',
-            margin: 0,
-            marginBottom: 'var(--spacing-1)',
-          }}>
-            Quotation Request Details
+          <h1 className="text-2xl font-semibold text-foreground">
+            Quotation Request #{qr.id}
           </h1>
-          <p style={{ 
-            fontSize: 'var(--font-sm)',
-            color: 'var(--text-secondary)',
-            margin: 0,
-          }}>
-            View quotation request information
-          </p>
+          <p className="text-sm text-muted-foreground mt-1">{new Date(qr.created_at).toLocaleDateString('en-US')}</p>
         </div>
 
-        {/* Details Card - Unified */}
-        <div className="card">
-          <div style={{ 
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-            gap: 'var(--spacing-4)',
-          }}>
-            <div>
-              <label style={{ 
-                display: 'block',
-                fontSize: 'var(--font-sm)',
-                fontWeight: 'var(--font-weight-medium)',
-                color: 'var(--text-secondary)',
-                marginBottom: 'var(--spacing-2)',
-              }}>
-                Purchase Request
-              </label>
-              <p style={{ 
-                fontSize: 'var(--font-base)',
-                fontWeight: 'var(--font-weight-semibold)',
-                color: 'var(--text-primary)',
-                margin: 0,
-              }}>
-                {typeof request.purchase_request === 'object' && request.purchase_request
-                  ? request.purchase_request.code || 'N/A'
-                  : 'N/A'}
-              </p>
-            </div>
-            <div>
-              <label style={{ 
-                display: 'block',
-                fontSize: 'var(--font-sm)',
-                fontWeight: 'var(--font-weight-medium)',
-                color: 'var(--text-secondary)',
-                marginBottom: 'var(--spacing-2)',
-              }}>
-                Supplier
-              </label>
-              <p style={{ 
-                fontSize: 'var(--font-base)',
-                fontWeight: 'var(--font-weight-semibold)',
-                color: 'var(--text-primary)',
-                margin: 0,
-              }}>
-                {typeof request.supplier === 'object' && request.supplier
-                  ? request.supplier.business_name || request.supplier.name || 'N/A'
-                  : 'N/A'}
-              </p>
-            </div>
-            <div>
-              <label style={{ 
-                display: 'block',
-                fontSize: 'var(--font-sm)',
-                fontWeight: 'var(--font-weight-medium)',
-                color: 'var(--text-secondary)',
-                marginBottom: 'var(--spacing-2)',
-              }}>
-                Created At
-              </label>
-              <p style={{ 
-                fontSize: 'var(--font-base)',
-                color: 'var(--text-primary)',
-                margin: 0,
-              }}>
-                {new Date(request.created_at).toLocaleDateString('en-US')}
-              </p>
-            </div>
-            {request.notes && (
-              <div style={{ gridColumn: '1 / -1' }}>
-                <label style={{ 
-                  display: 'block',
-                  fontSize: 'var(--font-sm)',
-                  fontWeight: 'var(--font-weight-medium)',
-                  color: 'var(--text-secondary)',
-                  marginBottom: 'var(--spacing-2)',
-                }}>
-                  Notes
-                </label>
-                <p style={{ 
-                  fontSize: 'var(--font-base)',
-                  color: 'var(--text-primary)',
-                  margin: 0,
-                }}>
-                  {request.notes}
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
+        <DetailCard title="Quotation Request Information">
+          {supplier && (
+            <DetailField label="Supplier" value={supplier.business_name || supplier.name} />
+          )}
+          {prId && (
+            <DetailField
+              label="Purchase Request"
+              value={
+                <Link href={`/purchase-requests/${prId}`} className="text-primary hover:underline">
+                  {pr?.code || `PR #${prId}`}
+                </Link>
+              }
+            />
+          )}
+          <DetailField label="Created By" value={qr.created_by_name} />
+          <DetailField label="Created At" value={new Date(qr.created_at).toLocaleDateString('en-US')} />
+          {qr.notes && (
+            <DetailField label="Notes" value={qr.notes} span={3} />
+          )}
+        </DetailCard>
 
-        {/* Items Section - Unified */}
-        <div className="card">
-          <h3 style={{ 
-            fontSize: 'var(--font-lg)',
-            fontWeight: 'var(--font-weight-semibold)',
-            color: 'var(--text-primary)',
-            margin: 0,
-            marginBottom: 'var(--spacing-4)',
-          }}>
-            Products
-          </h3>
-          <div style={{ overflowX: 'auto' }}>
+        <DetailCard title="Items">
+          <div className="col-span-3 overflow-x-auto">
             <table>
               <thead>
                 <tr>
                   <th>Product</th>
-                  <th>Code</th>
                   <th>Quantity</th>
+                  <th>Unit</th>
+                  <th>Notes</th>
                 </tr>
               </thead>
               <tbody>
-                {request.items.map((item) => (
-                  <tr key={item.id}>
-                    <td>
-                      <div style={{ 
-                        fontWeight: 'var(--font-weight-medium)',
-                        color: 'var(--text-primary)',
-                      }}>
-                        {item.product?.name || 'N/A'}
-                      </div>
-                    </td>
-                    <td>
-                      <div style={{ color: 'var(--text-secondary)' }}>
-                        {item.product?.code || ''}
-                      </div>
-                    </td>
-                    <td>
-                      <div style={{ color: 'var(--text-primary)' }}>{item.quantity}</div>
-                    </td>
+                {qr.items.map((item, idx) => (
+                  <tr key={(item as any).id ?? idx}>
+                    <td>{(item as any).product?.name || `Product #${(item as any).product_id}`}</td>
+                    <td>{(item as any).quantity}</td>
+                    <td>{(item as any).unit || '—'}</td>
+                    <td className="text-muted-foreground">{(item as any).notes || '—'}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </div>
+        </DetailCard>
 
-        {/* Actions - Unified */}
-        {/* Only Procurement Officer and Super Admin can create Purchase Quotation */}
-        {(user?.role === 'procurement_officer' || user?.role === 'super_admin' || user?.is_superuser) && (
-          <div style={{ display: 'flex', gap: 'var(--spacing-3)' }}>
-            <Link
-              href={`/purchase-quotations/new?quotation_request_id=${id}`}
-              className="btn btn-primary"
-            >
-              Create Purchase Quotation
-            </Link>
-          </div>
-        )}
+        <div className="flex gap-3">
+          <Link href={`/purchase-quotations/new?quotation_request_id=${qr.id}`}>
+            <Button variant="primary">Create Quotation</Button>
+          </Link>
+        </div>
       </div>
     </MainLayout>
   );

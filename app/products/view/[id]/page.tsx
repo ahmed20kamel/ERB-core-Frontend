@@ -3,15 +3,20 @@
 import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { productsApi } from '@/lib/api/products';
+import { Button } from '@/components/ui';
 import MainLayout from '@/components/layout/MainLayout';
 import Link from 'next/link';
 import { formatPrice, formatPercentage, formatNumber } from '@/lib/utils/format';
 import EntityHeader from '@/components/ui/EntityHeader';
 import { useAuth } from '@/lib/hooks/use-auth';
+import BilingualName from '@/components/ui/BilingualName';
+import { useT } from '@/lib/i18n/useT';
 
 export default function ProductDetailPage() {
+  const t = useT();
   const params = useParams();
   const id = Number(params.id);
+  const { user } = useAuth();
 
   const { data: product, isLoading } = useQuery({
     queryKey: ['products', id],
@@ -23,7 +28,7 @@ export default function ProductDetailPage() {
       <MainLayout>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-6)' }}>
           <div className="card" style={{ textAlign: 'center', padding: 'var(--spacing-12)' }}>
-            <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Loading...</p>
+            <p style={{ color: 'var(--text-secondary)', margin: 0 }}>{t('btn', 'loading')}</p>
           </div>
         </div>
       </MainLayout>
@@ -35,14 +40,12 @@ export default function ProductDetailPage() {
       <MainLayout>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-6)' }}>
           <div className="card" style={{ textAlign: 'center', padding: 'var(--spacing-12)' }}>
-            <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Product not found</p>
+            <p style={{ color: 'var(--text-secondary)', margin: 0 }}>{t('empty', 'notFound')}</p>
           </div>
         </div>
       </MainLayout>
     );
   }
-
-  const { user } = useAuth();
   const isAdmin = user?.role === 'super_admin' || user?.is_staff;
 
   const getStatusVariant = () => {
@@ -62,15 +65,13 @@ export default function ProductDetailPage() {
           image={product.image_url || product.image}
           imageAlt={product.name}
           entityType="product"
-          statusBadge={product.is_active ? (product.status || 'Active') : 'Inactive'}
+          statusBadge={product.is_active ? (product.status === 'inactive' ? t('status', 'inactive') : t('status', 'active')) : t('status', 'inactive')}
           statusVariant={getStatusVariant()}
           backHref="/products"
-          backLabel="Back to Products"
+          backLabel={`${t('btn','back')} ${t('page','products')}`}
           actions={
             <>
-              <Link href={`/products/${id}`} className="btn btn-edit">
-                Edit
-              </Link>
+              <Link href={`/products/${id}`}><Button variant="edit">{t('btn', 'edit')}</Button></Link>
             </>
           }
         />
@@ -84,7 +85,7 @@ export default function ProductDetailPage() {
             margin: 0,
             marginBottom: 'var(--spacing-4)',
           }}>
-            Basic Product Information
+            {t('section', 'basicInfo')}
           </h3>
           <div style={{ 
             display: 'grid',
@@ -92,7 +93,7 @@ export default function ProductDetailPage() {
             gap: 'var(--spacing-4)',
           }}>
             <div>
-              <label style={{ 
+              <label style={{
                 display: 'block',
                 fontSize: 'var(--font-sm)',
                 fontWeight: 'var(--font-weight-medium)',
@@ -101,14 +102,7 @@ export default function ProductDetailPage() {
               }}>
                 Product Name
               </label>
-              <p style={{ 
-                fontSize: 'var(--font-base)',
-                fontWeight: 'var(--font-weight-semibold)',
-                color: 'var(--text-primary)',
-                margin: 0,
-              }}>
-                {product.name}
-              </p>
+              <BilingualName nameEn={product.name} nameAr={product.name_ar} />
             </div>
             <div>
               <label style={{ 
@@ -263,7 +257,7 @@ export default function ProductDetailPage() {
             margin: 0,
             marginBottom: 'var(--spacing-4)',
           }}>
-            Category & Supplier
+            {t('section', 'categorySupplier')}
           </h3>
           <div style={{ 
             display: 'grid',
@@ -298,17 +292,20 @@ export default function ProductDetailPage() {
               }}>
                 Supplier
               </label>
-              <p style={{ 
-                fontSize: 'var(--font-base)',
-                color: 'var(--text-primary)',
-                margin: 0,
-              }}>
-                {product.supplier
-                  ? typeof product.supplier === 'object'
-                    ? product.supplier.business_name || product.supplier.name
-                    : `Supplier ID: ${product.supplier}`
-                  : '-'}
-              </p>
+              {product.supplier ? (
+                typeof product.supplier === 'object' ? (
+                  <BilingualName
+                    nameEn={product.supplier.business_name || product.supplier.name}
+                    nameAr={(product.supplier as any).business_name_ar}
+                  />
+                ) : (
+                  <p style={{ fontSize: 'var(--font-base)', color: 'var(--text-primary)', margin: 0 }}>
+                    {`Supplier ID: ${product.supplier}`}
+                  </p>
+                )
+              ) : (
+                <p style={{ fontSize: 'var(--font-base)', color: 'var(--text-primary)', margin: 0 }}>-</p>
+              )}
             </div>
           </div>
         </div>
@@ -322,7 +319,7 @@ export default function ProductDetailPage() {
             margin: 0,
             marginBottom: 'var(--spacing-4)',
           }}>
-            Pricing
+            {t('section', 'pricing')}
           </h3>
           <div style={{ 
             display: 'grid',
@@ -362,7 +359,7 @@ export default function ProductDetailPage() {
                 color: 'var(--text-primary)',
                 margin: 0,
               }}>
-                {formatPrice(product.unit_price)}
+                {formatPrice(product.sell_price ?? product.unit_price)}
               </p>
             </div>
             <div>
@@ -452,7 +449,7 @@ export default function ProductDetailPage() {
               margin: 0,
               marginBottom: 'var(--spacing-4)',
             }}>
-              Inventory
+              {t('section', 'inventory')}
             </h3>
             <div style={{ 
               display: 'grid',
@@ -532,7 +529,7 @@ export default function ProductDetailPage() {
             margin: 0,
             marginBottom: 'var(--spacing-4)',
           }}>
-            Taxes & Discount
+            {t('section', 'taxesDiscount')}
           </h3>
           <div style={{ 
             display: 'grid',
@@ -597,9 +594,9 @@ export default function ProductDetailPage() {
         </div>
 
         {/* Additional Information - Unified */}
-        {(product.internal_notes || product.notes) && (
+        {product.internal_notes && (
           <div className="card">
-            <h3 style={{ 
+            <h3 style={{
               fontSize: 'var(--font-lg)',
               fontWeight: 'var(--font-weight-semibold)',
               color: 'var(--text-primary)',
@@ -608,53 +605,30 @@ export default function ProductDetailPage() {
             }}>
               Additional Information
             </h3>
-            <div style={{ 
+            <div style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
               gap: 'var(--spacing-4)',
             }}>
-              {product.internal_notes && (
-                <div style={{ gridColumn: '1 / -1' }}>
-                  <label style={{ 
-                    display: 'block',
-                    fontSize: 'var(--font-sm)',
-                    fontWeight: 'var(--font-weight-medium)',
-                    color: 'var(--text-secondary)',
-                    marginBottom: 'var(--spacing-2)',
-                  }}>
-                    Internal Notes
-                  </label>
-                  <p style={{ 
-                    fontSize: 'var(--font-base)',
-                    color: 'var(--text-primary)',
-                    margin: 0,
-                    whiteSpace: 'pre-wrap',
-                  }}>
-                    {product.internal_notes}
-                  </p>
-                </div>
-              )}
-              {product.notes && (
-                <div style={{ gridColumn: '1 / -1' }}>
-                  <label style={{ 
-                    display: 'block',
-                    fontSize: 'var(--font-sm)',
-                    fontWeight: 'var(--font-weight-medium)',
-                    color: 'var(--text-secondary)',
-                    marginBottom: 'var(--spacing-2)',
-                  }}>
-                    Notes
-                  </label>
-                  <p style={{ 
-                    fontSize: 'var(--font-base)',
-                    color: 'var(--text-primary)',
-                    margin: 0,
-                    whiteSpace: 'pre-wrap',
-                  }}>
-                    {product.notes}
-                  </p>
-                </div>
-              )}
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label style={{
+                  display: 'block',
+                  fontSize: 'var(--font-sm)',
+                  fontWeight: 'var(--font-weight-medium)',
+                  color: 'var(--text-secondary)',
+                  marginBottom: 'var(--spacing-2)',
+                }}>
+                  Internal Notes
+                </label>
+                <p style={{
+                  fontSize: 'var(--font-base)',
+                  color: 'var(--text-primary)',
+                  margin: 0,
+                  whiteSpace: 'pre-wrap',
+                }}>
+                  {product.internal_notes}
+                </p>
+              </div>
             </div>
           </div>
         )}
@@ -676,32 +650,32 @@ export default function ProductDetailPage() {
             gap: 'var(--spacing-4)',
           }}>
             <div>
-              <label style={{ 
+              <label style={{
                 display: 'block',
                 fontSize: 'var(--font-sm)',
                 fontWeight: 'var(--font-weight-medium)',
                 color: 'var(--text-secondary)',
                 marginBottom: 'var(--spacing-2)',
               }}>
-                Status
+                {t('col', 'status')}
               </label>
               <span className={`badge ${
-                product.status === 'active' ? 'badge-success' : 
-                product.status === 'inactive' ? 'badge-error' : 
+                product.status === 'active' ? 'badge-success' :
+                product.status === 'inactive' ? 'badge-error' :
                 'badge-info'
               }`}>
-                {product.status || 'Active'}
+                {product.status === 'active' ? t('status', 'active') : product.status === 'inactive' ? t('status', 'inactive') : t('status', 'active')}
               </span>
             </div>
             <div>
-              <label style={{ 
+              <label style={{
                 display: 'block',
                 fontSize: 'var(--font-sm)',
                 fontWeight: 'var(--font-weight-medium)',
                 color: 'var(--text-secondary)',
                 marginBottom: 'var(--spacing-2)',
               }}>
-                Active
+                {t('col', 'active')}
               </label>
               <span className={`badge ${product.is_active ? 'badge-success' : 'badge-error'}`}>
                 {product.is_active ? 'Yes' : 'No'}

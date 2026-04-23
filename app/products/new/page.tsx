@@ -5,509 +5,208 @@ import { useRouter } from 'next/navigation';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { productsApi } from '@/lib/api/products';
 import { suppliersApi } from '@/lib/api/suppliers';
-import { ProductFormData, toProductCreateData } from '@/lib/types/form-data';
 import MainLayout from '@/components/layout/MainLayout';
 import Link from 'next/link';
-import SearchableDropdown, { DropdownOption } from '@/components/ui/SearchableDropdown';
 import FormField from '@/components/ui/FormField';
+import SearchableDropdown from '@/components/ui/SearchableDropdown';
+import { Button } from '@/components/ui';
+import { toast } from '@/lib/hooks/use-toast';
+import { ProductFormData } from '@/lib/types/form-data';
 
-const units = [
-  { value: 'piece', label: 'Piece' },
-  { value: 'pcs', label: 'Number / Pieces' },
-  { value: 'kg', label: 'Kilogram' },
-  { value: 'kl', label: 'Kilo' },
-  { value: 'meter', label: 'Meter' },
-  { value: 'lm', label: 'Linear Meter' },
-  { value: 'liter', label: 'Liter' },
-  { value: 'box', label: 'Box' },
-  { value: 'pack', label: 'Pack' },
-  { value: 'pkt', label: 'Packet' },
-  { value: 'bag', label: 'Bag' },
-  { value: 'roll', label: 'Roll' },
-  { value: 'ctn', label: 'Carton' },
-  { value: 'ton', label: 'Ton' },
-  { value: 'trip', label: 'Trip' },
-  { value: 'sqm', label: 'Square Meter' },
-  { value: 'cbm', label: 'Cubic Metre (cbm / m3)' },
-  { value: 'pump', label: 'Pump' },
-  { value: 'sheet', label: 'Sheet' },
-  { value: 'brd', label: 'Board' },
-  { value: 'drm', label: 'Drum' },
-  { value: 'doz', label: 'Dozen' },
-  { value: 'ls', label: 'Lump Sum' },
-  { value: 'set', label: 'Set' },
-  { value: 'ream', label: 'Ream' },
-  { value: 'bundle', label: 'Bundle' },
+const UNITS = [
+  'piece','pcs','kg','kl','meter','lm','liter','box','pack','pkt','bag','roll',
+  'ctn','ton','trip','sqm','cbm','pump','sheet','brd','drm','doz','ls','set',
+  'ream','bundle','nos','mtr','qty','pair','can','gal','day','hour','month',
 ];
 
-const discountTypes = [
-  { value: 'percentage', label: '%' },
-  { value: 'fixed', label: 'Fixed Amount' },
-];
-
-const statusOptions = [
-  { value: 'active', label: 'Active' },
-  { value: 'inactive', label: 'Inactive' },
-  { value: 'archived', label: 'Archived' },
-];
+const defaultForm: ProductFormData = {
+  name: '',
+  name_ar: '',
+  code: '',
+  sku: '',
+  barcode: '',
+  description: '',
+  notes: '',
+  internal_notes: '',
+  brand: '',
+  category: '',
+  tags: '',
+  unit: 'piece',
+  supplier: undefined,
+  sell_price: 0,
+  buy_price: 0,
+  minimum_price: 0,
+  discount: 0,
+  discount_type: 'percentage',
+  tax1: 0,
+  tax2: 0,
+  track_stock: false,
+  stock_balance: 0,
+  low_stock_threshold: 0,
+  profit_margin: 0,
+  status: 'active',
+  is_active: true,
+};
 
 export default function NewProductPage() {
   const router = useRouter();
-  const [formData, setFormData] = useState<ProductFormData>({
-    name: '',
-    code: '',
-    sku: '',
-    barcode: '',
-    description: '',
-    notes: '',
-    internal_notes: '',
-    brand: '',
-    category: '',
-    tags: '',
-    unit: 'piece',
-    supplier: undefined,
-    unit_price: 0,
-    buy_price: 0,
-    minimum_price: 0,
-    discount: 0,
-    discount_type: 'percentage',
-    tax1: 0,
-    tax2: 0,
-    track_stock: false,
-    stock_balance: 0,
-    low_stock_threshold: 0,
-    profit_margin: 0,
-    status: 'active',
-    is_active: true,
-  });
+  const [form, setForm] = useState<ProductFormData>(defaultForm);
 
-  const { data: suppliers } = useQuery({
-    queryKey: ['suppliers'],
-    queryFn: () => suppliersApi.getAll({ page: 1 }),
+  const { data: suppliersData } = useQuery({
+    queryKey: ['suppliers-all'],
+    queryFn: () => suppliersApi.getAll({ page: 1, page_size: 1000 }),
   });
 
   const mutation = useMutation({
-    mutationFn: productsApi.create,
-    onSuccess: () => {
-      router.push('/products');
+    mutationFn: () => productsApi.create(form as any),
+    onSuccess: (data) => {
+      toast('Product created successfully!', 'success');
+      router.push(`/products/view/${data.id}`);
+    },
+    onError: (error: any) => {
+      toast(error?.response?.data?.detail || 'Failed to create product', 'error');
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    mutation.mutate(toProductCreateData(formData));
+  const set = (key: keyof ProductFormData, value: any) => {
+    setForm(prev => ({ ...prev, [key]: value }));
   };
+
+  const supplierOptions = (suppliersData?.results ?? []).map(s => ({
+    value: s.id,
+    label: s.business_name || s.name,
+  }));
+
+  const unitOptions = UNITS.map(u => ({ value: u, label: u }));
 
   return (
     <MainLayout>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-6)' }}>
-        {/* Header Section - Unified */}
+      <div className="space-y-6">
         <div>
-          <Link 
-            href="/products" 
-            className="text-sm mb-2 inline-block"
-            style={{ 
-              color: 'var(--text-secondary)',
-              textDecoration: 'none',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = 'var(--text-primary)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'var(--text-secondary)';
-            }}
-          >
+          <Link href="/products" className="text-sm text-muted-foreground hover:text-foreground mb-2 inline-block">
             ← Back to Products
           </Link>
-          <h1 style={{ 
-            fontSize: 'var(--font-2xl)',
-            fontWeight: 'var(--font-weight-semibold)',
-            color: 'var(--text-primary)',
-            margin: 0,
-            marginBottom: 'var(--spacing-1)',
-          }}>
-            Add New Product
-          </h1>
-          <p style={{ 
-            fontSize: 'var(--font-sm)',
-            color: 'var(--text-secondary)',
-            margin: 0,
-          }}>
-            Create a new product in your catalog
-          </p>
+          <h1 className="text-2xl font-semibold text-foreground">New Product</h1>
         </div>
 
-        {/* Form Card - Unified */}
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-6)' }}>
-          {/* Item Details Section */}
+        <form onSubmit={(e) => { e.preventDefault(); mutation.mutate(); }} className="space-y-6">
+          {/* Basic Info */}
           <div className="card">
-            <h2 style={{ 
-              fontSize: 'var(--font-lg)',
-              fontWeight: 'var(--font-weight-semibold)',
-              color: 'var(--text-primary)',
-              margin: 0,
-              marginBottom: 'var(--spacing-4)',
-            }}>
-              Item Details
-            </h2>
-            <div style={{ 
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-              gap: 'var(--spacing-4)',
-            }}>
-              <FormField label="Name" required>
-                <input
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="input"
-                />
+            <h2 className="section-title">Basic Information</h2>
+            <div className="form-grid">
+              <FormField label="Product Name (EN)" required>
+                <input className="input" value={form.name} onChange={e => set('name', e.target.value)} required />
               </FormField>
-
-              <FormField label="Item SKU">
-                <input
-                  type="text"
-                  value={formData.sku}
-                  onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                  className="input"
-                />
+              <FormField label="Product Name (AR)">
+                <input className="input" dir="rtl" value={form.name_ar} onChange={e => set('name_ar', e.target.value)} />
               </FormField>
-
-              <FormField label="Code" required>
-                <input
-                  type="text"
-                  required
-                  value={formData.code}
-                  onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                  className="input"
-                />
+              <FormField label="Code">
+                <input className="input" value={form.code} onChange={e => set('code', e.target.value)} />
               </FormField>
-
-              <div style={{ gridColumn: '1 / -1' }}>
-                <FormField label="Description">
-                  <textarea
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    rows={3}
-                    className="input"
-                  />
-                </FormField>
-              </div>
-
-              <FormField label="Category">
-                <input
-                  type="text"
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="input"
-                />
+              <FormField label="SKU">
+                <input className="input" value={form.sku} onChange={e => set('sku', e.target.value)} />
               </FormField>
-
+              <FormField label="Barcode">
+                <input className="input" value={form.barcode} onChange={e => set('barcode', e.target.value)} />
+              </FormField>
               <FormField label="Brand">
-                <input
-                  type="text"
-                  value={formData.brand}
-                  onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
-                  className="input"
+                <input className="input" value={form.brand} onChange={e => set('brand', e.target.value)} />
+              </FormField>
+              <FormField label="Category">
+                <input className="input" value={form.category} onChange={e => set('category', e.target.value)} />
+              </FormField>
+              <FormField label="Tags">
+                <input className="input" value={form.tags} onChange={e => set('tags', e.target.value)} />
+              </FormField>
+              <FormField label="Unit" required>
+                <SearchableDropdown
+                  options={unitOptions}
+                  value={form.unit}
+                  onChange={v => set('unit', v)}
                 />
               </FormField>
-
-              <div>
+              <FormField label="Supplier">
                 <SearchableDropdown
-                  label="Unit Template"
-                  required
-                  options={units.map((unit) => ({
-                    value: unit.value,
-                    label: unit.label,
-                  }))}
-                  value={formData.unit}
-                  onChange={(val) => setFormData({ ...formData, unit: val as any })}
-                  placeholder="Select Unit"
-                />
-              </div>
-
-              <div>
-                <SearchableDropdown
-                  label="Supplier"
-                  options={[
-                    { value: '', label: 'Select Supplier' },
-                    ...(suppliers?.results
-                      .filter((s) => s.is_active)
-                      .map((supplier) => ({
-                        value: supplier.id,
-                        label: supplier.business_name || supplier.name,
-                        searchText: `${supplier.business_name || ''} ${supplier.name || ''} ${supplier.contact_person || ''}`,
-                      })) || []),
-                  ]}
-                  value={formData.supplier || ''}
-                  onChange={(val) => setFormData({ ...formData, supplier: val ? Number(val) : undefined })}
-                  placeholder="Select Supplier"
+                  options={supplierOptions}
+                  value={form.supplier ?? null}
+                  onChange={v => set('supplier', v ?? undefined)}
                   allowClear
                 />
-              </div>
-
-              <FormField label="Barcode">
-                <input
-                  type="text"
-                  value={formData.barcode}
-                  onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
-                  className="input"
-                />
               </FormField>
-
-              <FormField label="Tags">
-                <input
-                  type="text"
-                  placeholder="Comma-separated tags"
-                  value={formData.tags}
-                  onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                  className="input"
-                />
-              </FormField>
-            </div>
-          </div>
-
-          {/* Pricing Details Section */}
-          <div className="card">
-            <h2 style={{ 
-              fontSize: 'var(--font-lg)',
-              fontWeight: 'var(--font-weight-semibold)',
-              color: 'var(--text-primary)',
-              margin: 0,
-              marginBottom: 'var(--spacing-4)',
-            }}>
-              Pricing Details
-            </h2>
-            <div style={{ 
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-              gap: 'var(--spacing-4)',
-            }}>
-              <FormField label="Purchase Price">
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.buy_price}
-                  onChange={(e) => setFormData({ ...formData, buy_price: Number(e.target.value) })}
-                  className="input"
-                />
-              </FormField>
-
-              <FormField label="Selling Price">
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.unit_price}
-                  onChange={(e) => setFormData({ ...formData, unit_price: Number(e.target.value) })}
-                  className="input"
-                />
-              </FormField>
-
-              <FormField label="Tax 1">
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.tax1}
-                  onChange={(e) => setFormData({ ...formData, tax1: Number(e.target.value) })}
-                  className="input"
-                />
-              </FormField>
-
-              <FormField label="Tax 2">
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.tax2}
-                  onChange={(e) => setFormData({ ...formData, tax2: Number(e.target.value) })}
-                  className="input"
-                />
-              </FormField>
-
-              <FormField label="Minimum Price">
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.minimum_price}
-                  onChange={(e) => setFormData({ ...formData, minimum_price: Number(e.target.value) })}
-                  className="input"
-                />
-              </FormField>
-
-              <FormField label="Discount">
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.discount}
-                  onChange={(e) => setFormData({ ...formData, discount: Number(e.target.value) })}
-                  className="input"
-                />
-              </FormField>
-
-              <div>
+              <FormField label="Status">
                 <SearchableDropdown
-                  label="Discount Type"
-                  options={discountTypes.map((type) => ({
-                    value: type.value,
-                    label: type.label,
-                  }))}
-                  value={formData.discount_type}
-                  onChange={(val) => setFormData({ ...formData, discount_type: val as 'percentage' | 'fixed' })}
-                  placeholder="Select Discount Type"
+                  options={[
+                    { value: 'active', label: 'Active' },
+                    { value: 'inactive', label: 'Inactive' },
+                    { value: 'archived', label: 'Archived' },
+                  ]}
+                  value={form.status}
+                  onChange={v => set('status', v)}
                 />
-              </div>
-
-              <FormField label="Profit Margin (%)">
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.profit_margin}
-                  onChange={(e) => setFormData({ ...formData, profit_margin: Number(e.target.value) })}
-                  className="input"
-                />
+              </FormField>
+              <FormField label="Description">
+                <textarea className="input" rows={3} value={form.description} onChange={e => set('description', e.target.value)} />
+              </FormField>
+              <FormField label="Notes">
+                <textarea className="input" rows={2} value={form.notes} onChange={e => set('notes', e.target.value)} />
               </FormField>
             </div>
           </div>
 
-          {/* Inventory Management Section */}
+          {/* Pricing */}
           <div className="card">
-            <h2 style={{ 
-              fontSize: 'var(--font-lg)',
-              fontWeight: 'var(--font-weight-semibold)',
-              color: 'var(--text-primary)',
-              margin: 0,
-              marginBottom: 'var(--spacing-4)',
-            }}>
-              Inventory Management
-            </h2>
-            <div style={{ 
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-              gap: 'var(--spacing-4)',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)' }}>
-                <input
-                  type="checkbox"
-                  checked={formData.track_stock}
-                  onChange={(e) => setFormData({ ...formData, track_stock: e.target.checked })}
-                  style={{ width: '16px', height: '16px', cursor: 'pointer' }}
-                />
-                <label style={{ 
-                  fontSize: 'var(--font-sm)',
-                  fontWeight: 'var(--font-weight-medium)',
-                  color: 'var(--text-primary)',
-                  cursor: 'pointer',
-                }}>
-                  Track Stock
-                </label>
-              </div>
+            <h2 className="section-title">Pricing</h2>
+            <div className="form-grid">
+              <FormField label="Unit Price">
+                <input className="input" type="number" step="0.01" min="0" value={form.sell_price} onChange={e => set('sell_price', parseFloat(e.target.value) || 0)} />
+              </FormField>
+              <FormField label="Buy Price">
+                <input className="input" type="number" step="0.01" min="0" value={form.buy_price} onChange={e => set('buy_price', parseFloat(e.target.value) || 0)} />
+              </FormField>
+              <FormField label="Minimum Price">
+                <input className="input" type="number" step="0.01" min="0" value={form.minimum_price} onChange={e => set('minimum_price', parseFloat(e.target.value) || 0)} />
+              </FormField>
+              <FormField label="Discount">
+                <input className="input" type="number" step="0.01" min="0" value={form.discount} onChange={e => set('discount', parseFloat(e.target.value) || 0)} />
+              </FormField>
+              <FormField label="Tax 1 (%)">
+                <input className="input" type="number" step="0.01" min="0" value={form.tax1} onChange={e => set('tax1', parseFloat(e.target.value) || 0)} />
+              </FormField>
+              <FormField label="Tax 2 (%)">
+                <input className="input" type="number" step="0.01" min="0" value={form.tax2} onChange={e => set('tax2', parseFloat(e.target.value) || 0)} />
+              </FormField>
+            </div>
+          </div>
 
-              {formData.track_stock && (
+          {/* Stock */}
+          <div className="card">
+            <h2 className="section-title">Stock</h2>
+            <div className="form-grid">
+              <FormField label="Track Stock">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={form.track_stock} onChange={e => set('track_stock', e.target.checked)} />
+                  <span className="text-sm">Track inventory</span>
+                </label>
+              </FormField>
+              {form.track_stock && (
                 <>
                   <FormField label="Stock Balance">
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={formData.stock_balance}
-                      onChange={(e) => setFormData({ ...formData, stock_balance: Number(e.target.value) })}
-                      className="input"
-                    />
+                    <input className="input" type="number" min="0" value={form.stock_balance} onChange={e => set('stock_balance', parseFloat(e.target.value) || 0)} />
                   </FormField>
-
                   <FormField label="Low Stock Threshold">
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={formData.low_stock_threshold}
-                      onChange={(e) => setFormData({ ...formData, low_stock_threshold: Number(e.target.value) })}
-                      className="input"
-                    />
+                    <input className="input" type="number" min="0" value={form.low_stock_threshold} onChange={e => set('low_stock_threshold', parseFloat(e.target.value) || 0)} />
                   </FormField>
                 </>
               )}
             </div>
           </div>
 
-          {/* More Details Section */}
-          <div className="card">
-            <h2 style={{ 
-              fontSize: 'var(--font-lg)',
-              fontWeight: 'var(--font-weight-semibold)',
-              color: 'var(--text-primary)',
-              margin: 0,
-              marginBottom: 'var(--spacing-4)',
-            }}>
-              More Details
-            </h2>
-            <div style={{ 
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-              gap: 'var(--spacing-4)',
-            }}>
-              <div style={{ gridColumn: '1 / -1' }}>
-                <FormField label="Internal Notes">
-                  <textarea
-                    value={formData.internal_notes}
-                    onChange={(e) => setFormData({ ...formData, internal_notes: e.target.value })}
-                    rows={4}
-                    className="input"
-                  />
-                </FormField>
-              </div>
-
-              <FormField label="Status">
-                <select
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value as 'active' | 'inactive' | 'archived' })}
-                  className="input"
-                >
-                  {statusOptions.map((status) => (
-                    <option key={status.value} value={status.value}>
-                      {status.label}
-                    </option>
-                  ))}
-                </select>
-              </FormField>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--spacing-2)' }}>
-                <input
-                  type="checkbox"
-                  checked={formData.is_active}
-                  onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                  style={{ width: '16px', height: '16px', cursor: 'pointer' }}
-                />
-                <label style={{ 
-                  fontSize: 'var(--font-sm)',
-                  fontWeight: 'var(--font-weight-medium)',
-                  color: 'var(--text-primary)',
-                  cursor: 'pointer',
-                }}>
-                  Active
-                </label>
-              </div>
-            </div>
-          </div>
-
-          {/* Form Actions - Unified */}
-          <div style={{ display: 'flex', gap: 'var(--spacing-3)' }}>
-            <button
-              type="submit"
-              disabled={mutation.isPending}
-              className="btn btn-primary"
-            >
-              {mutation.isPending ? 'Saving...' : 'Save Product'}
-            </button>
-            <Link href="/products" className="btn btn-secondary">
-              Cancel
+          <div className="flex gap-3">
+            <Button type="submit" variant="primary" isLoading={mutation.isPending}>
+              Create Product
+            </Button>
+            <Link href="/products">
+              <Button type="button" variant="secondary">Cancel</Button>
             </Link>
           </div>
         </form>

@@ -13,6 +13,10 @@ export function useAuth() {
     queryFn: authApi.me,
     enabled: isAuthenticated,
     retry: false,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 
   const loginMutation = useMutation({

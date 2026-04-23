@@ -1,11 +1,10 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
 import { productsApi } from '@/lib/api/products';
 import { Product } from '@/types';
-import { formatPrice, formatNumber } from '@/lib/utils/format';
-import CategorySelector from './CategorySelector';
 
 interface ProductSelectorProps {
   selectedProductId: number | null;
@@ -14,246 +13,257 @@ interface ProductSelectorProps {
   onCategoryChange?: (category: string) => void;
 }
 
+function useDebounce(value: string, delay: number) {
+  const [d, setD] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setD(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return d;
+}
+
+interface MenuPos { top: number; left: number; width: number; }
+
+function usePortalMenu(triggerRef: React.RefObject<HTMLDivElement | null>, open: boolean) {
+  const [pos, setPos] = useState<MenuPos | null>(null);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+
+  const compute = useCallback(() => {
+    if (!triggerRef.current) return;
+    const r = triggerRef.current.getBoundingClientRect();
+    setPos({ top: r.bottom + window.scrollY + 4, left: r.left + window.scrollX, width: r.width });
+  }, [triggerRef]);
+
+  useEffect(() => {
+    if (!open) return;
+    compute();
+    window.addEventListener('scroll', compute, true);
+    window.addEventListener('resize', compute);
+    return () => {
+      window.removeEventListener('scroll', compute, true);
+      window.removeEventListener('resize', compute);
+    };
+  }, [open, compute]);
+
+  return { pos, mounted };
+}
+
 export default function ProductSelector({
   selectedProductId,
   onProductSelect,
   selectedCategory,
   onCategoryChange,
 }: ProductSelectorProps) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isOpen, setIsOpen] = useState(false);
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [catQuery, setCatQuery]   = useState('');
+  const [catOpen, setCatOpen]     = useState(false);
+  const [prodQuery, setProdQuery] = useState('');
+  const [prodOpen, setProdOpen]   = useState(false);
 
-  // Debounce search query - Reduced to 150ms for faster response
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(searchQuery);
-    }, 150);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
+  const catTriggerRef  = useRef<HTMLDivElement>(null);
+  const prodTriggerRef = useRef<HTMLDivElement>(null);
+  const catMenuRef     = useRef<HTMLDivElement>(null);
+  const prodMenuRef    = useRef<HTMLDivElement>(null);
 
-  // Fetch products with category filter
-  const { data: productsData, isLoading } = useQuery({
-    queryKey: ['products', selectedCategory, debouncedSearch],
-    queryFn: async () => {
-      const params: any = { page: 1, page_size: 1000 }; // Maximum page size for better performance
-      if (selectedCategory) {
-        params.category = selectedCategory;
-      }
-      // Use search parameter for server-side filtering (faster)
-      if (debouncedSearch && debouncedSearch.trim()) {
-        params.search = debouncedSearch.trim();
-      }
-      return productsApi.getAll(params);
-    },
-    enabled: !!selectedCategory, // Only fetch when category is selected
-    staleTime: 30000, // Cache for 30 seconds
+  const debouncedProd = useDebounce(prodQuery, 200);
+
+  const catPortal  = usePortalMenu(catTriggerRef, catOpen);
+  const prodPortal = usePortalMenu(prodTriggerRef, prodOpen);
+
+  // ── Data ──────────────────────────────────────────────────────────────
+  const { data: allCategories = [], isLoading: catsLoading } = useQuery({
+    queryKey: ['product-categories'],
+    queryFn: productsApi.getCategories,
+    staleTime: 5 * 60_000,
   });
 
+  const filteredCats = catQuery.trim()
+    ? allCategories.filter((c) => c.toLowerCase().includes(catQuery.toLowerCase()))
+    : allCategories;
 
-  const filteredProducts = useMemo(() => {
-    if (!productsData?.results) return [];
-    let products = productsData.results;
-    
-    // Client-side filtering for instant results while typing
-    // This provides immediate feedback before server search completes
-    if (searchQuery && searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim();
-      products = products.filter((p) => {
-        const nameMatch = p.name?.toLowerCase().includes(query);
-        const codeMatch = p.code?.toLowerCase().includes(query);
-        const skuMatch = p.sku?.toLowerCase().includes(query);
-        const barcodeMatch = p.barcode?.toLowerCase().includes(query);
-        return nameMatch || codeMatch || skuMatch || barcodeMatch;
-      });
-    }
-    
-    return products;
-  }, [productsData, searchQuery]);
+  const { data: productsData, isLoading: prodsLoading } = useQuery({
+    queryKey: ['products-selector', selectedCategory, debouncedProd],
+    queryFn: () => productsApi.getAll({
+      page_size: 50,
+      ...(selectedCategory ? { category: selectedCategory } : {}),
+      ...(debouncedProd.trim() ? { search: debouncedProd.trim() } : {}),
+    }),
+    enabled: !!(selectedCategory || debouncedProd.trim().length >= 2),
+    staleTime: 30_000,
+  });
 
-  const selectedProduct = useMemo(() => {
-    if (!selectedProductId || !productsData?.results) return null;
-    return productsData.results.find((p) => p.id === selectedProductId) || null;
-  }, [selectedProductId, productsData]);
+  const products = productsData?.results ?? [];
 
-  const handleProductClick = (product: Product) => {
-    onProductSelect(product);
-    setIsOpen(false);
-    setSearchQuery('');
+  const selectedProduct = selectedProductId
+    ? products.find((p) => p.id === selectedProductId) ?? null
+    : null;
+
+  // ── Outside-click close ───────────────────────────────────────────────
+  useEffect(() => {
+    const h = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (catTriggerRef.current?.contains(t) || catMenuRef.current?.contains(t)) return;
+      setCatOpen(false); setCatQuery('');
+    };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, []);
+
+  useEffect(() => {
+    const h = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (prodTriggerRef.current?.contains(t) || prodMenuRef.current?.contains(t)) return;
+      setProdOpen(false);
+    };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, []);
+
+  // ── Handlers ─────────────────────────────────────────────────────────
+  const handleCatSelect = (cat: string) => {
+    onCategoryChange?.(cat);
+    onProductSelect(null);
+    setProdQuery('');
+    setCatOpen(false);
+    setCatQuery('');
   };
 
-  return (
-    <div className="space-y-4">
-      {/* Category Selector */}
-      <CategorySelector
-        selectedCategory={selectedCategory || ''}
-        onCategoryChange={(category) => {
-          onCategoryChange?.(category);
-          onProductSelect(null);
-          setSearchQuery('');
-          setIsOpen(false);
-        }}
-      />
+  const handleProdSelect = (p: Product) => {
+    onProductSelect(p);
+    if (p.category && p.category !== selectedCategory) onCategoryChange?.(p.category);
+    setProdOpen(false);
+    setProdQuery('');
+  };
 
-      {/* Product Searchable Dropdown */}
-      {selectedCategory && (
-        <div>
-          <label className="form-label">
-            Product * <span className="text-red-500">*</span>
-          </label>
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search by name, code, SKU, or barcode..."
-              value={selectedProduct ? `${selectedProduct.name} (${selectedProduct.code})` : searchQuery}
-              onChange={(e) => {
-                if (!selectedProduct) {
-                  setSearchQuery(e.target.value);
-                  setIsOpen(true);
-                }
-              }}
-              onFocus={() => {
-                if (!selectedProduct) {
-                  setIsOpen(true);
-                }
-              }}
-              onClick={() => {
-                if (selectedProduct) {
-                  onProductSelect(null);
-                  setSearchQuery('');
-                }
-              }}
-              className="w-full"
-            />
-            {isLoading && (
-              <div className="absolute right-3 top-2.5">
-                <div className="w-4 h-4 border-2 border-[var(--brand-orange)] border-t-transparent rounded-full animate-spin"></div>
-              </div>
-            )}
-            {selectedProduct && !isLoading && (
-              <button
-                type="button"
-                onClick={() => {
-                  onProductSelect(null);
-                  setSearchQuery('');
-                }}
-                className="absolute right-3 top-2.5 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            )}
-            
-            {/* Dropdown Results */}
-            {isOpen && (
-              <>
-                {/* Invisible overlay to detect outside clicks */}
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={() => setIsOpen(false)}
-                  style={{ backgroundColor: 'transparent' }}
-                />
-                <div className="dropdown-container absolute z-50 w-full mt-1 max-h-60 overflow-hidden">
-                {isLoading ? (
-                  <div className="px-4 py-3 text-sm text-muted-foreground text-center">
-                    <div className="flex items-center justify-center gap-2">
-                      <div className="w-4 h-4 border-2 border-[var(--brand-orange)] border-t-transparent rounded-full animate-spin"></div>
-                      <span>Searching...</span>
-                    </div>
-                  </div>
-                ) : filteredProducts.length === 0 ? (
-                  <div className="px-4 py-3 text-sm text-muted-foreground text-center">
-                    No products found{searchQuery ? ` for "${searchQuery}"` : ''}
-                  </div>
-                ) : (
-                  <div className="max-h-60 overflow-y-auto">
-                    <div className="px-3 py-2 text-xs text-muted-foreground border-b bg-[var(--table-header-bg)] sticky top-0" style={{ borderColor: 'var(--border)' }}>
-                      {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found
-                    </div>
-                    {filteredProducts.map((product) => (
-                      <button
-                        key={product.id}
-                        type="button"
-                        onClick={() => handleProductClick(product)}
-                        className="dropdown-item w-full text-left"
-                      >
-                        <div className="font-medium" style={{ color: 'var(--foreground)' }}>
-                          {product.name}
-                        </div>
-                        <div className="text-xs mt-0.5" style={{ color: 'var(--muted-foreground)' }}>
-                          Code: {product.code} {product.sku && `| SKU: ${product.sku}`}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
+  const clearProduct  = () => { onProductSelect(null); setProdQuery(''); };
+  const clearCategory = () => { onCategoryChange?.(''); onProductSelect(null); setProdQuery(''); };
 
-      {/* Product Preview */}
-      {selectedProduct && (
-        <div className="p-4 border rounded-md" style={{ backgroundColor: 'var(--accent)', borderColor: 'var(--border)' }}>
-          <div className="flex items-start justify-between mb-3">
-            <h4 className="text-sm font-semibold" style={{ color: 'var(--foreground)' }}>
-              Product Information
-            </h4>
-            <button
-              type="button"
-              onClick={() => {
-                onProductSelect(null);
-                setSearchQuery('');
-              }}
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+  const catDisplay  = catOpen ? catQuery : (selectedCategory || '');
+  const prodDisplay = selectedProduct
+    ? `${selectedProduct.name}  (${selectedProduct.code})`
+    : prodOpen ? prodQuery : '';
+
+  // ── Portal menus ──────────────────────────────────────────────────────
+  const catMenu = catPortal.mounted && catOpen && catPortal.pos ? createPortal(
+    <div
+      ref={catMenuRef}
+      className="dropdown-container"
+      style={{ position: 'absolute', zIndex: 9999, top: catPortal.pos.top, left: catPortal.pos.left, width: Math.max(catPortal.pos.width, 220), maxHeight: 220, overflowY: 'auto', boxSizing: 'border-box' }}
+      onMouseDown={(e) => e.stopPropagation()}
+    >
+      {catsLoading
+        ? <div style={{ padding: '8px 12px', fontSize: 12, color: 'var(--text-secondary)' }}>Loading…</div>
+        : filteredCats.length === 0
+          ? <div style={{ padding: '8px 12px', fontSize: 12, color: 'var(--text-secondary)' }}>No categories</div>
+          : filteredCats.map((cat) => (
+            <button key={cat} type="button"
+              className={`dropdown-item${selectedCategory === cat ? ' selected' : ''}`}
+              onMouseDown={(e) => { e.preventDefault(); handleCatSelect(cat); }}>
+              {cat}
             </button>
-          </div>
-          <div className="grid grid-cols-2 gap-3 text-xs">
-            <div>
-              <span style={{ color: 'var(--muted-foreground)' }}>Unit:</span>
-              <span className="ml-2 font-medium" style={{ color: 'var(--foreground)' }}>
-                {selectedProduct.unit || 'N/A'}
-              </span>
-            </div>
-            <div>
-              <span style={{ color: 'var(--muted-foreground)' }}>Category:</span>
-              <span className="ml-2 font-medium" style={{ color: 'var(--foreground)' }}>
-                {selectedProduct.category || 'N/A'}
-              </span>
-            </div>
-            <div>
-              <span style={{ color: 'var(--muted-foreground)' }}>Current Stock:</span>
-              <span className="ml-2 font-medium" style={{ color: 'var(--foreground)' }}>
-                {formatNumber(selectedProduct.stock_balance || 0)}
-              </span>
-            </div>
-            <div>
-              <span style={{ color: 'var(--muted-foreground)' }}>Last Price:</span>
-              <span className="ml-2 font-medium" style={{ color: 'var(--foreground)' }}>
-                {formatPrice(selectedProduct.buy_price || selectedProduct.unit_price || 0)}
-              </span>
-            </div>
-            {selectedProduct.supplier && (
-              <div className="col-span-2">
-                <span style={{ color: 'var(--muted-foreground)' }}>Supplier:</span>
-                <span className="ml-2 font-medium" style={{ color: 'var(--foreground)' }}>
-                  {typeof selectedProduct.supplier === 'object'
-                    ? selectedProduct.supplier.name
-                    : 'N/A'}
+          ))
+      }
+    </div>,
+    document.body
+  ) : null;
+
+  const prodMenu = prodPortal.mounted && prodOpen && !selectedProduct && prodPortal.pos ? createPortal(
+    <div
+      ref={prodMenuRef}
+      className="dropdown-container"
+      style={{ position: 'absolute', zIndex: 9999, top: prodPortal.pos.top, left: prodPortal.pos.left, width: prodPortal.pos.width, maxHeight: 240, overflowY: 'auto', boxSizing: 'border-box' }}
+      onMouseDown={(e) => e.stopPropagation()}
+    >
+      {prodsLoading
+        ? <div style={{ padding: '8px 12px', fontSize: 12, color: 'var(--text-secondary)' }}>Searching…</div>
+        : !selectedCategory && debouncedProd.trim().length < 2
+          ? <div style={{ padding: '8px 12px', fontSize: 12, color: 'var(--text-secondary)' }}>Select a category or type 2+ characters…</div>
+          : products.length === 0
+            ? <div style={{ padding: '8px 12px', fontSize: 12, color: 'var(--text-secondary)' }}>No products found</div>
+            : products.map((p) => (
+              <button key={p.id} type="button"
+                className="dropdown-item"
+                onMouseDown={(e) => { e.preventDefault(); handleProdSelect(p); }}>
+                <span style={{ fontWeight: 600, fontSize: 13 }}>{p.name}</span>
+                <span style={{ fontSize: 11, color: 'var(--text-secondary)', marginLeft: 6 }}>
+                  {p.code}{p.category ? ` · ${p.category}` : ''}{p.unit ? ` · ${p.unit}` : ''}
                 </span>
-              </div>
-            )}
-          </div>
+              </button>
+            ))
+      }
+    </div>,
+    document.body
+  ) : null;
+
+  return (
+    <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+
+      {/* ── Category ── */}
+      <div style={{ width: 180, flexShrink: 0 }}>
+        <label style={{ fontSize: 11, color: 'var(--text-secondary)', display: 'block', marginBottom: 3 }}>Category</label>
+        <div ref={catTriggerRef} style={{ position: 'relative' }}>
+          <input
+            className="input"
+            style={{ width: '100%', paddingRight: 44, fontSize: 13, boxSizing: 'border-box' }}
+            placeholder="All…"
+            value={catDisplay}
+            onChange={(e) => { setCatQuery(e.target.value); setCatOpen(true); }}
+            onFocus={() => setCatOpen(true)}
+            autoComplete="off"
+          />
+          {selectedCategory && !catOpen && (
+            <button type="button" onClick={clearCategory}
+              style={{ position: 'absolute', right: 22, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)', background: 'none', border: 'none', cursor: 'pointer', lineHeight: 1, padding: '0 2px' }}>
+              ×
+            </button>
+          )}
+          <span style={{ position: 'absolute', right: 7, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--text-secondary)', fontSize: 10 }}>
+            {catOpen ? '▲' : '▼'}
+          </span>
         </div>
-      )}
+      </div>
+
+      {/* ── Product ── */}
+      <div style={{ flex: 1 }}>
+        <label style={{ fontSize: 11, color: 'var(--text-secondary)', display: 'block', marginBottom: 3 }}>
+          Product <span style={{ color: '#ef4444' }}>*</span>
+          {selectedProduct && (
+            <span style={{ marginLeft: 8, fontWeight: 600, color: 'var(--text-primary)', fontSize: 11 }}>
+              {selectedProduct.code} · {selectedProduct.unit || '—'} · stock: {selectedProduct.stock_balance ?? '—'}
+            </span>
+          )}
+        </label>
+        <div ref={prodTriggerRef} style={{ position: 'relative' }}>
+          <input
+            className="input"
+            style={{ width: '100%', paddingRight: 28, fontSize: 13, boxSizing: 'border-box' }}
+            placeholder={selectedCategory ? 'Search product…' : 'Search by name, code, SKU…'}
+            value={prodDisplay}
+            onChange={(e) => {
+              if (selectedProduct) clearProduct();
+              setProdQuery(e.target.value);
+              setProdOpen(true);
+            }}
+            onFocus={() => { if (!selectedProduct) setProdOpen(true); }}
+            onClick={() => { if (selectedProduct) { clearProduct(); setProdOpen(true); } }}
+            autoComplete="off"
+          />
+          {(selectedProduct || prodQuery) && (
+            <button type="button" onClick={() => { clearProduct(); setProdOpen(false); }}
+              style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)', background: 'none', border: 'none', cursor: 'pointer', lineHeight: 1 }}>
+              ×
+            </button>
+          )}
+          {prodsLoading && !selectedProduct && (
+            <div style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)' }}>
+              <div style={{ width: 13, height: 13, border: '2px solid var(--brand-orange)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {catMenu}
+      {prodMenu}
     </div>
   );
 }
-

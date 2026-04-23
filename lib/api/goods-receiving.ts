@@ -66,8 +66,7 @@ export const goodsReceivingApi = {
     invoice_delivery_status?: 'not_delivered' | 'delivered';
   }): Promise<GoodsReceivedNote> => {
     const formData = new FormData();
-    
-    // Append basic fields
+
     formData.append('purchase_order_id', data.purchase_order_id.toString());
     formData.append('receipt_date', data.receipt_date);
     if (data.status) formData.append('status', data.status);
@@ -75,57 +74,33 @@ export const goodsReceivingApi = {
     if (data.invoice_delivery_status) {
       formData.append('invoice_delivery_status', data.invoice_delivery_status);
     }
-    
-    // Append material images as files
+
     if (data.material_images && data.material_images.length > 0) {
-      data.material_images.forEach((file) => {
-        formData.append('material_images', file);
+      data.material_images.forEach((img) => {
+        formData.append('material_images', img);
       });
     }
-    
-    // Append supplier invoice file
+
     if (data.supplier_invoice_file) {
       formData.append('supplier_invoice_file', data.supplier_invoice_file);
     }
-    
-    // Append items as JSON - ensure it's a valid array
+
     if (data.items && Array.isArray(data.items) && data.items.length > 0) {
-      const itemsJson = JSON.stringify(data.items);
-      console.log('Appending items to FormData:', itemsJson);
-      console.log('Items count:', data.items.length);
-      console.log('Items structure:', data.items.map(item => ({
-        purchase_order_item_id: item.purchase_order_item_id,
-        product_id: item.product_id,
-        ordered_quantity: item.ordered_quantity,
-        received_quantity: item.received_quantity,
-        rejected_quantity: item.rejected_quantity,
-      })));
-      formData.append('items', itemsJson);
+      formData.append('items', JSON.stringify(data.items));
     } else {
-      console.error('Items is empty or not an array:', data.items);
-      console.error('Items type:', typeof data.items);
-      console.error('Items is array:', Array.isArray(data.items));
-      if (data.items) {
-        console.error('Items value:', data.items);
-      }
       throw new Error('Items are required and must be a non-empty array');
     }
-    
-    // Debug: Log all FormData keys and values (except files)
-    console.log('FormData keys:', Array.from(formData.keys()));
-    for (const key of formData.keys()) {
-      if (key !== 'material_images' && key !== 'supplier_invoice_file') {
-        const value = formData.get(key);
-        console.log(`FormData[${key}]:`, value, typeof value);
-      }
-    }
-    
-    // Don't set Content-Type header - let axios/browser set it automatically with boundary
+
     const response = await apiClient.post('/goods-receiving/', formData);
     return response.data;
   },
 
-  update: async (id: number, data: Partial<GoodsReceivedNote>): Promise<GoodsReceivedNote> => {
+  update: async (id: number, data: Partial<{
+    receipt_date: string;
+    status: 'draft' | 'partial' | 'completed' | 'cancelled';
+    notes: string;
+    invoice_delivery_status: 'not_delivered' | 'delivered';
+  }>): Promise<GoodsReceivedNote> => {
     const response = await apiClient.patch(`/goods-receiving/${id}/`, data);
     return response.data;
   },
@@ -134,9 +109,26 @@ export const goodsReceivingApi = {
     await apiClient.delete(`/goods-receiving/${id}/`);
   },
 
+  addImages: async (id: number, images: File[]): Promise<GoodsReceivedNote> => {
+    const formData = new FormData();
+    images.forEach((img) => formData.append('material_images', img));
+    const response = await apiClient.post(`/goods-receiving/${id}/add_images/`, formData);
+    return response.data;
+  },
+
+  deleteImage: async (grnId: number, imageId: number): Promise<void> => {
+    await apiClient.delete(`/goods-receiving/${grnId}/delete_image/${imageId}/`);
+  },
+
+  uploadSupplierInvoice: async (id: number, file: File): Promise<GoodsReceivedNote> => {
+    const formData = new FormData();
+    formData.append('supplier_invoice_file', file);
+    const response = await apiClient.post(`/goods-receiving/${id}/upload_supplier_invoice/`, formData);
+    return response.data;
+  },
+
   markInvoiceDelivered: async (id: number): Promise<GoodsReceivedNote> => {
     const response = await apiClient.post(`/goods-receiving/${id}/mark_invoice_delivered/`);
     return response.data;
   },
 };
-

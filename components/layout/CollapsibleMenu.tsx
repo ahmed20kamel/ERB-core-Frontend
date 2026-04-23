@@ -98,7 +98,7 @@ export default function CollapsibleMenu({
           maxHeight: isOpen ? '1000px' : '0',
         }}
       >
-        <div className="ml-3 mt-0.5 space-y-0.5 border-l pl-3" style={{ borderColor: 'var(--sidebar-border)' }}>
+        <div className="ms-3 mt-0.5 space-y-0.5 border-s ps-3" style={{ borderColor: 'var(--sidebar-border)' }}>
           {visibleItems.map((item) => {
             const itemIsActive = pathname === item.href || pathname.startsWith(item.href + '/');
             return (
