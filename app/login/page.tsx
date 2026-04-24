@@ -22,12 +22,19 @@ export default function LoginPage() {
     if (isAuthenticated) router.replace('/dashboard');
   }, [isAuthenticated, router]);
 
+  const [error, setError] = useState('');
+
   const { mutate: login, isPending: isLoggingIn } = useMutation({
     mutationFn: ({ username, password }: { username: string; password: string }) =>
       authApi.login(username, password),
     onSuccess: (data) => {
+      setError('');
       setAuth(data.user, data.tokens.access, data.tokens.refresh);
       router.push('/dashboard');
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.error || err?.response?.data?.detail || 'Invalid username or password';
+      setError(msg);
     },
   });
 
@@ -79,6 +86,11 @@ export default function LoginPage() {
           </h2>
 
           <form className="space-y-5" onSubmit={handleSubmit}>
+            {error && (
+              <div className="rounded-lg px-4 py-3 text-sm font-medium" style={{ backgroundColor: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)' }}>
+                {error}
+              </div>
+            )}
             <TextField
               id="username" name="username" type="text" label="Username" required
               placeholder="Enter your username" value={username}
