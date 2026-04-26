@@ -23,15 +23,11 @@ function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: '2-digit' });
 }
 
-function linkify(text: string) {
-  const urlRx = /(https?:\/\/[^\s]+)/g;
-  const parts = text.split(urlRx);
-  return parts.map((p, i) =>
-    urlRx.test(p)
-      ? <a key={i} href={p} target="_blank" rel="noreferrer"
-          style={{ color: '#2563EB', textDecoration: 'underline', wordBreak: 'break-all' }}>{p}</a>
-      : p
-  );
+function parseMessage(text: string): { body: string; urls: string[] } {
+  const urlRx = /https?:\/\/[^\s]+/g;
+  const urls = text.match(urlRx) ?? [];
+  const body = text.replace(urlRx, '').replace(/\n{3,}/g, '\n\n').trim();
+  return { body, urls };
 }
 
 /* ─── Stat card ──────────────────────────────────────────────────────────── */
@@ -320,11 +316,11 @@ export default function ViolationsPage() {
                     <Th>{t('viol', 'sectorPlot')}</Th>
                     <Th>{t('viol', 'project')}</Th>
                     <Th>{t('viol', 'engineer')}</Th>
-                    <Th w={80}>{t('viol', 'deadline')}</Th>
-                    <Th w={110}>{t('viol', 'fine')}</Th>
-                    <Th w={90}>{t('viol', 'date')}</Th>
-                    <Th w={120}>{t('viol', 'status')}</Th>
-                    <Th w={160}>{t('viol', 'action')}</Th>
+                    <Th w={80} center>{t('viol', 'deadline')}</Th>
+                    <Th w={110} center>{t('viol', 'fine')}</Th>
+                    <Th w={90} center>{t('viol', 'date')}</Th>
+                    <Th w={120} center>{t('viol', 'status')}</Th>
+                    <Th w={150}>{t('viol', 'action')}</Th>
                   </tr>
                 </thead>
                 <tbody>
@@ -403,10 +399,12 @@ export default function ViolationsPage() {
                           </Td>
 
                           {/* Deadline */}
-                          <Td>
+                          <Td center>
                             {v.deadline_days != null
                               ? <span style={{
-                                  fontWeight: 700, fontSize: 13,
+                                  display: 'inline-block', padding: '3px 9px', borderRadius: 8,
+                                  fontWeight: 700, fontSize: 12,
+                                  background: v.deadline_days <= 1 ? '#FEE2E2' : v.deadline_days <= 3 ? '#FEF3C7' : '#F0FDF4',
                                   color: v.deadline_days <= 1 ? '#DC2626' : v.deadline_days <= 3 ? '#D97706' : '#16A34A',
                                 }}>
                                   {v.deadline_days}d
@@ -416,31 +414,31 @@ export default function ViolationsPage() {
                           </Td>
 
                           {/* Fine */}
-                          <Td>
+                          <Td center>
                             {v.fine_amount
-                              ? <div>
-                                  <span style={{ fontWeight: 700, color: '#DC2626', fontSize: 13 }}>
+                              ? <div style={{ lineHeight: 1.3 }}>
+                                  <span style={{ fontWeight: 800, color: '#DC2626', fontSize: 13 }}>
                                     {Number(v.fine_amount).toLocaleString()}
                                   </span>
-                                  <span style={{ fontSize: 10, color: '#9CA3AF', marginLeft: 3 }}>AED</span>
+                                  <span style={{ fontSize: 10, color: '#9CA3AF', display: 'block' }}>AED</span>
                                 </div>
                               : <span style={{ color: 'var(--text-tertiary)' }}>—</span>
                             }
                           </Td>
 
                           {/* Date */}
-                          <Td>
-                            <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{fmtDate(v.received_at)}</div>
+                          <Td center>
+                            <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 500 }}>{fmtDate(v.received_at)}</div>
                             {v.resolved_at && (
-                              <div style={{ fontSize: 11, color: '#22C55E', marginTop: 2 }}>✅ {fmtDate(v.resolved_at)}</div>
+                              <div style={{ fontSize: 10, color: '#22C55E', marginTop: 2 }}>✅ {fmtDate(v.resolved_at)}</div>
                             )}
                           </Td>
 
                           {/* Status */}
-                          <Td>
+                          <Td center>
                             <span style={{
                               display: 'inline-flex', alignItems: 'center', gap: 5,
-                              padding: '4px 10px', borderRadius: 20,
+                              padding: '5px 11px', borderRadius: 20,
                               background: meta.bg, color: meta.color,
                               fontSize: 11, fontWeight: 700, border: `1px solid ${meta.border}`,
                               whiteSpace: 'nowrap',
@@ -501,30 +499,78 @@ export default function ViolationsPage() {
                         </tr>
 
                         {/* Expanded row */}
-                        {isExp && (
-                          <tr key={`${v.id}-exp`} style={{ background: '#F8FAFC', borderBottom: '2px solid #E2E8F0' }}>
-                            <td colSpan={10} style={{ padding: '16px 20px 16px 52px' }}>
-                              {v.parse_error && (
+                        {isExp && (() => {
+                          const { body, urls } = parseMessage(v.raw_message);
+                          return (
+                            <tr key={`${v.id}-exp`} style={{ background: '#F8FAFC', borderBottom: '2px solid #E2E8F0' }}>
+                              <td colSpan={10} style={{ padding: '0 24px 20px 24px' }}>
                                 <div style={{
-                                  display: 'inline-flex', alignItems: 'center', gap: 6,
-                                  padding: '6px 12px', borderRadius: 8, marginBottom: 12,
-                                  background: '#FEF9C3', color: '#854D0E', fontSize: 12, fontWeight: 600,
-                                  border: '1px solid #FDE047',
+                                  background: '#fff', borderRadius: 14,
+                                  border: '1.5px solid #E2E8F0',
+                                  boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                                  overflow: 'hidden', maxWidth: 720,
                                 }}>
-                                  ⚠️ {v.parse_error}
+                                  {/* Header strip */}
+                                  <div style={{
+                                    padding: '10px 16px', background: '#F1F5F9',
+                                    borderBottom: '1px solid #E2E8F0',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                  }}>
+                                    <span style={{ fontSize: 11, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                      📩 Original SMS
+                                    </span>
+                                    <span style={{ fontSize: 11, color: '#94A3B8' }}>{v.sender} · {fmtDate(v.received_at)}</span>
+                                  </div>
+
+                                  {/* Parse error */}
+                                  {v.parse_error && (
+                                    <div style={{
+                                      padding: '8px 16px',
+                                      background: '#FFFBEB', borderBottom: '1px solid #FDE68A',
+                                      display: 'flex', alignItems: 'center', gap: 6,
+                                      fontSize: 12, fontWeight: 600, color: '#92400E',
+                                    }}>
+                                      ⚠️ {v.parse_error}
+                                    </div>
+                                  )}
+
+                                  {/* Message body */}
+                                  <div style={{
+                                    padding: '16px 20px',
+                                    direction: 'rtl', textAlign: 'right',
+                                    fontSize: 13, lineHeight: 2, color: '#1E293B',
+                                    fontFamily: 'system-ui, -apple-system, "Segoe UI", Arial, sans-serif',
+                                    whiteSpace: 'pre-wrap',
+                                  }}>
+                                    {body}
+                                  </div>
+
+                                  {/* URLs as buttons */}
+                                  {urls.length > 0 && (
+                                    <div style={{
+                                      padding: '10px 16px 14px',
+                                      borderTop: '1px solid #F1F5F9',
+                                      display: 'flex', flexWrap: 'wrap', gap: 8,
+                                    }}>
+                                      {urls.map((url, i) => (
+                                        <a key={i} href={url} target="_blank" rel="noreferrer" style={{
+                                          display: 'inline-flex', alignItems: 'center', gap: 5,
+                                          padding: '6px 14px', borderRadius: 8,
+                                          background: '#EFF6FF', color: '#1D4ED8',
+                                          border: '1px solid #BFDBFE',
+                                          fontSize: 12, fontWeight: 600,
+                                          textDecoration: 'none',
+                                        }}>
+                                          🔗 {i === 0 ? 'View on ADM' : `Link ${i + 1}`} ↗
+                                        </a>
+                                      ))}
+                                    </div>
+                                  )}
                                 </div>
-                              )}
-                              <div style={{
-                                background: '#fff', border: '1px solid #E2E8F0', borderRadius: 10,
-                                padding: '12px 16px', fontSize: 12, lineHeight: 1.8,
-                                fontFamily: 'monospace', color: '#374151', whiteSpace: 'pre-wrap',
-                                direction: 'rtl', textAlign: 'right', maxWidth: 680,
-                              }}>
-                                {linkify(v.raw_message)}
-                              </div>
-                            </td>
-                          </tr>
-                        )}
+                              </td>
+                            </tr>
+                          );
+                        })()}
                       </>
                     );
                   })}
@@ -557,21 +603,22 @@ export default function ViolationsPage() {
 }
 
 /* ─── Small helpers ──────────────────────────────────────────────────────── */
-function Th({ children, w }: { children?: React.ReactNode; w?: number }) {
+function Th({ children, w, center }: { children?: React.ReactNode; w?: number; center?: boolean }) {
   return (
     <th style={{
-      padding: '11px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700,
-      color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.5,
+      padding: '12px 16px', fontSize: 11, fontWeight: 700,
+      color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.6,
       whiteSpace: 'nowrap', width: w,
+      textAlign: center ? 'center' : 'left',
     }}>
       {children}
     </th>
   );
 }
 
-function Td({ children }: { children: React.ReactNode }) {
+function Td({ children, center }: { children: React.ReactNode; center?: boolean }) {
   return (
-    <td style={{ padding: '12px 14px', verticalAlign: 'middle' }}>
+    <td style={{ padding: '13px 16px', verticalAlign: 'middle', textAlign: center ? 'center' : 'left' }}>
       {children}
     </td>
   );
