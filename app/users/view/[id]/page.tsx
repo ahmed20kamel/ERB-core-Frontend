@@ -165,7 +165,7 @@ export default function UserDetailPage() {
 
             {projects.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 gap-2">
-                <BuildingIcon className="w-8 h-8" style={{ color: 'var(--text-tertiary)' }} />
+                <BuildingIcon className="w-8 h-8 opacity-40" />
                 <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                   {t('empty', 'noProjects')}
                 </p>
