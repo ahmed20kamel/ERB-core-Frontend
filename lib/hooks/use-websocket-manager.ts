@@ -81,9 +81,17 @@ function createManager(): WSManager {
   };
 }
 
-// Module-level singleton (safe in browser, skipped in SSR)
+const WS_ENABLED = process.env.NEXT_PUBLIC_WS_ENABLED === 'true';
+
+const noopManager: WSManager = {
+  subscribe: () => () => {},
+  connect: () => {},
+  disconnect: () => {},
+};
+
 let manager: WSManager | null = null;
 export function getWSManager(): WSManager {
+  if (!WS_ENABLED) return noopManager;
   if (!manager) manager = createManager();
   return manager;
 }
