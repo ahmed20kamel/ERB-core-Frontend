@@ -78,7 +78,7 @@ export default function ViolationsPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['violations', page, search, statusFilter],
-    queryFn: () => violationsApi.getAll({ page, search: search || undefined, status: statusFilter || undefined, page_size: 20 }),
+    queryFn: () => violationsApi.getAll({ page, search: search || undefined, status: statusFilter || undefined, page_size: 50 }),
     enabled: isAdmin,
   });
 
@@ -118,7 +118,7 @@ export default function ViolationsPage() {
 
   const violations: MunicipalViolation[] = data?.results ?? [];
   const totalCount  = data?.count ?? 0;
-  const totalPages  = Math.ceil(totalCount / 20);
+  const totalPages  = Math.ceil(totalCount / 50);
   const allSelected = violations.length > 0 && violations.every(v => selectedIds.has(v.id));
   const statusLabels: Record<string, string> = {
     new: t('viol', 'statusNew'), notified: t('viol', 'statusNotified'),
