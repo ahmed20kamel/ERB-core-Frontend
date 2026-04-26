@@ -74,7 +74,7 @@ export default function EditProjectPage() {
     }
   }, [project]);
 
-  const handleEngineerChange = (val: string) => {
+  const handleEngineerChange = (val: string | number | null) => {
     const id = val ? Number(val) : null;
     const eng = engineers.find(e => e.id === id);
     setFormData(f => ({
