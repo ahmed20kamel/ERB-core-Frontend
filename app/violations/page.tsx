@@ -31,8 +31,8 @@ function parseMessage(text: string): { body: string; urls: string[] } {
 }
 
 /* ─── Stat card ──────────────────────────────────────────────────────────── */
-function StatCard({ icon, label, value, color, border, onClick, active }: {
-  icon: string; label: string; value: number; color: string;
+function StatCard({ label, value, color, border, onClick, active }: {
+  label: string; value: number; color: string;
   border: string; onClick?: () => void; active?: boolean;
 }) {
   return (
@@ -40,19 +40,13 @@ function StatCard({ icon, label, value, color, border, onClick, active }: {
       <div style={{
         background: '#fff',
         border: active ? `2px solid ${color}` : `1.5px solid ${border}`,
-        borderRadius: 14,
-        padding: '16px 18px',
+        borderRadius: 12,
+        padding: '14px 16px',
         transition: 'box-shadow 0.15s, border-color 0.15s',
-        boxShadow: active ? `0 0 0 3px ${color}22` : '0 1px 4px rgba(0,0,0,0.06)',
+        boxShadow: active ? `0 0 0 3px ${color}22` : '0 1px 3px rgba(0,0,0,0.05)',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-          <span style={{ fontSize: 22 }}>{icon}</span>
-          <span style={{
-            fontSize: 11, fontWeight: 600, color,
-            background: `${color}18`, borderRadius: 20, padding: '2px 8px',
-          }}>{label}</span>
-        </div>
-        <div style={{ fontSize: 32, fontWeight: 800, color, lineHeight: 1 }}>{value}</div>
+        <div style={{ fontSize: 28, fontWeight: 800, color, lineHeight: 1, marginBottom: 6 }}>{value}</div>
+        <div style={{ fontSize: 11, fontWeight: 600, color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.4 }}>{label}</div>
       </div>
     </button>
   );
@@ -146,10 +140,9 @@ export default function ViolationsPage() {
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{
-                width: 42, height: 42, borderRadius: 12, background: '#FEF2F2',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
-              }}>⚠️</div>
+              <div>
+                <div style={{ width: 4, height: 36, borderRadius: 4, background: 'var(--color-primary)', marginRight: 14, display: 'inline-block', verticalAlign: 'middle' }} />
+              </div>
               <div>
                 <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.2 }}>
                   {t('viol', 'title')}
@@ -164,14 +157,13 @@ export default function ViolationsPage() {
           <button
             onClick={() => { setTestOpen(o => !o); setTestResult(null); }}
             style={{
-              display: 'flex', alignItems: 'center', gap: 8,
               padding: '9px 18px', borderRadius: 10, border: '1.5px solid #E5E7EB',
               background: testOpen ? '#F0FDF4' : '#fff', cursor: 'pointer',
               fontSize: 13, fontWeight: 600, color: testOpen ? '#15803D' : 'var(--text-primary)',
               transition: 'all 0.15s',
             }}
           >
-            🧪 {t('viol', 'testPanel')}
+            {t('viol', 'testPanel')}
           </button>
         </div>
 
@@ -217,23 +209,23 @@ export default function ViolationsPage() {
         {/* ══ Stats ═══════════════════════════════════════════════════════════ */}
         {stats && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 14 }}>
-            <StatCard icon="📋" label="Total" value={stats.total}
+            <StatCard label="Total" value={stats.total}
               color="var(--color-primary)" border="#C7D2FE"
               onClick={() => { setStatusFilter(''); setPage(1); }} active={statusFilter === ''} />
-            <StatCard icon="🆕" label={statusLabels.new}      value={stats.new}
+            <StatCard label={statusLabels.new}      value={stats.new}
               color={S.new.color}      border={S.new.border}
               onClick={() => { setStatusFilter('new'); setPage(1); }} active={statusFilter === 'new'} />
-            <StatCard icon="📣" label={statusLabels.notified} value={stats.notified}
+            <StatCard label={statusLabels.notified} value={stats.notified}
               color={S.notified.color} border={S.notified.border}
               onClick={() => { setStatusFilter('notified'); setPage(1); }} active={statusFilter === 'notified'} />
-            <StatCard icon="✅" label={statusLabels.resolved} value={stats.resolved}
+            <StatCard label={statusLabels.resolved} value={stats.resolved}
               color={S.resolved.color} border={S.resolved.border}
               onClick={() => { setStatusFilter('resolved'); setPage(1); }} active={statusFilter === 'resolved'} />
-            <StatCard icon="💸" label={statusLabels.fined}    value={stats.fined}
+            <StatCard label={statusLabels.fined}    value={stats.fined}
               color={S.fined.color}    border={S.fined.border}
               onClick={() => { setStatusFilter('fined'); setPage(1); }} active={statusFilter === 'fined'} />
             {stats.no_project > 0 && (
-              <StatCard icon="⚠️" label="No Project" value={stats.no_project}
+              <StatCard label="No Project" value={stats.no_project}
                 color="#D97706" border="#FDE68A" />
             )}
           </div>
@@ -281,7 +273,7 @@ export default function ViolationsPage() {
                 cursor: 'pointer', opacity: bulkMutation.isPending ? 0.6 : 1,
               }}
             >
-              ✅ {t('viol', 'markResolved')}
+              {t('viol', 'markResolved')}
             </button>
             <button
               onClick={() => setSelectedIds(new Set())}
@@ -347,7 +339,7 @@ export default function ViolationsPage() {
                           {/* Reference */}
                           <Td>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                              {hasError && <span title={v.parse_error} style={{ fontSize: 14, flexShrink: 0 }}>⚠️</span>}
+                              {hasError && <span title={v.parse_error} style={{ width: 8, height: 8, borderRadius: '50%', background: '#F59E0B', display: 'inline-block', flexShrink: 0 }} />}
                               <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 12, color: 'var(--text-primary)', letterSpacing: 0.3 }}>
                                 {v.reference_number || '—'}
                               </span>
@@ -458,7 +450,7 @@ export default function ViolationsPage() {
                                 bg={copiedId === v.id ? '#DCFCE7' : '#EFF6FF'}
                                 color={copiedId === v.id ? '#15803D' : '#1D4ED8'}
                               >
-                                {copiedId === v.id ? '✓' : '🔗'}
+                                {copiedId === v.id ? 'Copied' : 'Link'}
                               </ActionBtn>
 
                               {/* Expand details */}
@@ -491,7 +483,7 @@ export default function ViolationsPage() {
                                   bg="#DCFCE7" color="#15803D"
                                   disabled={resolveMutation.isPending}
                                 >
-                                  ✓
+                                  Resolve
                                 </ActionBtn>
                               )}
                             </div>
@@ -512,12 +504,12 @@ export default function ViolationsPage() {
                                 }}>
                                   {/* Header strip */}
                                   <div style={{
-                                    padding: '10px 16px', background: '#F1F5F9',
+                                    padding: '9px 16px', background: '#F8FAFC',
                                     borderBottom: '1px solid #E2E8F0',
                                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                                   }}>
-                                    <span style={{ fontSize: 11, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                                      📩 Original SMS
+                                    <span style={{ fontSize: 11, fontWeight: 600, color: '#64748B' }}>
+                                      Original SMS
                                     </span>
                                     <span style={{ fontSize: 11, color: '#94A3B8' }}>{v.sender} · {fmtDate(v.received_at)}</span>
                                   </div>
@@ -527,19 +519,18 @@ export default function ViolationsPage() {
                                     <div style={{
                                       padding: '8px 16px',
                                       background: '#FFFBEB', borderBottom: '1px solid #FDE68A',
-                                      display: 'flex', alignItems: 'center', gap: 6,
                                       fontSize: 12, fontWeight: 600, color: '#92400E',
                                     }}>
-                                      ⚠️ {v.parse_error}
+                                      {v.parse_error}
                                     </div>
                                   )}
 
                                   {/* Message body */}
                                   <div style={{
-                                    padding: '16px 20px',
-                                    direction: 'rtl', textAlign: 'right',
-                                    fontSize: 13, lineHeight: 2, color: '#1E293B',
-                                    fontFamily: 'system-ui, -apple-system, "Segoe UI", Arial, sans-serif',
+                                    padding: '20px 32px',
+                                    direction: 'rtl', textAlign: 'center',
+                                    fontSize: 14, lineHeight: 2.2, color: '#1E293B',
+                                    fontFamily: 'system-ui, -apple-system, "Segoe UI", Tahoma, Arial, sans-serif',
                                     whiteSpace: 'pre-wrap',
                                   }}>
                                     {body}
@@ -561,7 +552,7 @@ export default function ViolationsPage() {
                                           fontSize: 12, fontWeight: 600,
                                           textDecoration: 'none',
                                         }}>
-                                          🔗 {i === 0 ? 'View on ADM' : `Link ${i + 1}`} ↗
+                                          {i === 0 ? 'View on ADM' : `Link ${i + 1}`} ↗
                                         </a>
                                       ))}
                                     </div>
