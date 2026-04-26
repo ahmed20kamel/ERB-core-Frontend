@@ -496,11 +496,12 @@ export default function ViolationsPage() {
                           return (
                             <tr key={`${v.id}-exp`} style={{ background: '#F8FAFC', borderBottom: '2px solid #E2E8F0' }}>
                               <td colSpan={10} style={{ padding: '0 24px 20px 24px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'center' }}>
                                 <div style={{
                                   background: '#fff', borderRadius: 14,
                                   border: '1.5px solid #E2E8F0',
                                   boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                                  overflow: 'hidden', maxWidth: 720,
+                                  overflow: 'hidden', width: 640,
                                 }}>
                                   {/* Header strip */}
                                   <div style={{
@@ -557,6 +558,7 @@ export default function ViolationsPage() {
                                       ))}
                                     </div>
                                   )}
+                                </div>
                                 </div>
                               </td>
                             </tr>
