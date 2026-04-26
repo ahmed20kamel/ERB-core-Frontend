@@ -26,7 +26,7 @@ function createManager(): WSManager {
   let currentUserId: number | null = null;
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   let reconnectAttempts = 0;
-  const maxAttempts = 3;
+  const maxAttempts = 0;
   let active = false;
   const handlers = new Map<string, MessageHandler>();
 
