@@ -16,6 +16,7 @@ export const projectsApi = {
     consultant?: string;
     project_status?: string;
     is_active?: boolean;
+    responsible_engineer?: number;
     created_at_after?: string;
     created_at_before?: string;
   }): Promise<PaginatedResponse<Project>> => {
