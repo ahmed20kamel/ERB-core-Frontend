@@ -434,6 +434,7 @@ export default function ViolationsPage() {
                                   </p>
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                                     {group.map((v, mi) => {
+
                                       const { body, urls } = parseMessage(v.raw_message);
                                       const vmeta = S[v.status as keyof typeof S] ?? S.new;
                                       return (
@@ -475,6 +476,25 @@ export default function ViolationsPage() {
                                         </div>
                                       );
                                     })}
+                                  </div>
+                                  {/* Collapse arrow */}
+                                  <div style={{ display: 'flex', justifyContent: 'center', marginTop: 14 }}>
+                                    <button
+                                      onClick={() => setExpandedRef(null)}
+                                      title="Close"
+                                      style={{
+                                        display: 'flex', alignItems: 'center', gap: 5,
+                                        padding: '5px 16px', borderRadius: 20,
+                                        border: '1.5px solid #E2E8F0', background: '#fff',
+                                        color: '#64748B', fontSize: 11, fontWeight: 600,
+                                        cursor: 'pointer', lineHeight: 1,
+                                      }}
+                                    >
+                                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                                        <path d="M2 8L6 4L10 8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                                      </svg>
+                                      Close
+                                    </button>
                                   </div>
                                 </div>
                               </div>
