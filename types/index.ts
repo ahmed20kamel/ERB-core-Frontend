@@ -67,6 +67,10 @@ export interface MunicipalViolation {
   status: 'new' | 'notified' | 'resolved' | 'fined';
   status_display: string;
   parse_error: string;
+  resolve_token: string;
+  resolved_by_name: string | null;
+  resolved_at: string | null;
+  updated_at: string;
   created_at: string;
 }
 

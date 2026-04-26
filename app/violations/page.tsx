@@ -9,6 +9,8 @@ import { useAuth } from '@/lib/hooks/use-auth';
 import { useT } from '@/lib/i18n/useT';
 import { AlertIcon } from '@/components/icons';
 
+const FRONTEND_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://purchase-self.vercel.app';
+
 /* ── Status config ───────────────────────────────────────────────── */
 const STATUS_META = {
   new:      { bg: '#FEF3C7', color: '#92400E', dot: '#F59E0B' },
@@ -49,17 +51,17 @@ export default function ViolationsPage() {
   const [testMsg, setTestMsg]   = useState('');
   const [testResult, setTestResult] = useState<null | { type: 'ok' | 'ignored' | 'error'; detail: string }>(null);
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [copiedId, setCopiedId] = useState<number | null>(null);
 
   const isAdmin = user?.role === 'super_admin' || user?.is_superuser || user?.role === 'procurement_manager';
 
-  /* Stats — total counts from server */
   const { data: stats } = useQuery({
     queryKey: ['violations-stats'],
     queryFn: violationsApi.getStats,
     enabled: isAdmin,
   });
 
-  /* Paginated list */
   const { data, isLoading } = useQuery({
     queryKey: ['violations', page, search, statusFilter],
     queryFn: () => violationsApi.getAll({
@@ -71,12 +73,19 @@ export default function ViolationsPage() {
     enabled: isAdmin,
   });
 
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ['violations'] });
+    queryClient.invalidateQueries({ queryKey: ['violations-stats'] });
+  };
+
   const resolveMutation = useMutation({
     mutationFn: (id: number) => violationsApi.markResolved(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['violations'] });
-      queryClient.invalidateQueries({ queryKey: ['violations-stats'] });
-    },
+    onSuccess: invalidate,
+  });
+
+  const bulkMutation = useMutation({
+    mutationFn: (ids: number[]) => violationsApi.bulkAction(ids, 'resolve'),
+    onSuccess: () => { setSelectedIds(new Set()); invalidate(); },
   });
 
   const simulateMutation = useMutation({
@@ -90,14 +99,19 @@ export default function ViolationsPage() {
         ].filter(Boolean).join(' · ');
         setTestResult({ type: 'ok', detail: parts });
         setTestMsg('');
-        queryClient.invalidateQueries({ queryKey: ['violations'] });
-        queryClient.invalidateQueries({ queryKey: ['violations-stats'] });
+        invalidate();
       } else {
         setTestResult({ type: 'ignored', detail: res.reason ?? t('viol', 'testIgnored') });
       }
     },
     onError: () => setTestResult({ type: 'error', detail: t('viol', 'testError') }),
   });
+
+  const copyLink = (v: MunicipalViolation) => {
+    navigator.clipboard.writeText(`${FRONTEND_URL}/resolve/${v.resolve_token}`);
+    setCopiedId(v.id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
 
   if (!isAdmin) {
     return (
@@ -112,6 +126,19 @@ export default function ViolationsPage() {
   const violations: MunicipalViolation[] = data?.results ?? [];
   const totalCount = data?.count ?? 0;
   const totalPages = Math.ceil(totalCount / 20);
+  const allSelected = violations.length > 0 && violations.every(v => selectedIds.has(v.id));
+
+  const toggleAll = () => {
+    if (allSelected) {
+      setSelectedIds(prev => { const s = new Set(prev); violations.forEach(v => s.delete(v.id)); return s; });
+    } else {
+      setSelectedIds(prev => { const s = new Set(prev); violations.forEach(v => s.add(v.id)); return s; });
+    }
+  };
+
+  const toggleOne = (id: number) => {
+    setSelectedIds(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
+  };
 
   const statusLabels: Record<string, string> = {
     new:      t('viol', 'statusNew'),
@@ -239,6 +266,31 @@ export default function ViolationsPage() {
           </select>
         </div>
 
+        {/* ── Bulk actions bar ── */}
+        {selectedIds.size > 0 && (
+          <div className="flex items-center gap-3 px-4 py-3 rounded-xl"
+            style={{ background: 'var(--sidebar-active-bg)', border: '1px solid var(--color-primary)' }}>
+            <span className="text-sm font-semibold" style={{ color: 'var(--color-primary)' }}>
+              {selectedIds.size} {t('viol', 'violations')} {t('misc', 'selected') || 'محددة'}
+            </span>
+            <button
+              onClick={() => bulkMutation.mutate(Array.from(selectedIds))}
+              disabled={bulkMutation.isPending}
+              className="text-xs px-3 py-1.5 rounded-lg font-semibold"
+              style={{ background: '#10B981', color: '#fff' }}
+            >
+              {bulkMutation.isPending ? '...' : `✅ ${t('viol', 'markResolved')}`}
+            </button>
+            <button
+              onClick={() => setSelectedIds(new Set())}
+              className="text-xs px-3 py-1.5 rounded-lg font-medium"
+              style={{ background: '#F3F4F6', color: '#6B7280' }}
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
         {/* ── Table ── */}
         <div className="card overflow-hidden">
           {isLoading ? (
@@ -256,6 +308,10 @@ export default function ViolationsPage() {
               <table className="table">
                 <thead className="thead">
                   <tr>
+                    <th className="th w-8">
+                      <input type="checkbox" checked={allSelected} onChange={toggleAll}
+                        className="w-4 h-4 cursor-pointer" />
+                    </th>
                     <th className="th">{t('viol', 'refNum')}</th>
                     <th className="th">{t('viol', 'sectorPlot')}</th>
                     <th className="th">{t('viol', 'project')}</th>
@@ -272,14 +328,25 @@ export default function ViolationsPage() {
                     const meta = STATUS_META[v.status as keyof typeof STATUS_META] ?? STATUS_META.new;
                     const hasError = !!v.parse_error && !v.project;
                     const isExpanded = expandedRow === v.id;
+                    const isSelected = selectedIds.has(v.id);
 
                     return (
                       <>
                         <tr
                           key={v.id}
                           className="tr"
-                          style={hasError ? { background: '#FFFBEB' } : undefined}
+                          style={{
+                            background: isSelected
+                              ? 'var(--sidebar-active-bg)'
+                              : hasError ? '#FFFBEB' : undefined,
+                          }}
                         >
+                          {/* Checkbox */}
+                          <td className="td">
+                            <input type="checkbox" checked={isSelected} onChange={() => toggleOne(v.id)}
+                              className="w-4 h-4 cursor-pointer" />
+                          </td>
+
                           {/* Reference */}
                           <td className="td">
                             <div className="flex items-center gap-1.5">
@@ -342,9 +409,16 @@ export default function ViolationsPage() {
                               : '—'}
                           </td>
 
-                          {/* Date */}
-                          <td className="td text-xs" style={{ color: 'var(--text-secondary)' }}>
-                            {new Date(v.received_at).toLocaleDateString('ar-AE')}
+                          {/* Date + updated */}
+                          <td className="td" style={{ minWidth: 90 }}>
+                            <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                              {new Date(v.received_at).toLocaleDateString('ar-AE')}
+                            </div>
+                            {v.resolved_at && (
+                              <div className="text-xs mt-0.5" style={{ color: '#10B981' }}>
+                                ✅ {new Date(v.resolved_at).toLocaleDateString('ar-AE')}
+                              </div>
+                            )}
                           </td>
 
                           {/* Status badge */}
@@ -354,11 +428,26 @@ export default function ViolationsPage() {
                               <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: meta.dot }} />
                               {statusLabels[v.status] ?? v.status}
                             </span>
+                            {v.resolved_by_name && (
+                              <div className="text-xs mt-1" style={{ color: 'var(--text-tertiary)' }}>
+                                {v.resolved_by_name}
+                              </div>
+                            )}
                           </td>
 
                           {/* Actions */}
                           <td className="td">
                             <div className="flex gap-1.5 items-center flex-wrap">
+                              {/* Copy resolve link */}
+                              <button
+                                onClick={() => copyLink(v)}
+                                title="نسخ رابط المعالجة"
+                                className="text-xs px-2 py-1 rounded-md font-medium"
+                                style={{ background: '#EFF6FF', color: '#1D4ED8' }}
+                              >
+                                {copiedId === v.id ? '✓' : '🔗'}
+                              </button>
+
                               {v.parse_error && (
                                 <button
                                   onClick={() => setExpandedRow(isExpanded ? null : v.id)}
@@ -389,10 +478,10 @@ export default function ViolationsPage() {
                           </td>
                         </tr>
 
-                        {/* Expandable row — parse error + raw message */}
+                        {/* Expandable row */}
                         {isExpanded && (
                           <tr key={`${v.id}-expanded`} style={{ background: '#FFFBEB' }}>
-                            <td colSpan={9} className="px-4 py-3">
+                            <td colSpan={10} className="px-4 py-3">
                               {v.parse_error && (
                                 <p className="text-xs mb-2 font-medium" style={{ color: '#D97706' }}>
                                   ⚠️ {v.parse_error}
