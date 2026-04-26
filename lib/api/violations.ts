@@ -22,4 +22,22 @@ export const violationsApi = {
   markResolved: async (id: number): Promise<void> => {
     await apiClient.post(`/violations/${id}/mark_resolved/`);
   },
+
+  simulate: async (message: string): Promise<{
+    status: 'ok' | 'ignored';
+    reason?: string;
+    violation_id?: number;
+    project?: string | null;
+    engineer?: string | null;
+    reference?: string;
+    parsed?: {
+      sector?: string;
+      plot?: string;
+      deadline_days?: number | null;
+      fine_amount?: string | null;
+    };
+  }> => {
+    const response = await apiClient.post('/violations/simulate/', { message });
+    return response.data;
+  },
 };

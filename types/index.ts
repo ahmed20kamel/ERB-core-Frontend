@@ -114,6 +114,10 @@ export interface Project {
   project_status: 'on_going' | 'completed' | 'on_hold' | 'cancelled';
   consultant?: string;
   description?: string;
+  responsible_engineer?: number | null;
+  responsible_engineer_name?: string | null;
+  responsible_engineer_phone?: string | null;
+  responsible_engineer_email?: string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;

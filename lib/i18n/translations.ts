@@ -1,6 +1,7 @@
 export const translations = {
   // ── Navigation ──────────────────────────────────────────────────────
   nav: {
+    violations:         { en: 'Municipal Violations', ar: 'المخالفات البلدية' },
     dashboard:          { en: 'Dashboard',            ar: 'لوحة التحكم' },
     myProfile:          { en: 'My Profile',           ar: 'ملفي الشخصي' },
     purchaseManagement: { en: 'Purchase Management',  ar: 'إدارة المشتريات' },
@@ -566,6 +567,48 @@ export const translations = {
     searchUsers:        { en: 'Search users...',        ar: 'بحث عن مستخدمين...' },
     searchRoles:        { en: 'Search roles...',        ar: 'بحث عن أدوار...' },
   },
+  // ── Municipal Violations ─────────────────────────────────────────────
+  viol: {
+    title:           { en: 'Municipal Violations',                      ar: 'المخالفات البلدية' },
+    subtitle:        { en: 'Abu Dhabi Municipality Messages',           ar: 'رسائل بلدية أبوظبي' },
+    violation:       { en: 'violation',                                 ar: 'مخالفة' },
+    violations:      { en: 'violations',                                ar: 'مخالفات' },
+    refNum:          { en: 'Reference',                                 ar: 'المرجع' },
+    sectorPlot:      { en: 'Area / Plot',                               ar: 'المنطقة / القطعة' },
+    plot:            { en: 'Plot',                                      ar: 'قطعة' },
+    project:         { en: 'Project',                                   ar: 'المشروع' },
+    engineer:        { en: 'Engineer',                                  ar: 'المهندس' },
+    deadline:        { en: 'Deadline',                                  ar: 'المهلة' },
+    fine:            { en: 'Fine',                                      ar: 'الغرامة' },
+    date:            { en: 'Date',                                      ar: 'التاريخ' },
+    status:          { en: 'Status',                                    ar: 'الحالة' },
+    action:          { en: 'Action',                                    ar: 'إجراء' },
+    details:         { en: 'Details',                                   ar: 'تفاصيل' },
+    days:            { en: 'days',                                      ar: 'يوم' },
+    unspecified:     { en: 'Unspecified',                               ar: 'غير محدد' },
+    accessDenied:    { en: 'Access denied',                             ar: 'غير مصرح لك بالوصول' },
+    noViolations:    { en: 'No violations found',                       ar: 'لا توجد مخالفات' },
+    markResolved:    { en: 'Mark Resolved ✓',                          ar: 'تم الحل ✓' },
+    searchPlaceholder:{ en: 'Search by ref, area or plot...',           ar: 'بحث برقم المرجع أو المنطقة أو القطعة...' },
+    allStatuses:     { en: 'All Statuses',                              ar: 'كل الحالات' },
+    statusNew:       { en: 'New',                                       ar: 'جديدة' },
+    statusNotified:  { en: 'Notified',                                  ar: 'تم الإبلاغ' },
+    statusResolved:  { en: 'Resolved',                                  ar: 'تم الحل' },
+    statusFined:     { en: 'Fined',                                     ar: 'صدرت مخالفة' },
+    testPanel:       { en: 'Test with Old SMS',                         ar: 'اختبار برسالة قديمة' },
+    testHint:        { en: 'Paste an ADM municipality SMS to test parsing and notifications', ar: 'الصق رسالة بلدية أبوظبي لاختبار المعالجة والإشعارات' },
+    testPlaceholder: { en: 'Paste SMS message here...',                 ar: 'الصق نص الرسالة هنا...' },
+    testSend:        { en: 'Process & Send Notifications',              ar: 'معالجة وإرسال الإشعارات' },
+    testSending:     { en: 'Processing...',                             ar: 'جارٍ المعالجة...' },
+    testSuccess:     { en: 'Processed successfully',                    ar: 'تمت المعالجة بنجاح' },
+    testIgnored:     { en: 'Not recognized as a violation message',     ar: 'لم تُعرَّف كرسالة مخالفة' },
+    testError:       { en: 'Processing failed',                         ar: 'فشلت المعالجة' },
+    testRef:         { en: 'Ref',                                       ar: 'المرجع' },
+    testProject:     { en: 'Project',                                   ar: 'المشروع' },
+    testEngineer:    { en: 'Engineer',                                  ar: 'المهندس' },
+    testNotLinked:   { en: 'No matching project found',                 ar: 'لم يُعثر على مشروع مطابق' },
+  },
+
 } as const;
 
 export type TranslationKey = typeof translations;

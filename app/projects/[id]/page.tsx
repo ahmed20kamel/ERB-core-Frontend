@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { projectsApi } from '@/lib/api/projects';
+import { usersApi } from '@/lib/api/users';
+import { User } from '@/types';
 import { Button } from '@/components/ui';
 import MainLayout from '@/components/layout/MainLayout';
 import Link from 'next/link';
@@ -12,10 +14,10 @@ import SearchableDropdown from '@/components/ui/SearchableDropdown';
 import { useT } from '@/lib/i18n/useT';
 
 const statusOptions = [
-  { value: 'on_going', label: 'On Going' },
-  { value: 'completed', label: 'Completed' },
-  { value: 'on_hold', label: 'On Hold' },
-  { value: 'cancelled', label: 'Cancelled' },
+  { value: 'on_going',   label: 'On Going'   },
+  { value: 'completed',  label: 'Completed'  },
+  { value: 'on_hold',    label: 'On Hold'    },
+  { value: 'cancelled',  label: 'Cancelled'  },
 ];
 
 export default function EditProjectPage() {
@@ -30,6 +32,12 @@ export default function EditProjectPage() {
     queryFn: () => projectsApi.getById(id),
   });
 
+  const { data: engineersData } = useQuery({
+    queryKey: ['users', 'site_engineers'],
+    queryFn: () => usersApi.getAll({ role: 'site_engineer', page_size: 200, is_active: true }),
+  });
+  const engineers: User[] = engineersData?.results ?? [];
+
   const [formData, setFormData] = useState({
     code: '',
     name: '',
@@ -42,6 +50,7 @@ export default function EditProjectPage() {
     project_status: 'on_going' as 'on_going' | 'completed' | 'on_hold' | 'cancelled',
     consultant: '',
     description: '',
+    responsible_engineer: null as number | null,
     is_active: true,
   });
 
@@ -59,10 +68,21 @@ export default function EditProjectPage() {
         project_status: project.project_status || 'on_going',
         consultant: project.consultant || '',
         description: project.description || '',
+        responsible_engineer: project.responsible_engineer ?? null,
         is_active: project.is_active ?? true,
       });
     }
   }, [project]);
+
+  const handleEngineerChange = (val: string) => {
+    const id = val ? Number(val) : null;
+    const eng = engineers.find(e => e.id === id);
+    setFormData(f => ({
+      ...f,
+      responsible_engineer: id,
+      mobile_number: eng?.phone ?? f.mobile_number,
+    }));
+  };
 
   const mutation = useMutation({
     mutationFn: (data: typeof formData) => projectsApi.update(id, data),
@@ -81,13 +101,13 @@ export default function EditProjectPage() {
     mutation.mutate(formData);
   };
 
+  const selectedEngineer = engineers.find(e => e.id === formData.responsible_engineer);
+
   if (isLoading) {
     return (
       <MainLayout>
-        <div className="space-y-6">
-          <div className="card text-center py-12">
-            <p className="text-muted-foreground">{t('btn', 'loading')}</p>
-          </div>
+        <div className="card text-center py-12">
+          <p style={{ color: 'var(--text-secondary)' }}>{t('btn', 'loading')}</p>
         </div>
       </MainLayout>
     );
@@ -96,10 +116,8 @@ export default function EditProjectPage() {
   if (!project) {
     return (
       <MainLayout>
-        <div className="space-y-6">
-          <div className="card text-center py-12">
-            <p className="text-muted-foreground">{t('page', 'projects')} {t('empty', 'notFound')}</p>
-          </div>
+        <div className="card text-center py-12">
+          <p style={{ color: 'var(--text-secondary)' }}>{t('page', 'projects')} {t('empty', 'notFound')}</p>
         </div>
       </MainLayout>
     );
@@ -108,220 +126,202 @@ export default function EditProjectPage() {
   return (
     <MainLayout>
       <div className="space-y-6">
+        {/* Header */}
         <div>
-          <Link href="/projects" className="text-sm text-muted-foreground hover:text-foreground mb-2 inline-block">
+          <Link href="/projects" className="text-sm mb-2 inline-block"
+            style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-primary)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-secondary)'; }}
+          >
             ← {t('btn', 'back')} {t('page', 'projects')}
           </Link>
-          <h1 className="text-2xl font-semibold text-foreground">{t('page', 'editProject')}</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Update project information
+          <h1 className="text-2xl font-semibold" style={{ color: 'var(--text-primary)' }}>
+            {t('page', 'editProject')}
+          </h1>
+          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
+            {project.code} — {project.name}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+
           {/* Basic Information */}
           <div className="card">
-            <h2 className="text-lg font-semibold mb-4 text-foreground">{t('section', 'basicInfo')}</h2>
+            <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
+              {t('section', 'basicInfo')}
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label 
-                  className="block text-xs font-medium mb-1.5"
-                  style={{ color: 'var(--foreground)' }}
-                >
+                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>
                   {t('field', 'projectCode')} *
                 </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.code}
-                  onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                  className="w-full"
-                />
+                <input type="text" required value={formData.code} className="input w-full"
+                  onChange={(e) => setFormData({ ...formData, code: e.target.value })} />
               </div>
-
               <div className="md:col-span-2">
-                <label 
-                  className="block text-xs font-medium mb-1.5"
-                  style={{ color: 'var(--foreground)' }}
-                >
-                  Project Name *
+                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>
+                  {t('field', 'projectName')} *
                 </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full"
-                />
+                <input type="text" required value={formData.name} className="input w-full"
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
               </div>
-
               <div>
-                <label
-                  className="block text-xs font-medium mb-1.5"
-                  style={{ color: 'var(--foreground)' }}
-                >
-                  اسم المشروع بالعربي
+                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>
+                  {t('field', 'projectNameAr')}
                 </label>
-                <input
-                  type="text"
-                  dir="rtl"
+                <input type="text" dir="rtl" value={formData.name_ar} className="input w-full"
                   placeholder="اسم المشروع بالعربي"
-                  value={formData.name_ar}
-                  onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
-                  className="w-full"
-                />
+                  onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })} />
               </div>
-
               <div className="md:col-span-3">
-                <label
-                  className="block text-xs font-medium mb-1.5"
-                  style={{ color: 'var(--foreground)' }}
-                >
-                  Location
+                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>
+                  {t('field', 'location')}
                 </label>
-                <input
-                  type="text"
-                  value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  className="w-full"
-                />
+                <input type="text" value={formData.location} className="input w-full"
+                  onChange={(e) => setFormData({ ...formData, location: e.target.value })} />
               </div>
-
               <div className="md:col-span-3">
-                <label 
-                  className="block text-xs font-medium mb-1.5"
-                  style={{ color: 'var(--foreground)' }}
-                >
-                  Description
+                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>
+                  {t('field', 'description')}
                 </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows={3}
-                  className="w-full"
-                />
+                <textarea value={formData.description} rows={3} className="input w-full"
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
               </div>
             </div>
           </div>
 
-          {/* Contact Information */}
+          {/* Responsible Engineer + Contact */}
           <div className="card">
-            <h2 className="text-lg font-semibold mb-4 text-foreground">Contact Information</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label 
-                  className="block text-xs font-medium mb-1.5"
-                  style={{ color: 'var(--foreground)' }}
-                >
-                  Contact Person
+            <h2 className="text-lg font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
+              {t('section', 'contactInfo')}
+            </h2>
+            <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
+              {t('field', 'staffMember')} — {t('role', 'site_engineer')}
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+              {/* Engineer selector */}
+              <div className="md:col-span-2">
+                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>
+                  {t('role', 'site_engineer')} ({t('misc', 'optional')})
                 </label>
-                <input
-                  type="text"
-                  value={formData.contact_person}
-                  onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })}
-                  className="w-full"
+                <SearchableDropdown
+                  options={[
+                    { value: '', label: `— ${t('misc', 'selectRole')} —` },
+                    ...engineers.map(e => ({
+                      value: String(e.id),
+                      label: `${e.first_name} ${e.last_name}`.trim() || e.username,
+                      sublabel: e.phone || '',
+                    })),
+                  ]}
+                  value={formData.responsible_engineer ? String(formData.responsible_engineer) : ''}
+                  onChange={handleEngineerChange}
+                  placeholder={`${t('misc', 'selectRole')}...`}
                 />
+
+                {/* Selected engineer info card */}
+                {selectedEngineer && (
+                  <div
+                    className="mt-2 flex items-center gap-3 px-3 py-2 rounded-lg"
+                    style={{ background: 'var(--sidebar-active-bg)', border: '1px solid var(--color-primary)' }}
+                  >
+                    <div
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
+                      style={{ background: 'var(--color-primary)', color: '#fff' }}
+                    >
+                      {(selectedEngineer.first_name?.[0] ?? selectedEngineer.username[0]).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
+                        {`${selectedEngineer.first_name} ${selectedEngineer.last_name}`.trim() || selectedEngineer.username}
+                      </div>
+                      <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                        {selectedEngineer.job_title || t('role', 'site_engineer')}
+                        {selectedEngineer.phone ? ` · ${selectedEngineer.phone}` : ''}
+                        {selectedEngineer.email ? ` · ${selectedEngineer.email}` : ''}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setFormData(f => ({ ...f, responsible_engineer: null }))}
+                      className="text-xs px-2 py-1 rounded"
+                      style={{ color: 'var(--text-secondary)' }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
               </div>
 
-              <div className="md:col-span-2">
-                <label 
-                  className="block text-xs font-medium mb-1.5"
-                  style={{ color: 'var(--foreground)' }}
-                >
-                  Mobile Number
+              <div>
+                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>
+                  {t('field', 'contactPerson')}
                 </label>
-                <input
-                  type="text"
-                  value={formData.mobile_number}
-                  onChange={(e) => setFormData({ ...formData, mobile_number: e.target.value })}
-                  className="w-full"
-                />
+                <input type="text" value={formData.contact_person} className="input w-full"
+                  onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })} />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>
+                  {t('field', 'mobileNumber')}
+                </label>
+                <input type="text" value={formData.mobile_number} className="input w-full"
+                  onChange={(e) => setFormData({ ...formData, mobile_number: e.target.value })} />
               </div>
             </div>
           </div>
 
           {/* Project Details */}
           <div className="card">
-            <h2 className="text-lg font-semibold mb-4 text-foreground">Project Details</h2>
+            <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
+              {t('section', 'projectDetails')}
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label 
-                  className="block text-xs font-medium mb-1.5"
-                  style={{ color: 'var(--foreground)' }}
-                >
-                  Sector
+                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>
+                  {t('field', 'sector')}
                 </label>
-                <input
-                  type="text"
-                  value={formData.sector}
-                  onChange={(e) => setFormData({ ...formData, sector: e.target.value })}
-                  className="w-full"
-                />
+                <input type="text" value={formData.sector} className="input w-full"
+                  onChange={(e) => setFormData({ ...formData, sector: e.target.value })} />
               </div>
-
               <div>
-                <label 
-                  className="block text-xs font-medium mb-1.5"
-                  style={{ color: 'var(--foreground)' }}
-                >
-                  Plot
+                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>
+                  {t('field', 'plot')}
                 </label>
-                <input
-                  type="text"
-                  value={formData.plot}
-                  onChange={(e) => setFormData({ ...formData, plot: e.target.value })}
-                  className="w-full"
-                />
+                <input type="text" value={formData.plot} className="input w-full"
+                  onChange={(e) => setFormData({ ...formData, plot: e.target.value })} />
               </div>
-
               <div>
-                <label 
-                  className="block text-xs font-medium mb-1.5"
-                  style={{ color: 'var(--foreground)' }}
-                >
-                  Consultant
+                <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-primary)' }}>
+                  {t('field', 'consultant')}
                 </label>
-                <input
-                  type="text"
-                  value={formData.consultant}
-                  onChange={(e) => setFormData({ ...formData, consultant: e.target.value })}
-                  className="w-full"
-                />
+                <input type="text" value={formData.consultant} className="input w-full"
+                  onChange={(e) => setFormData({ ...formData, consultant: e.target.value })} />
               </div>
             </div>
           </div>
 
           {/* Status */}
           <div className="card">
-            <h2 className="text-lg font-semibold mb-4 text-foreground">Status</h2>
+            <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
+              {t('section', 'status')}
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <SearchableDropdown
-                  label="Project Status"
-                  options={statusOptions.map((option) => ({
-                    value: option.value,
-                    label: option.label,
-                  }))}
+                  label={t('field', 'projectStatus')}
+                  options={statusOptions}
                   value={formData.project_status}
                   onChange={(val) => setFormData({ ...formData, project_status: val as any })}
                   placeholder="Select Status"
                 />
               </div>
-
               <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="is_active"
-                  checked={formData.is_active}
+                <input type="checkbox" id="is_active" checked={formData.is_active}
                   onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                  className="w-4 h-4"
-                />
-                <label 
-                  htmlFor="is_active" 
-                  className="text-sm"
-                  style={{ color: 'var(--foreground)' }}
-                >
-                  Is Active
+                  className="w-4 h-4" />
+                <label htmlFor="is_active" className="text-sm" style={{ color: 'var(--text-primary)' }}>
+                  {t('field', 'isActive')}
                 </label>
               </div>
             </div>
@@ -329,9 +329,9 @@ export default function EditProjectPage() {
 
           {/* Actions */}
           <div className="flex items-center justify-end gap-3">
-            <Link href="/projects"><Button variant="secondary">Cancel</Button></Link>
+            <Link href="/projects"><Button variant="secondary">{t('btn', 'cancel')}</Button></Link>
             <Button type="submit" variant="primary" disabled={mutation.isPending} isLoading={mutation.isPending}>
-              Update Project
+              {t('btn', 'update')}
             </Button>
           </div>
         </form>
@@ -339,4 +339,3 @@ export default function EditProjectPage() {
     </MainLayout>
   );
 }
-

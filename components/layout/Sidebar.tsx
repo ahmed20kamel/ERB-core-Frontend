@@ -165,7 +165,7 @@ export default function Sidebar() {
 
             {/* Municipal Violations — admin only */}
             {(user?.role === 'super_admin' || user?.is_superuser || user?.role === 'procurement_manager') &&
-              navLink('/violations', 'المخالفات البلدية', <AlertIcon className="w-4 h-4" />)
+              navLink('/violations', t('nav', 'violations'), <AlertIcon className="w-4 h-4" />)
             }
 
             {/* My Profile */}
