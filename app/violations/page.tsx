@@ -399,25 +399,55 @@ export default function ViolationsPage() {
                           </td>
 
                           <td style={tdStyle()}>
-                            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                              <Btn bg={copiedId === primary.id ? '#DCFCE7' : '#EFF6FF'} color={copiedId === primary.id ? '#15803D' : '#1D4ED8'} onClick={() => copyLink(primary)}>
+                            <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', alignItems: 'center' }}>
+                              {/* Copy link */}
+                              <ActionBtn
+                                variant={copiedId === primary.id ? 'success' : 'blue'}
+                                onClick={() => copyLink(primary)}
+                                icon={copiedId === primary.id
+                                  ? <path d="M5 12l5 5L20 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                  : <><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></>
+                                }
+                              >
                                 {copiedId === primary.id ? 'Copied' : 'Link'}
-                              </Btn>
+                              </ActionBtn>
+
+                              {/* Messages expand */}
                               {extra.length > 0 && (
-                                <Btn bg="#F1F5F9" color="#475569" onClick={() => setExpandedRef(isExp ? null : refKey)}>
-                                  {isExp ? 'Hide' : `Messages (${extra.length + 1})`}
-                                </Btn>
+                                <ActionBtn
+                                  variant={isExp ? 'active' : 'slate'}
+                                  onClick={() => setExpandedRef(isExp ? null : refKey)}
+                                  icon={isExp
+                                    ? <path d="M5 15l7-7 7 7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                                    : <><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></>
+                                  }
+                                >
+                                  {isExp ? 'Hide' : `${extra.length + 1} msg`}
+                                </ActionBtn>
                               )}
+
+                              {/* ADM link */}
                               {primary.violation_url && (
                                 <a href={primary.violation_url} target="_blank" rel="noreferrer"
-                                  style={{ padding: '4px 9px', borderRadius: 7, fontSize: 11, fontWeight: 600, background: '#F0FDF4', color: '#15803D', border: '1px solid #86EFAC', textDecoration: 'none' }}>
-                                  ADM ↗
+                                  style={actionBtnStyle('green')}>
+                                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                                    <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                    <path d="M15 3h6v6M10 14L21 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                  </svg>
+                                  ADM
                                 </a>
                               )}
+
+                              {/* Resolve */}
                               {primary.status !== 'resolved' && (
-                                <Btn bg="#DCFCE7" color="#15803D" disabled={resolveMutation.isPending} onClick={() => resolveMutation.mutate(primary.id)}>
+                                <ActionBtn
+                                  variant="resolve"
+                                  disabled={resolveMutation.isPending}
+                                  onClick={() => resolveMutation.mutate(primary.id)}
+                                  icon={<path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>}
+                                >
                                   Resolve
-                                </Btn>
+                                </ActionBtn>
                               )}
                             </div>
                           </td>
@@ -535,16 +565,48 @@ function thStyle(w?: number): React.CSSProperties {
 function tdStyle(): React.CSSProperties {
   return { padding: '12px 14px', verticalAlign: 'middle' };
 }
-function Btn({ children, onClick, bg, color, disabled, title }: {
-  children: React.ReactNode; onClick?: () => void;
-  bg: string; color: string; disabled?: boolean; title?: string;
+
+const ACTION_VARIANTS = {
+  blue:    { bg: '#EFF6FF', color: '#1D4ED8', border: '#BFDBFE', hover: '#DBEAFE' },
+  success: { bg: '#F0FDF4', color: '#15803D', border: '#86EFAC', hover: '#DCFCE7' },
+  slate:   { bg: '#F8FAFC', color: '#475569', border: '#CBD5E1', hover: '#F1F5F9' },
+  active:  { bg: '#EFF6FF', color: '#1E40AF', border: '#93C5FD', hover: '#DBEAFE' },
+  green:   { bg: '#F0FDF4', color: '#15803D', border: '#86EFAC', hover: '#DCFCE7' },
+  resolve: { bg: '#ECFDF5', color: '#047857', border: '#6EE7B7', hover: '#D1FAE5' },
+} as const;
+
+function actionBtnStyle(variant: keyof typeof ACTION_VARIANTS): React.CSSProperties {
+  const v = ACTION_VARIANTS[variant];
+  return {
+    display: 'inline-flex', alignItems: 'center', gap: 4,
+    padding: '4px 9px', borderRadius: 7,
+    border: `1px solid ${v.border}`,
+    background: v.bg, color: v.color,
+    fontSize: 11, fontWeight: 600,
+    cursor: 'pointer', whiteSpace: 'nowrap', textDecoration: 'none',
+    transition: 'background 0.12s',
+  };
+}
+
+function ActionBtn({ children, onClick, variant, disabled, icon }: {
+  children: React.ReactNode;
+  onClick?: () => void;
+  variant: keyof typeof ACTION_VARIANTS;
+  disabled?: boolean;
+  icon?: React.ReactNode;
 }) {
   return (
-    <button onClick={onClick} disabled={disabled} title={title} style={{
-      padding: '4px 9px', borderRadius: 7, border: 'none', background: bg, color,
-      fontSize: 11, fontWeight: 600, cursor: disabled ? 'not-allowed' : 'pointer',
-      opacity: disabled ? 0.5 : 1, transition: 'opacity 0.15s', whiteSpace: 'nowrap',
+    <button onClick={onClick} disabled={disabled} style={{
+      ...actionBtnStyle(variant),
+      opacity: disabled ? 0.5 : 1,
+      cursor: disabled ? 'not-allowed' : 'pointer',
+      border: `1px solid ${ACTION_VARIANTS[variant].border}`,
     }}>
+      {icon && (
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+          {icon}
+        </svg>
+      )}
       {children}
     </button>
   );
