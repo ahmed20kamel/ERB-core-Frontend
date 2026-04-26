@@ -128,7 +128,7 @@ export default function ViolationsPage() {
         <div className="flex items-start justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
-              <AlertIcon className="w-6 h-6 flex-shrink-0" style={{ color: '#D97706' }} />
+              <AlertIcon className="w-6 h-6 flex-shrink-0" />
               {t('viol', 'title')}
             </h1>
             <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
