@@ -8,7 +8,7 @@ import { useT } from '@/lib/i18n/useT';
 import CollapsibleMenu from './CollapsibleMenu';
 import {
   DashboardIcon, FileTextIcon, BuildingIcon, PackageIcon,
-  BriefcaseIcon, DollarIcon, UsersIcon, XIcon, ShoppingCartIcon,
+  BriefcaseIcon, DollarIcon, UsersIcon, XIcon, ShoppingCartIcon, AlertIcon,
 } from '@/components/icons';
 
 export default function Sidebar() {
@@ -161,6 +161,11 @@ export default function Sidebar() {
             {/* Dashboard — super admin only */}
             {(user?.role === 'super_admin' || user?.is_superuser) &&
               navLink('/dashboard', t('nav', 'dashboard'), <DashboardIcon className="w-4 h-4" />)
+            }
+
+            {/* Municipal Violations — admin only */}
+            {(user?.role === 'super_admin' || user?.is_superuser || user?.role === 'procurement_manager') &&
+              navLink('/violations', 'المخالفات البلدية', <AlertIcon className="w-4 h-4" />)
             }
 
             {/* My Profile */}

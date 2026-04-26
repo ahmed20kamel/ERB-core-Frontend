@@ -45,6 +45,31 @@ export interface User {
   created_at?: string;
 }
 
+export interface MunicipalViolation {
+  id: number;
+  raw_message: string;
+  sender: string;
+  received_at: string;
+  violation_description: string;
+  area: string;
+  sector: string;
+  plot: string;
+  violation_date: string;
+  deadline_days: number | null;
+  fine_amount: string | null;
+  reference_number: string;
+  verification_code: string;
+  violation_url: string;
+  project: number | null;
+  project_name: string | null;
+  notified_engineer: number | null;
+  engineer_name: string | null;
+  status: 'new' | 'notified' | 'resolved' | 'fined';
+  status_display: string;
+  parse_error: string;
+  created_at: string;
+}
+
 export interface AuthResponse {
   user: User;
   tokens: {
