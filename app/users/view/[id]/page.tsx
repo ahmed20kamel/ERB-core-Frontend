@@ -148,7 +148,7 @@ export default function UserDetailPage() {
           <div className="card">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <BuildingIcon className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
+                <BuildingIcon className="w-5 h-5 text-primary" />
                 <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)', margin: 0 }}>
                   {t('page', 'projects')}
                 </h3>
