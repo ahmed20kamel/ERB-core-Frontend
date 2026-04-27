@@ -57,6 +57,16 @@ export const violationsApi = {
     return response.data;
   },
 
+  linkProject: async (id: number, projectId: number | null, engineerId?: number | null): Promise<{
+    status: string; project_name?: string; engineer_name?: string | null;
+  }> => {
+    const response = await apiClient.post(`/violations/${id}/link_project/`, {
+      project_id: projectId,
+      engineer_id: engineerId ?? null,
+    });
+    return response.data;
+  },
+
   simulate: async (message: string): Promise<{
     status: 'ok' | 'ignored';
     reason?: string;
