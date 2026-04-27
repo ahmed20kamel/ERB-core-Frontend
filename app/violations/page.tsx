@@ -30,34 +30,21 @@ function parseMessage(text: string) {
   return { body, urls };
 }
 
-function groupViolations(violations: MunicipalViolation[]): MunicipalViolation[][] {
-  const map = new Map<string, MunicipalViolation[]>();
-  for (const v of violations) {
-    const key = v.reference_number?.trim() || `__id_${v.id}`;
-    if (!map.has(key)) map.set(key, []);
-    map.get(key)!.push(v);
-  }
-  return Array.from(map.values());
-}
-
 /* ─── Stat card ──────────────────────────────────────────────────────────── */
 function StatCard({ label, value, sub, color, border, active, onClick }: {
   label: string; value: number; sub?: string;
   color: string; border: string; active?: boolean; onClick?: () => void;
 }) {
   return (
-    <button onClick={onClick} style={{
-      textAlign: 'left', width: '100%', background: 'none', border: 'none', padding: 0,
-      cursor: onClick ? 'pointer' : 'default',
-    }}>
+    <button onClick={onClick} style={{ textAlign: 'left', width: '100%', background: 'none', border: 'none', padding: 0, cursor: onClick ? 'pointer' : 'default' }}>
       <div style={{
         background: active ? `${color}10` : '#fff',
         border: active ? `2px solid ${color}` : `1.5px solid ${border}`,
-        borderRadius: 12, padding: '12px 16px',
+        borderRadius: 12, padding: '14px 16px',
         boxShadow: active ? `0 0 0 3px ${color}15` : '0 1px 3px rgba(0,0,0,0.04)',
         transition: 'all 0.15s',
       }}>
-        <div style={{ fontSize: 28, fontWeight: 800, color, lineHeight: 1, marginBottom: 4 }}>{value}</div>
+        <div style={{ fontSize: 30, fontWeight: 800, color, lineHeight: 1, marginBottom: 4 }}>{value}</div>
         <div style={{ fontSize: 12, fontWeight: 700, color: '#475569' }}>{label}</div>
         {sub && <div style={{ fontSize: 10, color: '#94A3B8', marginTop: 2 }}>{sub}</div>}
       </div>
@@ -84,10 +71,9 @@ function StatusBadge({ status }: { status: string }) {
 
 /* ─── Detail Panel ───────────────────────────────────────────────────────── */
 function ViolationDetailPanel({
-  group, onClose, onResolve, onLinkProject, resolving, linking,
-  projects,
+  violation, onClose, onResolve, onLinkProject, resolving, linking, projects,
 }: {
-  group: MunicipalViolation[];
+  violation: MunicipalViolation;
   onClose: () => void;
   onResolve: (id: number) => void;
   onLinkProject: (id: number, projectId: number | null) => void;
@@ -95,70 +81,93 @@ function ViolationDetailPanel({
   linking: boolean;
   projects: Array<{ id: number; name: string }>;
 }) {
-  const primary = group[0];
-  const { body, urls } = parseMessage(primary.raw_message);
+  const { body, urls } = parseMessage(violation.raw_message ?? '');
   const [copiedLink, setCopiedLink] = useState(false);
-  const [selectedProject, setSelectedProject] = useState<string>(primary.project?.toString() ?? '');
+  const [selectedProject, setSelectedProject] = useState<string>(violation.project?.toString() ?? '');
 
   useEffect(() => {
-    setSelectedProject(primary.project?.toString() ?? '');
-  }, [primary.id, primary.project]);
+    setSelectedProject(violation.project?.toString() ?? '');
+  }, [violation.id, violation.project]);
 
   const copyLink = () => {
-    navigator.clipboard.writeText(`${FRONTEND_URL}/resolve/${primary.resolve_token}`);
+    navigator.clipboard.writeText(`${FRONTEND_URL}/resolve/${violation.resolve_token}`);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
+  const deadlineColor = violation.deadline_days == null ? '#64748B'
+    : violation.deadline_days <= 1 ? '#DC2626'
+    : violation.deadline_days <= 3 ? '#D97706'
+    : '#16A34A';
+
   return (
     <div style={{
-      width: 420, flexShrink: 0, display: 'flex', flexDirection: 'column',
+      width: 440, flexShrink: 0,
       background: '#fff', border: '1.5px solid #E2E8F0', borderRadius: 16,
-      overflow: 'hidden', boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
-      position: 'sticky', top: 0, maxHeight: 'calc(100vh - 140px)', overflowY: 'auto',
+      overflow: 'hidden', boxShadow: '0 4px 24px rgba(0,0,0,0.10)',
+      position: 'sticky', top: 0, maxHeight: 'calc(100vh - 130px)',
+      display: 'flex', flexDirection: 'column',
     }}>
-      {/* Panel header */}
-      <div style={{ padding: '14px 18px', borderBottom: '1.5px solid #F1F5F9', display: 'flex', alignItems: 'center', gap: 10, background: '#FAFAFA' }}>
-        <div style={{ flex: 1 }}>
+      {/* Header */}
+      <div style={{ padding: '14px 18px', borderBottom: '1.5px solid #F1F5F9', background: '#FAFAFA', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <span style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: 15, color: '#0F172A' }}>
-              {primary.reference_number || `#${primary.id}`}
+            <span style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: 14, color: '#0F172A' }}>
+              Ref: {violation.reference_number || `#${violation.id}`}
             </span>
-            <StatusBadge status={primary.status} />
+            <StatusBadge status={violation.status} />
           </div>
           <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 3 }}>
-            {primary.sender} · {fmtDate(primary.received_at)}
-            {group.length > 1 && (
-              <span style={{ marginLeft: 8, background: '#E0F2FE', color: '#0369A1', padding: '1px 6px', borderRadius: 8, fontSize: 10, fontWeight: 700 }}>
-                {group.length} messages
-              </span>
-            )}
+            {violation.sender} · {fmtDate(violation.received_at)}
           </div>
         </div>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#94A3B8', fontSize: 18, lineHeight: 1 }}>✕</button>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', color: '#94A3B8', fontSize: 18, lineHeight: 1, borderRadius: 6 }}>✕</button>
       </div>
 
-      <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* Scrollable body */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-        {/* Raw SMS message */}
+        {/* Key facts row */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+          <InfoBox label="Area" value={violation.area || '—'} />
+          <InfoBox label="Sector" value={violation.sector || '—'} />
+          <InfoBox label="Plot No." value={violation.plot || '—'} />
+          {violation.fine_amount && (
+            <InfoBox label="Fine" value={`${Number(violation.fine_amount).toLocaleString()} AED`} valueColor="#DC2626" bold />
+          )}
+          {violation.deadline_days != null && (
+            <InfoBox label="Deadline" value={`${violation.deadline_days} days`} valueColor={deadlineColor} bold />
+          )}
+          {violation.violation_date && (
+            <InfoBox label="Date" value={violation.violation_date} />
+          )}
+        </div>
+
+        {/* Violation description */}
+        {violation.violation_description && (
+          <div style={{ padding: '10px 14px', background: '#FFFBEB', borderRadius: 10, border: '1px solid #FDE68A', fontSize: 12, color: '#92400E', direction: 'rtl', textAlign: 'right', lineHeight: 1.8, fontFamily: 'system-ui, Tahoma, Arial, sans-serif' }}>
+            {violation.violation_description}
+          </div>
+        )}
+
+        {/* Raw SMS */}
         <div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>SMS Message</div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6 }}>Original SMS</div>
           <div style={{
-            background: '#F8FAFC', border: '1.5px solid #E2E8F0', borderRadius: 12,
-            padding: '14px 16px', direction: 'rtl', textAlign: 'right',
-            fontSize: 13, lineHeight: 2, color: '#1E293B',
+            background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 10,
+            padding: '12px 14px', direction: 'rtl', textAlign: 'right',
+            fontSize: 12, lineHeight: 2, color: '#334155',
             fontFamily: 'system-ui, Tahoma, Arial, sans-serif',
-            whiteSpace: 'pre-wrap', maxHeight: 200, overflowY: 'auto',
+            whiteSpace: 'pre-wrap', maxHeight: 180, overflowY: 'auto',
           }}>
-            {body || primary.raw_message}
+            {body || violation.raw_message}
           </div>
           {urls.length > 0 && (
-            <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            <div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {urls.map((url, i) => (
                 <a key={i} href={url} target="_blank" rel="noreferrer" style={{
-                  padding: '4px 10px', borderRadius: 7, background: '#EFF6FF',
-                  color: '#1D4ED8', border: '1px solid #BFDBFE', fontSize: 11, fontWeight: 600,
-                  textDecoration: 'none',
+                  padding: '3px 10px', borderRadius: 7, background: '#EFF6FF',
+                  color: '#1D4ED8', border: '1px solid #BFDBFE', fontSize: 11, fontWeight: 600, textDecoration: 'none',
                 }}>
                   Open ADM Link ↗
                 </a>
@@ -167,149 +176,77 @@ function ViolationDetailPanel({
           )}
         </div>
 
-        {/* Parsed fields grid */}
-        {(primary.area || primary.sector || primary.plot || primary.fine_amount || primary.deadline_days) && (
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Violation Details</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-              {primary.area && <InfoBox label="Area" value={primary.area} />}
-              {primary.sector && <InfoBox label="Sector" value={primary.sector} />}
-              {primary.plot && <InfoBox label="Plot No." value={primary.plot} />}
-              {primary.violation_date && <InfoBox label="Violation Date" value={primary.violation_date} />}
-              {primary.fine_amount && (
-                <InfoBox label="Fine Amount"
-                  value={`${Number(primary.fine_amount).toLocaleString()} AED`}
-                  valueColor="#DC2626" bold />
-              )}
-              {primary.deadline_days != null && (
-                <InfoBox label="Deadline"
-                  value={`${primary.deadline_days} days`}
-                  valueColor={primary.deadline_days <= 1 ? '#DC2626' : primary.deadline_days <= 3 ? '#D97706' : '#16A34A'}
-                  bold />
-              )}
-            </div>
-            {primary.violation_description && (
-              <div style={{ marginTop: 8, padding: '10px 12px', background: '#FEF9C3', borderRadius: 8, border: '1px solid #FDE68A', fontSize: 12, color: '#92400E', direction: 'rtl', textAlign: 'right', lineHeight: 1.7 }}>
-                {primary.violation_description}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Project & engineer */}
+        {/* Project & Engineer */}
         <div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Project & Engineer</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {/* Project selector */}
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <select
-                value={selectedProject}
-                onChange={e => setSelectedProject(e.target.value)}
-                style={{
-                  flex: 1, padding: '8px 12px', borderRadius: 8, border: '1.5px solid #E2E8F0',
-                  fontSize: 12, background: '#fff', color: '#0F172A',
-                }}
-              >
-                <option value="">— No Project —</option>
-                {projects.map(p => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
-              <button
-                onClick={() => onLinkProject(primary.id, selectedProject ? Number(selectedProject) : null)}
-                disabled={linking || selectedProject === (primary.project?.toString() ?? '')}
-                style={{
-                  padding: '8px 14px', borderRadius: 8, border: 'none',
-                  background: '#2563EB', color: '#fff', fontSize: 12, fontWeight: 600,
-                  cursor: linking ? 'wait' : 'pointer', opacity: linking ? 0.7 : 1,
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {linking ? '...' : 'Link'}
-              </button>
-            </div>
-            {/* Engineer */}
-            {primary.engineer_name ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: '#F8FAFC', borderRadius: 8 }}>
-                <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#2563EB', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>
-                  {primary.engineer_name[0].toUpperCase()}
-                </div>
-                <div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: '#0F172A' }}>{primary.engineer_name}</div>
-                  <div style={{ fontSize: 10, color: '#94A3B8' }}>Responsible Engineer</div>
-                </div>
-              </div>
-            ) : (
-              <div style={{ padding: '8px 12px', background: '#FEF9C3', borderRadius: 8, fontSize: 11, color: '#92400E', border: '1px solid #FDE68A' }}>
-                No engineer assigned — select a project to auto-assign one
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Multiple messages in group */}
-        {group.length > 1 && (
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
-              All Messages ({group.length})
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {group.map((v, i) => {
-                const { body: vBody } = parseMessage(v.raw_message);
-                return (
-                  <div key={v.id} style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 10, overflow: 'hidden' }}>
-                    <div style={{ padding: '6px 12px', borderBottom: '1px solid #E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#fff' }}>
-                      <span style={{ fontSize: 10, fontWeight: 700, color: '#64748B' }}>{i === 0 ? 'Latest' : `Message ${group.length - i}`}</span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <StatusBadge status={v.status} />
-                        <span style={{ fontSize: 10, color: '#94A3B8' }}>{fmtDate(v.received_at)}</span>
-                      </div>
-                    </div>
-                    <div style={{ padding: '10px 12px', direction: 'rtl', textAlign: 'right', fontSize: 12, lineHeight: 1.8, color: '#334155', whiteSpace: 'pre-wrap', maxHeight: 120, overflowY: 'auto', fontFamily: 'system-ui, Tahoma, Arial, sans-serif' }}>
-                      {vBody}
-                    </div>
-                    {v.status !== 'resolved' && (
-                      <div style={{ padding: '6px 12px', borderTop: '1px solid #F1F5F9', display: 'flex', justifyContent: 'flex-end' }}>
-                        <button onClick={() => onResolve(v.id)} disabled={resolving}
-                          style={{ padding: '4px 12px', borderRadius: 7, border: '1px solid #86EFAC', background: '#DCFCE7', color: '#15803D', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>
-                          Mark Resolved
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Action buttons */}
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', borderTop: '1.5px solid #F1F5F9', paddingTop: 14 }}>
-          {primary.status !== 'resolved' && (
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 8 }}>Project & Engineer</div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+            <select
+              value={selectedProject}
+              onChange={e => setSelectedProject(e.target.value)}
+              style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: '1.5px solid #E2E8F0', fontSize: 12, background: '#fff', color: '#0F172A' }}
+            >
+              <option value="">— No Project —</option>
+              {projects.map(p => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
             <button
-              onClick={() => onResolve(primary.id)} disabled={resolving}
+              onClick={() => onLinkProject(violation.id, selectedProject ? Number(selectedProject) : null)}
+              disabled={linking || selectedProject === (violation.project?.toString() ?? '')}
               style={{
-                flex: 1, padding: '10px', borderRadius: 9, border: 'none',
-                background: '#22C55E', color: '#fff', fontSize: 13, fontWeight: 700,
-                cursor: resolving ? 'wait' : 'pointer', opacity: resolving ? 0.7 : 1,
+                padding: '8px 16px', borderRadius: 8, border: 'none',
+                background: '#2563EB', color: '#fff', fontSize: 12, fontWeight: 600,
+                cursor: linking ? 'wait' : 'pointer', opacity: (linking || selectedProject === (violation.project?.toString() ?? '')) ? 0.5 : 1,
+                whiteSpace: 'nowrap',
               }}
             >
-              ✓ Mark Resolved
+              {linking ? '...' : 'Link'}
             </button>
+          </div>
+          {violation.engineer_name ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: '#F0FDF4', borderRadius: 8, border: '1px solid #BBF7D0' }}>
+              <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#16A34A', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>
+                {violation.engineer_name[0].toUpperCase()}
+              </div>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: '#0F172A' }}>{violation.engineer_name}</div>
+                <div style={{ fontSize: 10, color: '#16A34A' }}>Responsible Engineer</div>
+              </div>
+            </div>
+          ) : (
+            <div style={{ padding: '8px 12px', background: '#FEF9C3', borderRadius: 8, fontSize: 11, color: '#92400E', border: '1px solid #FDE68A' }}>
+              No engineer assigned — link a project to auto-assign
+            </div>
           )}
+        </div>
+      </div>
+
+      {/* Action footer */}
+      <div style={{ padding: '12px 18px', borderTop: '1.5px solid #F1F5F9', display: 'flex', gap: 8, flexShrink: 0, background: '#FAFAFA' }}>
+        {violation.status !== 'resolved' && (
           <button
-            onClick={copyLink}
+            onClick={() => onResolve(violation.id)} disabled={resolving}
             style={{
-              padding: '10px 14px', borderRadius: 9,
-              border: `1.5px solid ${copiedLink ? '#86EFAC' : '#CBD5E1'}`,
-              background: copiedLink ? '#DCFCE7' : '#F8FAFC',
-              color: copiedLink ? '#15803D' : '#475569',
-              fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap',
+              flex: 1, padding: '10px', borderRadius: 9, border: 'none',
+              background: '#22C55E', color: '#fff', fontSize: 13, fontWeight: 700,
+              cursor: resolving ? 'wait' : 'pointer', opacity: resolving ? 0.7 : 1,
             }}
           >
-            {copiedLink ? '✓ Copied' : '🔗 Engineer Link'}
+            ✓ Mark Resolved
           </button>
-        </div>
+        )}
+        <button
+          onClick={copyLink}
+          style={{
+            padding: '10px 14px', borderRadius: 9,
+            border: `1.5px solid ${copiedLink ? '#86EFAC' : '#CBD5E1'}`,
+            background: copiedLink ? '#DCFCE7' : '#fff',
+            color: copiedLink ? '#15803D' : '#475569',
+            fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap',
+          }}
+        >
+          {copiedLink ? '✓ Copied' : '🔗 Engineer Link'}
+        </button>
       </div>
     </div>
   );
@@ -317,9 +254,9 @@ function ViolationDetailPanel({
 
 function InfoBox({ label, value, valueColor, bold }: { label: string; value: string; valueColor?: string; bold?: boolean }) {
   return (
-    <div style={{ padding: '8px 12px', background: '#F8FAFC', borderRadius: 8, border: '1px solid #F1F5F9' }}>
-      <div style={{ fontSize: 10, color: '#94A3B8', marginBottom: 3 }}>{label}</div>
-      <div style={{ fontSize: 13, fontWeight: bold ? 700 : 600, color: valueColor ?? '#0F172A' }}>{value}</div>
+    <div style={{ padding: '7px 10px', background: '#F8FAFC', borderRadius: 8, border: '1px solid #F1F5F9' }}>
+      <div style={{ fontSize: 9, color: '#94A3B8', marginBottom: 2, textTransform: 'uppercase', letterSpacing: 0.4 }}>{label}</div>
+      <div style={{ fontSize: 12, fontWeight: bold ? 700 : 600, color: valueColor ?? '#0F172A' }}>{value}</div>
     </div>
   );
 }
@@ -333,7 +270,7 @@ export default function ViolationsPage() {
   const [page, setPage]                 = useState(1);
   const [search, setSearch]             = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [selectedRef, setSelectedRef]   = useState<string | null>(null);
+  const [selectedId, setSelectedId]     = useState<number | null>(null);
   const [testOpen, setTestOpen]         = useState(false);
   const [testMsg, setTestMsg]           = useState('');
   const [testResult, setTestResult]     = useState<null | { type: 'ok' | 'ignored' | 'error'; detail: string }>(null);
@@ -349,7 +286,7 @@ export default function ViolationsPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['violations', page, search, statusFilter],
-    queryFn: () => violationsApi.getAll({ page, search: search || undefined, status: statusFilter || undefined, page_size: 50 }),
+    queryFn: () => violationsApi.getAll({ page, search: search || undefined, status: statusFilter || undefined, page_size: 25 }),
     enabled: isAdmin,
   });
 
@@ -391,32 +328,30 @@ export default function ViolationsPage() {
 
   const violations: MunicipalViolation[] = data?.results ?? [];
   const totalCount = data?.count ?? 0;
-  const totalPages = Math.ceil(totalCount / 50);
-  const grouped = groupViolations(violations);
-  const allPrimaryIds = grouped.map(g => g[0].id);
-  const allSelected = allPrimaryIds.length > 0 && allPrimaryIds.every(id => selectedIds.has(id));
+  const totalPages = Math.ceil(totalCount / 25);
+  const allIds = violations.map(v => v.id);
+  const allSelected = allIds.length > 0 && allIds.every(id => selectedIds.has(id));
   const projects = (projectsData?.results ?? []).map((p: any) => ({ id: p.id, name: p.name || p.project_name || `Project ${p.id}` }));
-
-  const selectedGroup = selectedRef ? grouped.find(g => (g[0].reference_number || `__id_${g[0].id}`) === selectedRef) : null;
+  const selectedViolation = selectedId != null ? violations.find(v => v.id === selectedId) ?? null : null;
 
   const toggleAll = () => {
-    if (allSelected) setSelectedIds(p => { const s = new Set(p); allPrimaryIds.forEach(id => s.delete(id)); return s; });
-    else             setSelectedIds(p => { const s = new Set(p); allPrimaryIds.forEach(id => s.add(id)); return s; });
+    if (allSelected) setSelectedIds(p => { const s = new Set(p); allIds.forEach(id => s.delete(id)); return s; });
+    else             setSelectedIds(p => { const s = new Set(p); allIds.forEach(id => s.add(id)); return s; });
   };
 
   return (
     <MainLayout>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <h1 style={{ margin: 0, fontSize: 21, fontWeight: 800, color: 'var(--text-primary)' }}>
+            <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: 'var(--text-primary)' }}>
               Abu Dhabi Municipality Violations
             </h1>
-            <p style={{ margin: '3px 0 0', fontSize: 13, color: 'var(--text-secondary)' }}>
-              ADM SMS notifications
-              {stats && <span style={{ fontWeight: 700, color: 'var(--color-primary)', marginLeft: 6 }}>{stats.total} violations</span>}
+            <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-secondary)' }}>
+              Incoming ADM SMS notifications · automated tracking &amp; assignment
+              {stats && <span style={{ fontWeight: 700, color: 'var(--color-primary)', marginLeft: 6 }}>{stats.total} total</span>}
             </p>
           </div>
           <button
@@ -427,21 +362,29 @@ export default function ViolationsPage() {
               fontSize: 13, fontWeight: 600, color: testOpen ? '#15803D' : 'var(--text-primary)',
             }}
           >
-            Test SMS Message
+            🧪 Test SMS
           </button>
         </div>
 
-        {/* Status workflow explanation */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 16px', background: '#F8FAFC', borderRadius: 10, border: '1px solid #E2E8F0', fontSize: 11, color: '#64748B', flexWrap: 'wrap' }}>
-          <span style={{ fontWeight: 700 }}>Violation Workflow:</span>
-          {(['new', 'notified', 'resolved'] as const).map((s, i) => (
-            <span key={s} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              {i > 0 && <span style={{ color: '#CBD5E1' }}>→</span>}
-              <StatusBadge status={s} />
-            </span>
-          ))}
-          <span style={{ marginLeft: 8, color: '#94A3B8' }}>Click any row to view details and actions</span>
-        </div>
+        {/* Stats */}
+        {stats && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 10 }}>
+            <StatCard label="Total" value={stats.total} sub="All violations"
+              color="#2563EB" border="#C7D2FE" active={statusFilter === ''} onClick={() => { setStatusFilter(''); setPage(1); }} />
+            <StatCard label="New" value={stats.new} sub="Needs action"
+              color={STATUS_CFG.new.color} border={STATUS_CFG.new.border} active={statusFilter === 'new'} onClick={() => { setStatusFilter('new'); setPage(1); }} />
+            <StatCard label="Notified" value={stats.notified} sub="Engineer informed"
+              color={STATUS_CFG.notified.color} border={STATUS_CFG.notified.border} active={statusFilter === 'notified'} onClick={() => { setStatusFilter('notified'); setPage(1); }} />
+            <StatCard label="Resolved" value={stats.resolved} sub="Closed"
+              color={STATUS_CFG.resolved.color} border={STATUS_CFG.resolved.border} active={statusFilter === 'resolved'} onClick={() => { setStatusFilter('resolved'); setPage(1); }} />
+            <StatCard label="Fined" value={stats.fined} sub="Fine issued"
+              color={STATUS_CFG.fined.color} border={STATUS_CFG.fined.border} active={statusFilter === 'fined'} onClick={() => { setStatusFilter('fined'); setPage(1); }} />
+            {stats.no_project > 0 && (
+              <StatCard label="No Project" value={stats.no_project} sub="Needs linking"
+                color="#D97706" border="#FDE68A" />
+            )}
+          </div>
+        )}
 
         {/* Test panel */}
         {testOpen && (
@@ -452,7 +395,7 @@ export default function ViolationsPage() {
             </div>
             <textarea value={testMsg} onChange={e => { setTestMsg(e.target.value); setTestResult(null); }}
               placeholder="Paste message text here..." rows={4}
-              style={{ padding: 12, borderRadius: 8, border: '1.5px solid #FDE68A', resize: 'vertical', direction: 'rtl', fontSize: 13, fontFamily: 'system-ui, Tahoma, Arial, sans-serif', background: '#fff', width: '100%' }} />
+              style={{ padding: 12, borderRadius: 8, border: '1.5px solid #FDE68A', resize: 'vertical', direction: 'rtl', fontSize: 13, fontFamily: 'system-ui, Tahoma, Arial, sans-serif', background: '#fff', width: '100%', boxSizing: 'border-box' }} />
             {testResult && (
               <div style={{
                 padding: '9px 13px', borderRadius: 9, fontSize: 13, fontWeight: 600,
@@ -469,33 +412,13 @@ export default function ViolationsPage() {
           </div>
         )}
 
-        {/* Stats */}
-        {stats && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: 10 }}>
-            <StatCard label="Total" value={stats.total} sub="All violations"
-              color="#2563EB" border="#C7D2FE" active={statusFilter === ''} onClick={() => { setStatusFilter(''); setPage(1); }} />
-            <StatCard label="New" value={stats.new} sub="Requires action"
-              color={STATUS_CFG.new.color} border={STATUS_CFG.new.border} active={statusFilter === 'new'} onClick={() => { setStatusFilter('new'); setPage(1); }} />
-            <StatCard label="Notified" value={stats.notified} sub="Engineer informed"
-              color={STATUS_CFG.notified.color} border={STATUS_CFG.notified.border} active={statusFilter === 'notified'} onClick={() => { setStatusFilter('notified'); setPage(1); }} />
-            <StatCard label="Resolved" value={stats.resolved} sub="Closed"
-              color={STATUS_CFG.resolved.color} border={STATUS_CFG.resolved.border} active={statusFilter === 'resolved'} onClick={() => { setStatusFilter('resolved'); setPage(1); }} />
-            <StatCard label="Fined" value={stats.fined} sub="Fine issued"
-              color={STATUS_CFG.fined.color} border={STATUS_CFG.fined.border} active={statusFilter === 'fined'} onClick={() => { setStatusFilter('fined'); setPage(1); }} />
-            {stats.no_project > 0 && (
-              <StatCard label="No Project" value={stats.no_project} sub="Needs manual link"
-                color="#D97706" border="#FDE68A" />
-            )}
-          </div>
-        )}
-
-        {/* Filters */}
+        {/* Filters row */}
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
           <input type="text" placeholder="Search by reference, area or plot..." value={search}
             onChange={e => { setSearch(e.target.value); setPage(1); }}
             style={{ flex: 1, minWidth: 220, padding: '9px 14px', borderRadius: 9, border: '1.5px solid #E2E8F0', fontSize: 13 }} />
           <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
-            style={{ minWidth: 160, padding: '9px 12px', borderRadius: 9, border: '1.5px solid #E2E8F0', fontSize: 13 }}>
+            style={{ minWidth: 150, padding: '9px 12px', borderRadius: 9, border: '1.5px solid #E2E8F0', fontSize: 13 }}>
             <option value="">All Statuses</option>
             <option value="new">New</option>
             <option value="notified">Notified</option>
@@ -525,12 +448,13 @@ export default function ViolationsPage() {
           {/* Table */}
           <div style={{ flex: 1, minWidth: 0, background: '#fff', borderRadius: 14, border: '1.5px solid #E5E7EB', overflow: 'hidden', boxShadow: '0 1px 6px rgba(0,0,0,0.05)' }}>
             {isLoading ? (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 180 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 200 }}>
                 <div className="w-7 h-7 border-4 rounded-full animate-spin" style={{ borderColor: 'var(--color-primary)', borderTopColor: 'transparent' }} />
               </div>
-            ) : grouped.length === 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 180, gap: 8 }}>
-                <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>No violations found</p>
+            ) : violations.length === 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 200, gap: 8 }}>
+                <div style={{ fontSize: 36 }}>✓</div>
+                <p style={{ color: 'var(--text-secondary)', fontSize: 14, margin: 0 }}>No violations found</p>
               </div>
             ) : (
               <div style={{ overflowX: 'auto' }}>
@@ -540,28 +464,26 @@ export default function ViolationsPage() {
                       <th style={thS(36)}>
                         <input type="checkbox" checked={allSelected} onChange={toggleAll} style={{ width: 15, height: 15, cursor: 'pointer' }} />
                       </th>
-                      <th style={thS()}>Reference</th>
-                      <th style={thS()}>Violation</th>
-                      <th style={thS()}>Area / Plot</th>
+                      <th style={thS(130)}>Reference</th>
+                      <th style={thS()}>Violation Description</th>
+                      <th style={thS(130)}>Area / Plot</th>
                       <th style={thS()}>Project</th>
-                      <th style={{ ...thS(90), textAlign: 'center' }}>Deadline</th>
-                      <th style={{ ...thS(110), textAlign: 'center' }}>Fine</th>
-                      <th style={{ ...thS(100), textAlign: 'center' }}>Status</th>
+                      <th style={{ ...thS(80), textAlign: 'center' }}>Deadline</th>
+                      <th style={{ ...thS(100), textAlign: 'center' }}>Fine</th>
+                      <th style={{ ...thS(105), textAlign: 'center' }}>Status</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {grouped.map((group, gi) => {
-                      const primary = group[0];
-                      const refKey  = primary.reference_number || `__id_${primary.id}`;
-                      const isSel   = selectedIds.has(primary.id);
-                      const isActive = selectedRef === refKey;
-                      const noProj  = !primary.project;
-                      const isEven  = gi % 2 === 0;
+                    {violations.map((v, i) => {
+                      const isSel    = selectedIds.has(v.id);
+                      const isActive = selectedId === v.id;
+                      const noProj   = !v.project;
+                      const isEven   = i % 2 === 0;
 
                       return (
                         <tr
-                          key={primary.id}
-                          onClick={() => setSelectedRef(isActive ? null : refKey)}
+                          key={v.id}
+                          onClick={() => setSelectedId(isActive ? null : v.id)}
                           style={{
                             background: isActive ? '#EFF6FF' : isSel ? '#F0F9FF' : noProj ? '#FFFBEB' : isEven ? '#fff' : '#FAFAFA',
                             borderBottom: '1px solid #F1F5F9',
@@ -572,74 +494,84 @@ export default function ViolationsPage() {
                         >
                           <td style={tdS()} onClick={e => e.stopPropagation()}>
                             <input type="checkbox" checked={isSel}
-                              onChange={() => setSelectedIds(p => { const s = new Set(p); s.has(primary.id) ? s.delete(primary.id) : s.add(primary.id); return s; })}
+                              onChange={() => setSelectedIds(p => { const s = new Set(p); s.has(v.id) ? s.delete(v.id) : s.add(v.id); return s; })}
                               style={{ width: 15, height: 15, cursor: 'pointer' }} />
                           </td>
 
+                          {/* Reference */}
                           <td style={tdS()}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                               {noProj && <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#F59E0B', display: 'inline-block', flexShrink: 0 }} title="No project linked" />}
-                              <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 12 }}>
-                                {primary.reference_number || `#${primary.id}`}
+                              <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 12, color: '#0F172A' }}>
+                                {v.reference_number || `#${v.id}`}
                               </span>
-                              {group.length > 1 && (
-                                <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 5px', borderRadius: 8, background: '#E0F2FE', color: '#0369A1' }}>
-                                  +{group.length - 1}
-                                </span>
-                              )}
                             </div>
-                            <div style={{ fontSize: 10, color: '#94A3B8', marginTop: 2 }}>{fmtDate(primary.received_at)}</div>
+                            <div style={{ fontSize: 10, color: '#94A3B8', marginTop: 2 }}>{fmtDate(v.received_at)}</div>
                           </td>
 
-                          <td style={{ ...tdS(), maxWidth: 220 }}>
-                            {primary.violation_description
-                              ? <span style={{ fontSize: 12, color: '#334155', direction: 'rtl', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>
-                                  {primary.violation_description}
+                          {/* Violation description */}
+                          <td style={{ ...tdS(), maxWidth: 260 }}>
+                            {v.violation_description
+                              ? <span style={{ fontSize: 12, color: '#334155', direction: 'rtl', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 240 }}>
+                                  {v.violation_description}
                                 </span>
-                              : <span style={{ fontSize: 11, color: '#94A3B8', fontStyle: 'italic' }}>Click to view message</span>
+                              : <span style={{ fontSize: 11, color: '#CBD5E1', fontStyle: 'italic' }}>Click to view SMS</span>
                             }
                           </td>
 
+                          {/* Area / Plot */}
                           <td style={tdS()}>
-                            {primary.sector || primary.plot
+                            {v.sector || v.plot || v.area
                               ? <div>
-                                  {primary.sector && <div style={{ fontWeight: 600, fontSize: 12 }}>{primary.sector}</div>}
-                                  {primary.plot && <div style={{ fontSize: 11, color: '#64748B' }}>Plot {primary.plot}</div>}
+                                  {v.area && <div style={{ fontWeight: 600, fontSize: 12, color: '#0F172A' }}>{v.area}</div>}
+                                  {(v.sector || v.plot) && (
+                                    <div style={{ fontSize: 11, color: '#64748B' }}>
+                                      {[v.sector && `Sector ${v.sector}`, v.plot && `Plot ${v.plot}`].filter(Boolean).join(' · ')}
+                                    </div>
+                                  )}
                                 </div>
                               : <span style={{ color: '#CBD5E1' }}>—</span>
                             }
                           </td>
 
+                          {/* Project */}
                           <td style={tdS()}>
-                            {primary.project_name
-                              ? <span style={{ fontWeight: 500, fontSize: 12 }}>{primary.project_name}</span>
-                              : <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 20, background: '#FEF3C7', color: '#92400E', fontSize: 11, fontWeight: 600 }}>
+                            {v.project_name
+                              ? <span style={{ fontWeight: 500, fontSize: 12, color: '#0F172A' }}>{v.project_name}</span>
+                              : <span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 20, background: '#FEF3C7', color: '#92400E', fontSize: 11, fontWeight: 600 }}>
                                   No Project
                                 </span>
                             }
                           </td>
 
+                          {/* Deadline */}
                           <td style={{ ...tdS(), textAlign: 'center' }}>
-                            {primary.deadline_days != null
-                              ? <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 8, fontWeight: 700, fontSize: 12, background: primary.deadline_days <= 1 ? '#FEE2E2' : primary.deadline_days <= 3 ? '#FEF3C7' : '#F0FDF4', color: primary.deadline_days <= 1 ? '#DC2626' : primary.deadline_days <= 3 ? '#D97706' : '#16A34A' }}>
-                                {primary.deadline_days}d
-                              </span>
+                            {v.deadline_days != null
+                              ? <span style={{
+                                  display: 'inline-block', padding: '2px 8px', borderRadius: 8, fontWeight: 700, fontSize: 12,
+                                  background: v.deadline_days <= 1 ? '#FEE2E2' : v.deadline_days <= 3 ? '#FEF3C7' : '#F0FDF4',
+                                  color:      v.deadline_days <= 1 ? '#DC2626' : v.deadline_days <= 3 ? '#D97706' : '#16A34A',
+                                }}>
+                                  {v.deadline_days}d
+                                </span>
                               : <span style={{ color: '#CBD5E1' }}>—</span>
                             }
                           </td>
 
+                          {/* Fine */}
                           <td style={{ ...tdS(), textAlign: 'center' }}>
-                            {primary.fine_amount
+                            {v.fine_amount
                               ? <div>
-                                  <span style={{ fontWeight: 800, color: '#DC2626', fontSize: 13 }}>{Number(primary.fine_amount).toLocaleString()}</span>
-                                  <span style={{ fontSize: 10, color: '#9CA3AF', display: 'block' }}>AED</span>
+                                  <div style={{ fontWeight: 800, color: '#DC2626', fontSize: 13 }}>{Number(v.fine_amount).toLocaleString()}</div>
+                                  <div style={{ fontSize: 10, color: '#9CA3AF' }}>AED</div>
                                 </div>
                               : <span style={{ color: '#CBD5E1' }}>—</span>
                             }
                           </td>
 
+                          {/* Status */}
                           <td style={{ ...tdS(), textAlign: 'center' }}>
-                            <StatusBadge status={primary.status} />
+                            <StatusBadge status={v.status} />
                           </td>
                         </tr>
                       );
@@ -648,13 +580,33 @@ export default function ViolationsPage() {
                 </table>
               </div>
             )}
+
+            {/* Pagination inside card */}
+            {totalPages > 1 && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderTop: '1px solid #F1F5F9', background: '#FAFAFA' }}>
+                <span style={{ fontSize: 12, color: '#94A3B8' }}>
+                  Showing {(page - 1) * 25 + 1}–{Math.min(page * 25, totalCount)} of {totalCount}
+                </span>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+                    style={{ padding: '6px 14px', borderRadius: 8, border: '1.5px solid #E2E8F0', background: '#fff', fontSize: 12, fontWeight: 600, cursor: page === 1 ? 'not-allowed' : 'pointer', opacity: page === 1 ? 0.4 : 1 }}>
+                    ← Prev
+                  </button>
+                  <span style={{ padding: '6px 12px', fontSize: 12, color: '#64748B', fontWeight: 600 }}>{page} / {totalPages}</span>
+                  <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+                    style={{ padding: '6px 14px', borderRadius: 8, border: '1.5px solid #E2E8F0', background: '#fff', fontSize: 12, fontWeight: 600, cursor: page === totalPages ? 'not-allowed' : 'pointer', opacity: page === totalPages ? 0.4 : 1 }}>
+                    Next →
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Detail panel */}
-          {selectedGroup && (
+          {selectedViolation && (
             <ViolationDetailPanel
-              group={selectedGroup}
-              onClose={() => setSelectedRef(null)}
+              violation={selectedViolation}
+              onClose={() => setSelectedId(null)}
               onResolve={(id) => resolveMutation.mutate(id)}
               onLinkProject={(id, projectId) => linkMutation.mutate({ id, projectId })}
               resolving={resolveMutation.isPending}
@@ -664,28 +616,13 @@ export default function ViolationsPage() {
           )}
         </div>
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-              style={{ padding: '7px 16px', borderRadius: 8, border: '1.5px solid #E2E8F0', background: '#fff', fontSize: 13, fontWeight: 600, cursor: page === 1 ? 'not-allowed' : 'pointer', opacity: page === 1 ? 0.4 : 1 }}>
-              Previous
-            </button>
-            <span style={{ fontSize: 13, color: '#64748B', fontWeight: 600 }}>Page {page} of {totalPages}</span>
-            <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-              style={{ padding: '7px 16px', borderRadius: 8, border: '1.5px solid #E2E8F0', background: '#fff', fontSize: 13, fontWeight: 600, cursor: page === totalPages ? 'not-allowed' : 'pointer', opacity: page === totalPages ? 0.4 : 1 }}>
-              Next
-            </button>
-          </div>
-        )}
-
       </div>
     </MainLayout>
   );
 }
 
 function thS(w?: number): React.CSSProperties {
-  return { padding: '11px 14px', fontSize: 11, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.5, whiteSpace: 'nowrap', width: w };
+  return { padding: '11px 14px', fontSize: 10, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.6, whiteSpace: 'nowrap', width: w, textAlign: 'left' };
 }
 function tdS(): React.CSSProperties {
   return { padding: '11px 14px', verticalAlign: 'middle' };
