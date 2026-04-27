@@ -37,8 +37,13 @@ export const violationsApi = {
     await apiClient.post(`/violations/${id}/mark_resolved/`);
   },
 
-  bulkAction: async (ids: number[], action: 'resolve'): Promise<{ updated: number }> => {
+  bulkAction: async (ids: number[], action: 'resolve' | 'delete'): Promise<{ updated?: number; deleted?: number }> => {
     const response = await apiClient.post('/violations/bulk_action/', { ids, action });
+    return response.data;
+  },
+
+  deleteAll: async (): Promise<{ deleted: number }> => {
+    const response = await apiClient.post('/violations/bulk_action/', { ids: [], action: 'delete_all' });
     return response.data;
   },
 

@@ -275,6 +275,8 @@ export default function ViolationsPage() {
   const [testMsg, setTestMsg]           = useState('');
   const [testResult, setTestResult]     = useState<null | { type: 'ok' | 'ignored' | 'error'; detail: string }>(null);
   const [selectedIds, setSelectedIds]   = useState<Set<number>>(new Set());
+  const [selectAllPages, setSelectAllPages] = useState(false);
+  const [confirmDelete, setConfirmDelete]   = useState(false);
 
   const isAdmin = user?.role === 'super_admin' || user?.is_superuser || user?.role === 'procurement_manager';
 
@@ -302,7 +304,11 @@ export default function ViolationsPage() {
   };
 
   const resolveMutation = useMutation({ mutationFn: (id: number) => violationsApi.markResolved(id), onSuccess: invalidate });
-  const bulkMutation    = useMutation({ mutationFn: (ids: number[]) => violationsApi.bulkAction(ids, 'resolve'), onSuccess: () => { setSelectedIds(new Set()); invalidate(); } });
+  const bulkMutation    = useMutation({ mutationFn: (ids: number[]) => violationsApi.bulkAction(ids, 'resolve'), onSuccess: () => { setSelectedIds(new Set()); setSelectAllPages(false); invalidate(); } });
+  const bulkDeleteMutation = useMutation({
+    mutationFn: () => selectAllPages ? violationsApi.deleteAll() : violationsApi.bulkAction(Array.from(selectedIds), 'delete'),
+    onSuccess: () => { setSelectedIds(new Set()); setSelectAllPages(false); setSelectedId(null); setConfirmDelete(false); invalidate(); },
+  });
   const linkMutation    = useMutation({ mutationFn: ({ id, projectId }: { id: number; projectId: number | null }) => violationsApi.linkProject(id, projectId), onSuccess: invalidate });
 
   const simulateMutation = useMutation({
@@ -335,7 +341,7 @@ export default function ViolationsPage() {
   const selectedViolation = selectedId != null ? violations.find(v => v.id === selectedId) ?? null : null;
 
   const toggleAll = () => {
-    if (allSelected) setSelectedIds(p => { const s = new Set(p); allIds.forEach(id => s.delete(id)); return s; });
+    if (allSelected) { setSelectedIds(p => { const s = new Set(p); allIds.forEach(id => s.delete(id)); return s; }); setSelectAllPages(false); }
     else             setSelectedIds(p => { const s = new Set(p); allIds.forEach(id => s.add(id)); return s; });
   };
 
@@ -429,16 +435,71 @@ export default function ViolationsPage() {
 
         {/* Bulk action bar */}
         {selectedIds.size > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', borderRadius: 10, background: '#EFF6FF', border: '1.5px solid #93C5FD' }}>
-            <span style={{ fontWeight: 700, fontSize: 13, color: '#1E40AF' }}>{selectedIds.size} selected</span>
-            <button onClick={() => bulkMutation.mutate(Array.from(selectedIds))} disabled={bulkMutation.isPending}
-              style={{ padding: '6px 14px', borderRadius: 8, border: 'none', background: '#22C55E', color: '#fff', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
-              Mark Resolved
-            </button>
-            <button onClick={() => setSelectedIds(new Set())}
-              style={{ padding: '6px 10px', borderRadius: 8, border: 'none', background: '#E5E7EB', cursor: 'pointer', fontSize: 12, color: '#6B7280' }}>
-              Cancel
-            </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', borderRadius: 10, background: '#EFF6FF', border: '1.5px solid #93C5FD' }}>
+              <span style={{ fontWeight: 700, fontSize: 13, color: '#1E40AF' }}>
+                {selectAllPages ? `All ${totalCount} violations selected` : `${selectedIds.size} selected`}
+              </span>
+              <button onClick={() => bulkMutation.mutate(Array.from(selectedIds))} disabled={bulkMutation.isPending || selectAllPages}
+                style={{ padding: '6px 14px', borderRadius: 8, border: 'none', background: '#22C55E', color: '#fff', fontWeight: 700, fontSize: 12, cursor: 'pointer', opacity: selectAllPages ? 0.4 : 1 }}>
+                Mark Resolved
+              </button>
+              <button onClick={() => setConfirmDelete(true)} disabled={bulkDeleteMutation.isPending}
+                style={{ padding: '6px 14px', borderRadius: 8, border: 'none', background: '#EF4444', color: '#fff', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
+                Delete
+              </button>
+              <button onClick={() => { setSelectedIds(new Set()); setSelectAllPages(false); }}
+                style={{ padding: '6px 10px', borderRadius: 8, border: 'none', background: '#E5E7EB', cursor: 'pointer', fontSize: 12, color: '#6B7280' }}>
+                Cancel
+              </button>
+            </div>
+
+            {/* Select-all-pages banner */}
+            {allSelected && totalCount > violations.length && !selectAllPages && (
+              <div style={{ padding: '9px 16px', borderRadius: 9, background: '#FEF9C3', border: '1.5px solid #FDE68A', fontSize: 12, color: '#92400E', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span>All {violations.length} violations on this page are selected.</span>
+                <button onClick={() => setSelectAllPages(true)}
+                  style={{ padding: '4px 12px', borderRadius: 7, border: 'none', background: '#D97706', color: '#fff', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
+                  Select all {totalCount} violations
+                </button>
+              </div>
+            )}
+            {selectAllPages && (
+              <div style={{ padding: '9px 16px', borderRadius: 9, background: '#FEE2E2', border: '1.5px solid #FCA5A5', fontSize: 12, color: '#7F1D1D', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span>All {totalCount} violations across all pages are selected.</span>
+                <button onClick={() => setSelectAllPages(false)}
+                  style={{ padding: '4px 12px', borderRadius: 7, border: 'none', background: '#E5E7EB', color: '#374151', fontWeight: 600, fontSize: 12, cursor: 'pointer' }}>
+                  Clear selection
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Delete confirmation dialog */}
+        {confirmDelete && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ background: '#fff', borderRadius: 16, padding: '28px 32px', maxWidth: 420, width: '90%', boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}>
+              <div style={{ fontSize: 32, marginBottom: 12 }}>🗑️</div>
+              <h3 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 800, color: '#0F172A' }}>Confirm Delete</h3>
+              <p style={{ margin: '0 0 24px', fontSize: 13, color: '#64748B', lineHeight: 1.6 }}>
+                You are about to permanently delete{' '}
+                <strong style={{ color: '#DC2626' }}>
+                  {selectAllPages ? `all ${totalCount} violations` : `${selectedIds.size} violation${selectedIds.size !== 1 ? 's' : ''}`}
+                </strong>.
+                This cannot be undone.
+              </p>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button onClick={() => bulkDeleteMutation.mutate()} disabled={bulkDeleteMutation.isPending}
+                  style={{ flex: 1, padding: '11px', borderRadius: 9, border: 'none', background: '#EF4444', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer', opacity: bulkDeleteMutation.isPending ? 0.7 : 1 }}>
+                  {bulkDeleteMutation.isPending ? 'Deleting...' : 'Yes, Delete'}
+                </button>
+                <button onClick={() => setConfirmDelete(false)} disabled={bulkDeleteMutation.isPending}
+                  style={{ flex: 1, padding: '11px', borderRadius: 9, border: '1.5px solid #E2E8F0', background: '#fff', color: '#374151', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
+                  Cancel
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
