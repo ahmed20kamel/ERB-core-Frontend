@@ -13,14 +13,14 @@ const FRONTEND_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://purchase-self.v
 
 /* ─── Status config ──────────────────────────────────────────────────────── */
 const STATUS_CFG = {
-  new:      { bg: '#FEF9C3', color: '#854D0E', dot: '#EAB308', border: '#FDE047', label: 'جديدة',       labelEn: 'New' },
-  notified: { bg: '#DBEAFE', color: '#1E3A8A', dot: '#3B82F6', border: '#93C5FD', label: 'تم الإبلاغ',  labelEn: 'Notified' },
-  resolved: { bg: '#DCFCE7', color: '#14532D', dot: '#22C55E', border: '#86EFAC', label: 'محلولة',      labelEn: 'Resolved' },
-  fined:    { bg: '#FEE2E2', color: '#7F1D1D', dot: '#EF4444', border: '#FCA5A5', label: 'صدرت غرامة',  labelEn: 'Fined' },
+  new:      { bg: '#FEF9C3', color: '#854D0E', dot: '#EAB308', border: '#FDE047', label: 'New' },
+  notified: { bg: '#DBEAFE', color: '#1E3A8A', dot: '#3B82F6', border: '#93C5FD', label: 'Notified' },
+  resolved: { bg: '#DCFCE7', color: '#14532D', dot: '#22C55E', border: '#86EFAC', label: 'Resolved' },
+  fined:    { bg: '#FEE2E2', color: '#7F1D1D', dot: '#EF4444', border: '#FCA5A5', label: 'Fined' },
 } as const;
 
 function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString('ar-AE', { day: '2-digit', month: 'short', year: '2-digit' });
+  return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' });
 }
 
 function parseMessage(text: string) {
@@ -128,7 +128,11 @@ function ViolationDetailPanel({
           </div>
           <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 3 }}>
             {primary.sender} · {fmtDate(primary.received_at)}
-            {group.length > 1 && <span style={{ marginLeft: 8, background: '#E0F2FE', color: '#0369A1', padding: '1px 6px', borderRadius: 8, fontSize: 10, fontWeight: 700 }}>{group.length} رسائل</span>}
+            {group.length > 1 && (
+              <span style={{ marginLeft: 8, background: '#E0F2FE', color: '#0369A1', padding: '1px 6px', borderRadius: 8, fontSize: 10, fontWeight: 700 }}>
+                {group.length} messages
+              </span>
+            )}
           </div>
         </div>
         <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#94A3B8', fontSize: 18, lineHeight: 1 }}>✕</button>
@@ -138,7 +142,7 @@ function ViolationDetailPanel({
 
         {/* Raw SMS message */}
         <div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>نص الرسالة</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>SMS Message</div>
           <div style={{
             background: '#F8FAFC', border: '1.5px solid #E2E8F0', borderRadius: 12,
             padding: '14px 16px', direction: 'rtl', textAlign: 'right',
@@ -156,7 +160,7 @@ function ViolationDetailPanel({
                   color: '#1D4ED8', border: '1px solid #BFDBFE', fontSize: 11, fontWeight: 600,
                   textDecoration: 'none',
                 }}>
-                  فتح رابط ADM ↗
+                  Open ADM Link ↗
                 </a>
               ))}
             </div>
@@ -166,20 +170,20 @@ function ViolationDetailPanel({
         {/* Parsed fields grid */}
         {(primary.area || primary.sector || primary.plot || primary.fine_amount || primary.deadline_days) && (
           <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>تفاصيل المخالفة</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Violation Details</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-              {primary.area && <InfoBox label="المنطقة" value={primary.area} />}
-              {primary.sector && <InfoBox label="رقم الحوض" value={primary.sector} />}
-              {primary.plot && <InfoBox label="رقم القطعة" value={primary.plot} />}
-              {primary.violation_date && <InfoBox label="تاريخ المخالفة" value={primary.violation_date} />}
+              {primary.area && <InfoBox label="Area" value={primary.area} />}
+              {primary.sector && <InfoBox label="Sector" value={primary.sector} />}
+              {primary.plot && <InfoBox label="Plot No." value={primary.plot} />}
+              {primary.violation_date && <InfoBox label="Violation Date" value={primary.violation_date} />}
               {primary.fine_amount && (
-                <InfoBox label="قيمة الغرامة"
+                <InfoBox label="Fine Amount"
                   value={`${Number(primary.fine_amount).toLocaleString()} AED`}
                   valueColor="#DC2626" bold />
               )}
               {primary.deadline_days != null && (
-                <InfoBox label="المهلة"
-                  value={`${primary.deadline_days} يوم`}
+                <InfoBox label="Deadline"
+                  value={`${primary.deadline_days} days`}
                   valueColor={primary.deadline_days <= 1 ? '#DC2626' : primary.deadline_days <= 3 ? '#D97706' : '#16A34A'}
                   bold />
               )}
@@ -194,7 +198,7 @@ function ViolationDetailPanel({
 
         {/* Project & engineer */}
         <div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>المشروع والمهندس</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Project & Engineer</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {/* Project selector */}
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -206,7 +210,7 @@ function ViolationDetailPanel({
                   fontSize: 12, background: '#fff', color: '#0F172A',
                 }}
               >
-                <option value="">— بدون مشروع —</option>
+                <option value="">— No Project —</option>
                 {projects.map(p => (
                   <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
@@ -221,7 +225,7 @@ function ViolationDetailPanel({
                   whiteSpace: 'nowrap',
                 }}
               >
-                {linking ? '...' : 'ربط'}
+                {linking ? '...' : 'Link'}
               </button>
             </div>
             {/* Engineer */}
@@ -232,12 +236,12 @@ function ViolationDetailPanel({
                 </div>
                 <div>
                   <div style={{ fontSize: 12, fontWeight: 600, color: '#0F172A' }}>{primary.engineer_name}</div>
-                  <div style={{ fontSize: 10, color: '#94A3B8' }}>المهندس المسؤول</div>
+                  <div style={{ fontSize: 10, color: '#94A3B8' }}>Responsible Engineer</div>
                 </div>
               </div>
             ) : (
               <div style={{ padding: '8px 12px', background: '#FEF9C3', borderRadius: 8, fontSize: 11, color: '#92400E', border: '1px solid #FDE68A' }}>
-                لم يتم تعيين مهندس — اختر المشروع لتعيين المهندس تلقائياً
+                No engineer assigned — select a project to auto-assign one
               </div>
             )}
           </div>
@@ -247,7 +251,7 @@ function ViolationDetailPanel({
         {group.length > 1 && (
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
-              جميع الرسائل ({group.length})
+              All Messages ({group.length})
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {group.map((v, i) => {
@@ -255,7 +259,7 @@ function ViolationDetailPanel({
                 return (
                   <div key={v.id} style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 10, overflow: 'hidden' }}>
                     <div style={{ padding: '6px 12px', borderBottom: '1px solid #E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#fff' }}>
-                      <span style={{ fontSize: 10, fontWeight: 700, color: '#64748B' }}>{i === 0 ? 'الأحدث' : `رسالة ${group.length - i}`}</span>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: '#64748B' }}>{i === 0 ? 'Latest' : `Message ${group.length - i}`}</span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <StatusBadge status={v.status} />
                         <span style={{ fontSize: 10, color: '#94A3B8' }}>{fmtDate(v.received_at)}</span>
@@ -268,7 +272,7 @@ function ViolationDetailPanel({
                       <div style={{ padding: '6px 12px', borderTop: '1px solid #F1F5F9', display: 'flex', justifyContent: 'flex-end' }}>
                         <button onClick={() => onResolve(v.id)} disabled={resolving}
                           style={{ padding: '4px 12px', borderRadius: 7, border: '1px solid #86EFAC', background: '#DCFCE7', color: '#15803D', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>
-                          تمت المعالجة
+                          Mark Resolved
                         </button>
                       </div>
                     )}
@@ -290,7 +294,7 @@ function ViolationDetailPanel({
                 cursor: resolving ? 'wait' : 'pointer', opacity: resolving ? 0.7 : 1,
               }}
             >
-              ✓ تمت المعالجة
+              ✓ Mark Resolved
             </button>
           )}
           <button
@@ -303,7 +307,7 @@ function ViolationDetailPanel({
               fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap',
             }}
           >
-            {copiedLink ? '✓ تم النسخ' : '🔗 رابط المهندس'}
+            {copiedLink ? '✓ Copied' : '🔗 Engineer Link'}
           </button>
         </div>
       </div>
@@ -360,27 +364,27 @@ export default function ViolationsPage() {
     queryClient.invalidateQueries({ queryKey: ['violations-stats'] });
   };
 
-  const resolveMutation   = useMutation({ mutationFn: (id: number) => violationsApi.markResolved(id), onSuccess: invalidate });
-  const bulkMutation      = useMutation({ mutationFn: (ids: number[]) => violationsApi.bulkAction(ids, 'resolve'), onSuccess: () => { setSelectedIds(new Set()); invalidate(); } });
-  const linkMutation      = useMutation({ mutationFn: ({ id, projectId }: { id: number; projectId: number | null }) => violationsApi.linkProject(id, projectId), onSuccess: invalidate });
+  const resolveMutation = useMutation({ mutationFn: (id: number) => violationsApi.markResolved(id), onSuccess: invalidate });
+  const bulkMutation    = useMutation({ mutationFn: (ids: number[]) => violationsApi.bulkAction(ids, 'resolve'), onSuccess: () => { setSelectedIds(new Set()); invalidate(); } });
+  const linkMutation    = useMutation({ mutationFn: ({ id, projectId }: { id: number; projectId: number | null }) => violationsApi.linkProject(id, projectId), onSuccess: invalidate });
 
   const simulateMutation = useMutation({
     mutationFn: (msg: string) => violationsApi.simulate(msg),
     onSuccess: (res) => {
       if (res.status === 'ok') {
-        setTestResult({ type: 'ok', detail: [res.reference && `Ref: ${res.reference}`, res.project ?? 'لا يوجد مشروع', res.engineer].filter(Boolean).join(' · ') });
+        setTestResult({ type: 'ok', detail: [res.reference && `Ref: ${res.reference}`, res.project ?? 'No project', res.engineer].filter(Boolean).join(' · ') });
         setTestMsg(''); invalidate();
       } else {
-        setTestResult({ type: 'ignored', detail: res.reason ?? 'ليست رسالة مخالفة' });
+        setTestResult({ type: 'ignored', detail: res.reason ?? 'Not a violation message' });
       }
     },
-    onError: () => setTestResult({ type: 'error', detail: 'حدث خطأ' }),
+    onError: () => setTestResult({ type: 'error', detail: 'An error occurred' }),
   });
 
   if (!isAdmin) return (
     <MainLayout>
       <div className="flex items-center justify-center h-64">
-        <p style={{ color: 'var(--text-secondary)' }}>ليس لديك صلاحية لعرض هذه الصفحة</p>
+        <p style={{ color: 'var(--text-secondary)' }}>You do not have permission to view this page.</p>
       </div>
     </MainLayout>
   );
@@ -408,11 +412,11 @@ export default function ViolationsPage() {
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
           <div>
             <h1 style={{ margin: 0, fontSize: 21, fontWeight: 800, color: 'var(--text-primary)' }}>
-              مخالفات بلدية أبوظبي
+              Abu Dhabi Municipality Violations
             </h1>
             <p style={{ margin: '3px 0 0', fontSize: 13, color: 'var(--text-secondary)' }}>
-              رسائل بلدية مدينة أبوظبي
-              {stats && <span style={{ fontWeight: 700, color: 'var(--color-primary)', marginLeft: 6 }}>{stats.total} مخالفة</span>}
+              ADM SMS notifications
+              {stats && <span style={{ fontWeight: 700, color: 'var(--color-primary)', marginLeft: 6 }}>{stats.total} violations</span>}
             </p>
           </div>
           <button
@@ -423,31 +427,31 @@ export default function ViolationsPage() {
               fontSize: 13, fontWeight: 600, color: testOpen ? '#15803D' : 'var(--text-primary)',
             }}
           >
-            اختبار برسالة قديمة
+            Test SMS Message
           </button>
         </div>
 
         {/* Status workflow explanation */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 16px', background: '#F8FAFC', borderRadius: 10, border: '1px solid #E2E8F0', fontSize: 11, color: '#64748B', flexWrap: 'wrap' }}>
-          <span style={{ fontWeight: 700 }}>مسار المخالفة:</span>
+          <span style={{ fontWeight: 700 }}>Violation Workflow:</span>
           {(['new', 'notified', 'resolved'] as const).map((s, i) => (
             <span key={s} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              {i > 0 && <span style={{ color: '#CBD5E1' }}>←</span>}
+              {i > 0 && <span style={{ color: '#CBD5E1' }}>→</span>}
               <StatusBadge status={s} />
             </span>
           ))}
-          <span style={{ marginLeft: 8, color: '#94A3B8' }}>اضغط على أي مخالفة لعرض التفاصيل والإجراءات</span>
+          <span style={{ marginLeft: 8, color: '#94A3B8' }}>Click any row to view details and actions</span>
         </div>
 
         {/* Test panel */}
         {testOpen && (
           <div style={{ background: '#FFFBEB', border: '1.5px solid #FDE68A', borderRadius: 14, padding: 18, display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div>
-              <p style={{ margin: 0, fontWeight: 700, fontSize: 14, color: '#92400E' }}>اختبار بنص رسالة</p>
-              <p style={{ margin: '3px 0 0', fontSize: 12, color: '#B45309' }}>الصق نص رسالة بلدية أبوظبي لاختبار التحليل</p>
+              <p style={{ margin: 0, fontWeight: 700, fontSize: 14, color: '#92400E' }}>Test SMS Message</p>
+              <p style={{ margin: '3px 0 0', fontSize: 12, color: '#B45309' }}>Paste an ADM SMS text to test parsing and the full notification pipeline</p>
             </div>
             <textarea value={testMsg} onChange={e => { setTestMsg(e.target.value); setTestResult(null); }}
-              placeholder="الصق نص الرسالة هنا..." rows={4}
+              placeholder="Paste message text here..." rows={4}
               style={{ padding: 12, borderRadius: 8, border: '1.5px solid #FDE68A', resize: 'vertical', direction: 'rtl', fontSize: 13, fontFamily: 'system-ui, Tahoma, Arial, sans-serif', background: '#fff', width: '100%' }} />
             {testResult && (
               <div style={{
@@ -460,7 +464,7 @@ export default function ViolationsPage() {
             )}
             <button onClick={() => simulateMutation.mutate(testMsg)} disabled={!testMsg.trim() || simulateMutation.isPending}
               style={{ padding: '9px 20px', borderRadius: 9, border: 'none', background: '#D97706', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', alignSelf: 'flex-start', opacity: simulateMutation.isPending ? 0.7 : 1 }}>
-              {simulateMutation.isPending ? 'جاري المعالجة...' : 'تحليل الرسالة'}
+              {simulateMutation.isPending ? 'Processing...' : 'Analyze Message'}
             </button>
           </div>
         )}
@@ -468,18 +472,18 @@ export default function ViolationsPage() {
         {/* Stats */}
         {stats && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: 10 }}>
-            <StatCard label="الإجمالي" value={stats.total} sub="جميع المخالفات"
+            <StatCard label="Total" value={stats.total} sub="All violations"
               color="#2563EB" border="#C7D2FE" active={statusFilter === ''} onClick={() => { setStatusFilter(''); setPage(1); }} />
-            <StatCard label="جديدة" value={stats.new} sub="تحتاج إجراء"
+            <StatCard label="New" value={stats.new} sub="Requires action"
               color={STATUS_CFG.new.color} border={STATUS_CFG.new.border} active={statusFilter === 'new'} onClick={() => { setStatusFilter('new'); setPage(1); }} />
-            <StatCard label="تم الإبلاغ" value={stats.notified} sub="المهندس أُبلغ"
+            <StatCard label="Notified" value={stats.notified} sub="Engineer informed"
               color={STATUS_CFG.notified.color} border={STATUS_CFG.notified.border} active={statusFilter === 'notified'} onClick={() => { setStatusFilter('notified'); setPage(1); }} />
-            <StatCard label="محلولة" value={stats.resolved} sub="مغلقة"
+            <StatCard label="Resolved" value={stats.resolved} sub="Closed"
               color={STATUS_CFG.resolved.color} border={STATUS_CFG.resolved.border} active={statusFilter === 'resolved'} onClick={() => { setStatusFilter('resolved'); setPage(1); }} />
-            <StatCard label="غرامة" value={stats.fined} sub="صدرت غرامة"
+            <StatCard label="Fined" value={stats.fined} sub="Fine issued"
               color={STATUS_CFG.fined.color} border={STATUS_CFG.fined.border} active={statusFilter === 'fined'} onClick={() => { setStatusFilter('fined'); setPage(1); }} />
             {stats.no_project > 0 && (
-              <StatCard label="بدون مشروع" value={stats.no_project} sub="تحتاج ربط يدوي"
+              <StatCard label="No Project" value={stats.no_project} sub="Needs manual link"
                 color="#D97706" border="#FDE68A" />
             )}
           </div>
@@ -487,30 +491,30 @@ export default function ViolationsPage() {
 
         {/* Filters */}
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-          <input type="text" placeholder="بحث برقم مرجعي أو منطقة أو قطعة..." value={search}
+          <input type="text" placeholder="Search by reference, area or plot..." value={search}
             onChange={e => { setSearch(e.target.value); setPage(1); }}
             style={{ flex: 1, minWidth: 220, padding: '9px 14px', borderRadius: 9, border: '1.5px solid #E2E8F0', fontSize: 13 }} />
           <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
             style={{ minWidth: 160, padding: '9px 12px', borderRadius: 9, border: '1.5px solid #E2E8F0', fontSize: 13 }}>
-            <option value="">جميع الحالات</option>
-            <option value="new">جديدة</option>
-            <option value="notified">تم الإبلاغ</option>
-            <option value="resolved">محلولة</option>
-            <option value="fined">صدرت غرامة</option>
+            <option value="">All Statuses</option>
+            <option value="new">New</option>
+            <option value="notified">Notified</option>
+            <option value="resolved">Resolved</option>
+            <option value="fined">Fined</option>
           </select>
         </div>
 
         {/* Bulk action bar */}
         {selectedIds.size > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', borderRadius: 10, background: '#EFF6FF', border: '1.5px solid #93C5FD' }}>
-            <span style={{ fontWeight: 700, fontSize: 13, color: '#1E40AF' }}>تم اختيار {selectedIds.size}</span>
+            <span style={{ fontWeight: 700, fontSize: 13, color: '#1E40AF' }}>{selectedIds.size} selected</span>
             <button onClick={() => bulkMutation.mutate(Array.from(selectedIds))} disabled={bulkMutation.isPending}
               style={{ padding: '6px 14px', borderRadius: 8, border: 'none', background: '#22C55E', color: '#fff', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
-              تمت المعالجة
+              Mark Resolved
             </button>
             <button onClick={() => setSelectedIds(new Set())}
               style={{ padding: '6px 10px', borderRadius: 8, border: 'none', background: '#E5E7EB', cursor: 'pointer', fontSize: 12, color: '#6B7280' }}>
-              إلغاء
+              Cancel
             </button>
           </div>
         )}
@@ -526,7 +530,7 @@ export default function ViolationsPage() {
               </div>
             ) : grouped.length === 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 180, gap: 8 }}>
-                <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>لا توجد مخالفات</p>
+                <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>No violations found</p>
               </div>
             ) : (
               <div style={{ overflowX: 'auto' }}>
@@ -536,13 +540,13 @@ export default function ViolationsPage() {
                       <th style={thS(36)}>
                         <input type="checkbox" checked={allSelected} onChange={toggleAll} style={{ width: 15, height: 15, cursor: 'pointer' }} />
                       </th>
-                      <th style={thS()}>المرجع</th>
-                      <th style={thS()}>وصف المخالفة</th>
-                      <th style={thS()}>المنطقة / القطعة</th>
-                      <th style={thS()}>المشروع</th>
-                      <th style={{ ...thS(90), textAlign: 'center' }}>المهلة</th>
-                      <th style={{ ...thS(110), textAlign: 'center' }}>الغرامة</th>
-                      <th style={{ ...thS(100), textAlign: 'center' }}>الحالة</th>
+                      <th style={thS()}>Reference</th>
+                      <th style={thS()}>Violation</th>
+                      <th style={thS()}>Area / Plot</th>
+                      <th style={thS()}>Project</th>
+                      <th style={{ ...thS(90), textAlign: 'center' }}>Deadline</th>
+                      <th style={{ ...thS(110), textAlign: 'center' }}>Fine</th>
+                      <th style={{ ...thS(100), textAlign: 'center' }}>Status</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -574,7 +578,7 @@ export default function ViolationsPage() {
 
                           <td style={tdS()}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                              {noProj && <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#F59E0B', display: 'inline-block', flexShrink: 0 }} title="بدون مشروع" />}
+                              {noProj && <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#F59E0B', display: 'inline-block', flexShrink: 0 }} title="No project linked" />}
                               <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 12 }}>
                                 {primary.reference_number || `#${primary.id}`}
                               </span>
@@ -592,7 +596,7 @@ export default function ViolationsPage() {
                               ? <span style={{ fontSize: 12, color: '#334155', direction: 'rtl', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>
                                   {primary.violation_description}
                                 </span>
-                              : <span style={{ fontSize: 11, color: '#94A3B8', fontStyle: 'italic' }}>اضغط لعرض الرسالة</span>
+                              : <span style={{ fontSize: 11, color: '#94A3B8', fontStyle: 'italic' }}>Click to view message</span>
                             }
                           </td>
 
@@ -600,7 +604,7 @@ export default function ViolationsPage() {
                             {primary.sector || primary.plot
                               ? <div>
                                   {primary.sector && <div style={{ fontWeight: 600, fontSize: 12 }}>{primary.sector}</div>}
-                                  {primary.plot && <div style={{ fontSize: 11, color: '#64748B' }}>قطعة {primary.plot}</div>}
+                                  {primary.plot && <div style={{ fontSize: 11, color: '#64748B' }}>Plot {primary.plot}</div>}
                                 </div>
                               : <span style={{ color: '#CBD5E1' }}>—</span>
                             }
@@ -610,7 +614,7 @@ export default function ViolationsPage() {
                             {primary.project_name
                               ? <span style={{ fontWeight: 500, fontSize: 12 }}>{primary.project_name}</span>
                               : <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 20, background: '#FEF3C7', color: '#92400E', fontSize: 11, fontWeight: 600 }}>
-                                  بدون مشروع
+                                  No Project
                                 </span>
                             }
                           </td>
@@ -618,7 +622,7 @@ export default function ViolationsPage() {
                           <td style={{ ...tdS(), textAlign: 'center' }}>
                             {primary.deadline_days != null
                               ? <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 8, fontWeight: 700, fontSize: 12, background: primary.deadline_days <= 1 ? '#FEE2E2' : primary.deadline_days <= 3 ? '#FEF3C7' : '#F0FDF4', color: primary.deadline_days <= 1 ? '#DC2626' : primary.deadline_days <= 3 ? '#D97706' : '#16A34A' }}>
-                                {primary.deadline_days}د
+                                {primary.deadline_days}d
                               </span>
                               : <span style={{ color: '#CBD5E1' }}>—</span>
                             }
@@ -665,12 +669,12 @@ export default function ViolationsPage() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
             <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
               style={{ padding: '7px 16px', borderRadius: 8, border: '1.5px solid #E2E8F0', background: '#fff', fontSize: 13, fontWeight: 600, cursor: page === 1 ? 'not-allowed' : 'pointer', opacity: page === 1 ? 0.4 : 1 }}>
-              السابق
+              Previous
             </button>
-            <span style={{ fontSize: 13, color: '#64748B', fontWeight: 600 }}>{page} / {totalPages}</span>
+            <span style={{ fontSize: 13, color: '#64748B', fontWeight: 600 }}>Page {page} of {totalPages}</span>
             <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
               style={{ padding: '7px 16px', borderRadius: 8, border: '1.5px solid #E2E8F0', background: '#fff', fontSize: 13, fontWeight: 600, cursor: page === totalPages ? 'not-allowed' : 'pointer', opacity: page === totalPages ? 0.4 : 1 }}>
-              التالي
+              Next
             </button>
           </div>
         )}
