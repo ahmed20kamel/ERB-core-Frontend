@@ -4,7 +4,7 @@ import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { purchaseOrdersApi } from '@/lib/api/purchase-orders';
-import { PurchaseOrder, PurchaseOrderItem, PurchaseRequest, Project, Supplier } from '@/types';
+import { PurchaseOrder, PurchaseOrderItem, Supplier } from '@/types';
 import { fmt, fmtDate, StatusBadge, COMPANY } from '@/components/print/PrintTemplate';
 import Image from 'next/image';
 
@@ -61,8 +61,6 @@ export default function PrintLPOPage() {
   );
 
   const supplier  = typeof po.supplier === 'object' && po.supplier ? po.supplier as Supplier : null;
-  const prObj     = typeof po.purchase_request === 'object' && po.purchase_request ? po.purchase_request as PurchaseRequest : null;
-  const project   = prObj && typeof prObj.project === 'object' && prObj.project ? prObj.project as Project : null;
   const subtotal  = Number(po.subtotal  ?? 0);
   const discount  = Number(po.discount  ?? 0);
   const taxRate   = Number(po.tax_rate  ?? 0);
@@ -71,11 +69,13 @@ export default function PrintLPOPage() {
   const hasDiscount = discount > 0;
 
   /* ── Signatories ── */
+  const hasProjectInfo = po.project_name || po.pr_created_by_name;
+
   const signatories = [
-    { label: 'Prepared By', name: prObj?.created_by_name  || '—', stamp: null },
+    { label: 'Prepared By', name: po.pr_created_by_name        || '—', stamp: null },
     { label: 'Checked By',  name: po.quotation_created_by_name || '—', stamp: '/stamps/noura-stamp.svg' },
-    { label: 'Approved By', name: po.approved_by_name     || '—', stamp: '/stamps/saif-stamp.svg'  },
-    { label: 'Supplier',    name: '',                               stamp: null },
+    { label: 'Approved By', name: po.approved_by_name          || '—', stamp: '/stamps/saif-stamp.svg'  },
+    { label: 'Supplier',    name: '',                                   stamp: null },
   ];
 
   return (
@@ -155,41 +155,42 @@ export default function PrintLPOPage() {
           </table>
 
           {/* ── Project + PR Engineer info bar ── */}
-          {(project || prObj) && (
+          {hasProjectInfo && (
             <div style={{
               display:'flex', alignItems:'stretch', gap:0,
               background:LIGHT, border:`1px solid ${BORDER}`, borderRadius:6,
               marginTop:8, overflow:'hidden', fontSize:'8.5pt',
             }}>
               {/* Project side */}
-              {project && (
+              {po.project_name && (
                 <div style={{ display:'flex', alignItems:'center', gap:10, padding:'7px 14px', borderRight:`1px solid ${BORDER}`, flex:1 }}>
                   <div style={{ width:3, height:28, background:ORANGE, borderRadius:2, flexShrink:0 }} />
                   <div>
                     <div style={{ fontSize:'7pt', fontWeight:700, textTransform:'uppercase', letterSpacing:'.5px', color:GREY, marginBottom:2 }}>Project</div>
                     <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                      <span style={{ fontWeight:700, color:NAVY, fontSize:'9pt' }}>{project.name}</span>
-                      <span style={{
-                        background:ORANGE, color:'#fff', borderRadius:4,
-                        padding:'1px 8px', fontSize:'7.5pt', fontWeight:700,
-                      }}>{project.code}</span>
-                      {project.location && (
-                        <span style={{ color:GREY, fontSize:'8pt' }}>· {project.location}</span>
+                      <span style={{ fontWeight:700, color:NAVY, fontSize:'9pt' }}>{po.project_name}</span>
+                      {po.project_code && (
+                        <span style={{ background:ORANGE, color:'#fff', borderRadius:4, padding:'1px 8px', fontSize:'7.5pt', fontWeight:700 }}>
+                          {po.project_code}
+                        </span>
+                      )}
+                      {po.project_location && (
+                        <span style={{ color:GREY, fontSize:'8pt' }}>· {po.project_location}</span>
                       )}
                     </div>
                   </div>
                 </div>
               )}
               {/* PR Engineer side */}
-              {prObj && (
+              {po.pr_created_by_name && (
                 <div style={{ display:'flex', alignItems:'center', gap:10, padding:'7px 14px' }}>
                   <div style={{ width:3, height:28, background:NAVY, borderRadius:2, flexShrink:0 }} />
                   <div>
                     <div style={{ fontSize:'7pt', fontWeight:700, textTransform:'uppercase', letterSpacing:'.5px', color:GREY, marginBottom:2 }}>Site Engineer</div>
                     <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                      <span style={{ fontWeight:600, color:NAVY, fontSize:'9pt' }}>{prObj.created_by_name}</span>
-                      {prObj.created_by_phone && (
-                        <span style={{ color:GREY, fontSize:'8pt' }}>· {prObj.created_by_phone}</span>
+                      <span style={{ fontWeight:600, color:NAVY, fontSize:'9pt' }}>{po.pr_created_by_name}</span>
+                      {po.pr_created_by_phone && (
+                        <span style={{ color:GREY, fontSize:'8pt' }}>· {po.pr_created_by_phone}</span>
                       )}
                     </div>
                   </div>

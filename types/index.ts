@@ -348,6 +348,11 @@ export interface PurchaseOrder {
   created_by_name: string;
   created_by_phone?: string;
   quotation_created_by_name?: string | null;
+  pr_created_by_name?: string | null;
+  pr_created_by_phone?: string | null;
+  project_name?: string | null;
+  project_code?: string | null;
+  project_location?: string | null;
   has_grn?: boolean;
   grns_count?: number;
   created_at: string;
