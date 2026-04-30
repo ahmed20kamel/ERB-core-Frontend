@@ -71,10 +71,26 @@ export default function PrintLPOPage() {
   /* ── Signatories ── */
   const hasProjectInfo = po.project_name || po.pr_created_by_name;
 
+  const USER_STAMPS: Record<string, string> = {
+    abdo:  '/stamps/abdo-stamp.svg',
+    sayed: '/stamps/sayed-stamp.svg',
+    noura: '/stamps/noura-stamp.svg',
+    saif:  '/stamps/saif-stamp.svg',
+  };
+
+  function resolveStamp(username: string | null | undefined): string | null {
+    if (!username) return null;
+    const key = username.toLowerCase();
+    for (const name of Object.keys(USER_STAMPS)) {
+      if (key.includes(name)) return USER_STAMPS[name];
+    }
+    return null;
+  }
+
   const signatories = [
-    { label: 'Prepared By', name: po.pr_created_by_name        || '—', stamp: null },
-    { label: 'Checked By',  name: po.quotation_created_by_name || '—', stamp: '/stamps/noura-stamp.svg' },
-    { label: 'Approved By', name: po.approved_by_name          || '—', stamp: '/stamps/saif-stamp.svg'  },
+    { label: 'Prepared By', name: po.pr_created_by_name        || '—', stamp: resolveStamp(po.pr_created_by_name) },
+    { label: 'Checked By',  name: po.quotation_created_by_name || '—', stamp: resolveStamp(po.quotation_created_by_name) ?? '/stamps/noura-stamp.svg' },
+    { label: 'Approved By', name: po.approved_by_name          || '—', stamp: resolveStamp(po.approved_by_name)          ?? '/stamps/saif-stamp.svg'  },
     { label: 'Supplier',    name: '',                                   stamp: null },
   ];
 
