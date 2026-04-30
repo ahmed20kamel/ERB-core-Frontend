@@ -227,6 +227,7 @@ export interface PurchaseRequest {
   rejection_reason?: string;
   created_by: number;
   created_by_name?: string;
+  created_by_phone?: string;
   approved_by?: number | null;
   approved_by_name?: string | null;
   approved_at?: string | null;

@@ -30,11 +30,10 @@ function toWords(n: number): string {
   return r + ' Only';
 }
 
-/* ── Shared colours ─────────────────────────────────────────────── */
-const NAVY = '#1a1a2e';
+const NAVY   = '#1a1a2e';
 const ORANGE = '#f97316';
-const GREY = '#64748b';
-const LIGHT = '#f8fafc';
+const GREY   = '#64748b';
+const LIGHT  = '#f8fafc';
 const BORDER = '#e2e8f0';
 
 export default function PrintLPOPage() {
@@ -61,21 +60,22 @@ export default function PrintLPOPage() {
     </div>
   );
 
-  const supplier   = typeof po.supplier === 'object' && po.supplier ? po.supplier as Supplier : null;
-  const prObj      = typeof po.purchase_request === 'object' && po.purchase_request ? po.purchase_request as PurchaseRequest : null;
-  const project    = prObj && typeof prObj.project === 'object' && prObj.project ? prObj.project as Project : null;
-  const subtotal   = Number(po.subtotal  ?? 0);
-  const discount   = Number(po.discount  ?? 0);
-  const taxRate    = Number(po.tax_rate  ?? 0);
-  const taxAmount  = Number(po.tax_amount ?? 0);
-  const total      = Number(po.total     ?? 0);
+  const supplier  = typeof po.supplier === 'object' && po.supplier ? po.supplier as Supplier : null;
+  const prObj     = typeof po.purchase_request === 'object' && po.purchase_request ? po.purchase_request as PurchaseRequest : null;
+  const project   = prObj && typeof prObj.project === 'object' && prObj.project ? prObj.project as Project : null;
+  const subtotal  = Number(po.subtotal  ?? 0);
+  const discount  = Number(po.discount  ?? 0);
+  const taxRate   = Number(po.tax_rate  ?? 0);
+  const taxAmount = Number(po.tax_amount ?? 0);
+  const total     = Number(po.total     ?? 0);
   const hasDiscount = discount > 0;
 
+  /* ── Signatories ── */
   const signatories = [
-    { label: 'Prepared By', name: prObj?.created_by_name || '' },
-    { label: 'Checked By',  name: po.quotation_created_by_name || '' },
-    { label: 'LPO By',      name: po.created_by_name },
-    { label: 'Approved By', name: po.approved_by_name || '' },
+    { label: 'Prepared By', name: prObj?.created_by_name  || '—', stamp: null },
+    { label: 'Checked By',  name: po.quotation_created_by_name || '—', stamp: '/stamps/noura-stamp.svg' },
+    { label: 'Approved By', name: po.approved_by_name     || '—', stamp: '/stamps/saif-stamp.svg'  },
+    { label: 'Supplier',    name: '',                               stamp: null },
   ];
 
   return (
@@ -85,8 +85,7 @@ export default function PrintLPOPage() {
       <div className="print-controls-bar" style={{
         position:'sticky', top:0, zIndex:100,
         display:'flex', alignItems:'center', justifyContent:'space-between',
-        padding:'8px 32px',
-        background:'#fff', borderBottom:`1px solid ${BORDER}`,
+        padding:'8px 32px', background:'#fff', borderBottom:`1px solid ${BORDER}`,
         boxShadow:'0 1px 4px rgba(0,0,0,.06)',
       }}>
         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
@@ -155,34 +154,45 @@ export default function PrintLPOPage() {
             </tbody>
           </table>
 
-          {/* ── Project + Engineer info bar ── */}
-          {(project || po.created_by_name) && (
+          {/* ── Project + PR Engineer info bar ── */}
+          {(project || prObj) && (
             <div style={{
-              display:'flex', alignItems:'center', flexWrap:'wrap', gap:16,
+              display:'flex', alignItems:'stretch', gap:0,
               background:LIGHT, border:`1px solid ${BORDER}`, borderRadius:6,
-              padding:'6px 14px', marginTop:8, fontSize:'8.5pt', color:NAVY,
+              marginTop:8, overflow:'hidden', fontSize:'8.5pt',
             }}>
+              {/* Project side */}
               {project && (
-                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                  <span style={{ fontSize:'7.5pt', fontWeight:700, textTransform:'uppercase', letterSpacing:'.4px', color:GREY }}>Project</span>
-                  <span style={{ fontWeight:700, color:NAVY }}>{project.name}</span>
-                  {project.code && (
-                    <span style={{
-                      background:'#fff', border:`1px solid ${BORDER}`, borderRadius:4,
-                      padding:'1px 8px', fontSize:'7.5pt', fontWeight:700, color:ORANGE,
-                    }}>
-                      {project.code}
-                    </span>
-                  )}
+                <div style={{ display:'flex', alignItems:'center', gap:10, padding:'7px 14px', borderRight:`1px solid ${BORDER}`, flex:1 }}>
+                  <div style={{ width:3, height:28, background:ORANGE, borderRadius:2, flexShrink:0 }} />
+                  <div>
+                    <div style={{ fontSize:'7pt', fontWeight:700, textTransform:'uppercase', letterSpacing:'.5px', color:GREY, marginBottom:2 }}>Project</div>
+                    <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                      <span style={{ fontWeight:700, color:NAVY, fontSize:'9pt' }}>{project.name}</span>
+                      <span style={{
+                        background:ORANGE, color:'#fff', borderRadius:4,
+                        padding:'1px 8px', fontSize:'7.5pt', fontWeight:700,
+                      }}>{project.code}</span>
+                      {project.location && (
+                        <span style={{ color:GREY, fontSize:'8pt' }}>· {project.location}</span>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
-              {(po.created_by_name || po.created_by_phone) && (
-                <div style={{ display:'flex', alignItems:'center', gap:8, marginLeft:'auto' }}>
-                  <span style={{ fontSize:'7.5pt', fontWeight:700, textTransform:'uppercase', letterSpacing:'.4px', color:GREY }}>Engineer</span>
-                  {po.created_by_name && <span style={{ fontWeight:600, color:NAVY }}>{po.created_by_name}</span>}
-                  {po.created_by_phone && (
-                    <span style={{ color:GREY, fontSize:'8pt' }}>· Tel: {po.created_by_phone}</span>
-                  )}
+              {/* PR Engineer side */}
+              {prObj && (
+                <div style={{ display:'flex', alignItems:'center', gap:10, padding:'7px 14px' }}>
+                  <div style={{ width:3, height:28, background:NAVY, borderRadius:2, flexShrink:0 }} />
+                  <div>
+                    <div style={{ fontSize:'7pt', fontWeight:700, textTransform:'uppercase', letterSpacing:'.5px', color:GREY, marginBottom:2 }}>Site Engineer</div>
+                    <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                      <span style={{ fontWeight:600, color:NAVY, fontSize:'9pt' }}>{prObj.created_by_name}</span>
+                      {prObj.created_by_phone && (
+                        <span style={{ color:GREY, fontSize:'8pt' }}>· {prObj.created_by_phone}</span>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -217,18 +227,16 @@ export default function PrintLPOPage() {
                 Order Information
               </div>
               <div style={{ border:`1px solid ${BORDER}`, borderRadius:8, overflow:'hidden' }}>
-                {[
+                {([
                   ['Order Date',    fmtDate(po.order_date)],
                   ['Delivery Date', fmtDate(po.delivery_date)],
                   ['Payment Terms', po.payment_terms || '—'],
                   ['Delivery',      po.delivery_method === 'pickup' ? 'Ex-Works / Pickup' : 'Delivery to Site'],
-                  ['Approved By',   po.approved_by_name || '—'],
-                  ['LPO By',        po.created_by_name],
-                ].map(([label, value], i) => (
+                ] as [string, string][]).map(([label, value], i, arr) => (
                   <div key={i} style={{
                     display:'flex', alignItems:'baseline', padding:'5px 10px',
                     background: i%2===0 ? '#fafafa' : '#fff',
-                    borderBottom: i < 5 ? `1px solid #f1f5f9` : 'none',
+                    borderBottom: i < arr.length - 1 ? `1px solid #f1f5f9` : 'none',
                   }}>
                     <span style={{ fontSize:'7.5pt', fontWeight:600, color:GREY, width:100, flexShrink:0, textTransform:'uppercase', letterSpacing:'.3px' }}>{label}</span>
                     <span style={{ fontSize:'9pt', color:NAVY, fontWeight:500 }}>{value}</span>
@@ -360,20 +368,38 @@ export default function PrintLPOPage() {
             </div>
           )}
 
-          {/* ── Signatures ── */}
+          {/* ── Authorization / Signatures ── */}
           <div style={{ fontSize:'9pt', fontWeight:700, letterSpacing:'.8px', textTransform:'uppercase', color:ORANGE, borderBottom:`1.5px solid #fed7aa`, paddingBottom:4, margin:'14px 0 10px' }}>
             Authorization
           </div>
-          <div style={{ display:'flex', gap:0, border:`1px solid ${BORDER}`, borderRadius:8, overflow:'hidden' }}>
+          <div style={{ display:'flex', border:`1px solid ${BORDER}`, borderRadius:8, overflow:'hidden' }}>
             {signatories.map((s, i) => (
               <div key={i} style={{
-                flex:1, padding:'10px 12px 8px', textAlign:'center',
+                flex:1, textAlign:'center',
                 borderRight: i < signatories.length - 1 ? `1px solid ${BORDER}` : 'none',
-                background:'#fafafa',
+                background:'#fafafa', position:'relative', overflow:'hidden',
               }}>
-                <div style={{ height:1, background:'#94a3b8', margin:'24px 0 6px' }} />
-                <div style={{ fontSize:'7.5pt', fontWeight:700, textTransform:'uppercase', letterSpacing:'.5px', color:GREY }}>{s.label}</div>
-                {s.name && <div style={{ fontSize:'9pt', fontWeight:600, color:NAVY, marginTop:3 }}>{s.name}</div>}
+                {/* Stamp image — centred, rotated, slightly transparent */}
+                {s.stamp && (
+                  <div style={{
+                    position:'absolute', top:'50%', left:'50%',
+                    transform:'translate(-50%, -54%) rotate(-10deg)',
+                    opacity:0.82, pointerEvents:'none', zIndex:1,
+                    width:96, height:96, marginTop:-4,
+                  }}>
+                    <Image src={s.stamp} alt="stamp" width={96} height={96}
+                      style={{ objectFit:'contain', width:'100%', height:'100%' }}
+                      unoptimized priority />
+                  </div>
+                )}
+                {/* Text — above stamp */}
+                <div style={{ position:'relative', zIndex:2, padding:'10px 12px 10px' }}>
+                  <div style={{ height:1, background:'#cbd5e1', margin:'28px 0 8px' }} />
+                  <div style={{ fontSize:'7.5pt', fontWeight:700, textTransform:'uppercase', letterSpacing:'.6px', color:GREY }}>{s.label}</div>
+                  {s.name && s.name !== '—' && (
+                    <div style={{ fontSize:'9pt', fontWeight:600, color:NAVY, marginTop:3 }}>{s.name}</div>
+                  )}
+                </div>
               </div>
             ))}
           </div>
