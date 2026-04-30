@@ -95,6 +95,7 @@ export interface PurchaseOrderFormData {
   purchase_request_id: number | undefined;
   purchase_quotation_id: number | undefined;
   supplier_id: number | undefined;
+  cost_code_id?: number | null;
   order_date: string;
   delivery_date: string;
   payment_terms: string;
@@ -123,6 +124,7 @@ export function toPurchaseOrderCreateData(form: PurchaseOrderFormData, items?: A
     purchase_request_id: form.purchase_request_id ?? null,
     purchase_quotation_id: form.purchase_quotation_id ?? null,
     supplier_id: form.supplier_id as number,
+    cost_code_id: form.cost_code_id ?? null,
     order_date: form.order_date,
     delivery_date: form.delivery_date || undefined,
     payment_terms: form.payment_terms,

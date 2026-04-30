@@ -8,8 +8,9 @@ import { suppliersApi } from '@/lib/api/suppliers';
 import { productsApi } from '@/lib/api/products';
 import MainLayout from '@/components/layout/MainLayout';
 import Link from 'next/link';
-import { PurchaseOrder, PurchaseOrderItem } from '@/types';
+import { PurchaseOrder, PurchaseOrderItem, CostCode } from '@/types';
 import { PurchaseOrderUpdateFormData, toPurchaseOrderUpdateData } from '@/lib/types/form-data';
+import CostCodePicker from '@/components/ui/CostCodePicker';
 import { toast } from '@/lib/hooks/use-toast';
 import SearchableDropdown from '@/components/ui/SearchableDropdown';
 import { formatPrice } from '@/lib/utils/format';
@@ -57,7 +58,9 @@ function EditPurchaseOrderPageContent() {
     tax_rate: 0,
     discount: 0,
     status: 'draft',
+    cost_code_id: null,
   });
+  const [selectedCostCode, setSelectedCostCode] = useState<CostCode | null>(null);
 
   const [items, setItems] = useState<
     Omit<PurchaseOrderItem, 'product' | 'total' | 'created_at'>[]
@@ -108,6 +111,10 @@ function EditPurchaseOrderPageContent() {
           notes: item.notes || '',
         }))
       );
+      if (order.cost_code) {
+        setSelectedCostCode(order.cost_code as CostCode);
+        setFormData(prev => ({ ...prev, cost_code_id: (order.cost_code as CostCode).id }));
+      }
     }
   }, [order]);
 
@@ -318,6 +325,17 @@ function EditPurchaseOrderPageContent() {
                 <option value="rejected">{t('status', 'rejected')}</option>
                 <option value="cancelled">{t('status', 'cancelled')}</option>
               </select>
+            </div>
+
+            <div className="md:col-span-3">
+              <label className="form-label">Cost Code</label>
+              <CostCodePicker
+                value={selectedCostCode}
+                onChange={(code) => {
+                  setSelectedCostCode(code);
+                  setFormData(prev => ({ ...prev, cost_code_id: code?.id ?? null }));
+                }}
+              />
             </div>
           </div>
 
