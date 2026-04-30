@@ -4,7 +4,7 @@ import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { purchaseOrdersApi } from '@/lib/api/purchase-orders';
-import { PurchaseOrder, PurchaseOrderItem, Supplier } from '@/types';
+import { PurchaseOrder, PurchaseOrderItem, PurchaseRequest, Project, Supplier } from '@/types';
 import { fmt, fmtDate, StatusBadge, COMPANY } from '@/components/print/PrintTemplate';
 import Image from 'next/image';
 
@@ -61,13 +61,22 @@ export default function PrintLPOPage() {
     </div>
   );
 
-  const supplier = typeof po.supplier === 'object' && po.supplier ? po.supplier as Supplier : null;
-  const subtotal  = Number(po.subtotal  ?? 0);
-  const discount  = Number(po.discount  ?? 0);
-  const taxRate   = Number(po.tax_rate  ?? 0);
-  const taxAmount = Number(po.tax_amount ?? 0);
-  const total     = Number(po.total     ?? 0);
+  const supplier   = typeof po.supplier === 'object' && po.supplier ? po.supplier as Supplier : null;
+  const prObj      = typeof po.purchase_request === 'object' && po.purchase_request ? po.purchase_request as PurchaseRequest : null;
+  const project    = prObj && typeof prObj.project === 'object' && prObj.project ? prObj.project as Project : null;
+  const subtotal   = Number(po.subtotal  ?? 0);
+  const discount   = Number(po.discount  ?? 0);
+  const taxRate    = Number(po.tax_rate  ?? 0);
+  const taxAmount  = Number(po.tax_amount ?? 0);
+  const total      = Number(po.total     ?? 0);
   const hasDiscount = discount > 0;
+
+  const signatories = [
+    { label: 'Prepared By', name: prObj?.created_by_name || '' },
+    { label: 'Checked By',  name: po.quotation_created_by_name || '' },
+    { label: 'LPO By',      name: po.created_by_name },
+    { label: 'Approved By', name: po.approved_by_name || '' },
+  ];
 
   return (
     <div className="print-page-bg" style={{ minHeight:'100vh', background:'#e8ecf0', fontFamily:"'Inter','Cairo','Segoe UI',sans-serif", fontSize:'12px' }}>
@@ -105,7 +114,7 @@ export default function PrintLPOPage() {
         borderRadius:4, boxShadow:'0 4px 32px rgba(0,0,0,.18)',
         overflow:'hidden',
       }}>
-        <div style={{ padding:'14mm 16mm 12mm', color:NAVY, lineHeight:1.5 }}>
+        <div style={{ padding:'12mm 16mm 10mm', color:NAVY, lineHeight:1.5 }}>
 
           {/* ── HEADER ── */}
           <table style={{ width:'100%', borderCollapse:'collapse', marginBottom:0 }}>
@@ -146,8 +155,41 @@ export default function PrintLPOPage() {
             </tbody>
           </table>
 
+          {/* ── Project + Engineer info bar ── */}
+          {(project || po.created_by_name) && (
+            <div style={{
+              display:'flex', alignItems:'center', flexWrap:'wrap', gap:16,
+              background:LIGHT, border:`1px solid ${BORDER}`, borderRadius:6,
+              padding:'6px 14px', marginTop:8, fontSize:'8.5pt', color:NAVY,
+            }}>
+              {project && (
+                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                  <span style={{ fontSize:'7.5pt', fontWeight:700, textTransform:'uppercase', letterSpacing:'.4px', color:GREY }}>Project</span>
+                  <span style={{ fontWeight:700, color:NAVY }}>{project.name}</span>
+                  {project.code && (
+                    <span style={{
+                      background:'#fff', border:`1px solid ${BORDER}`, borderRadius:4,
+                      padding:'1px 8px', fontSize:'7.5pt', fontWeight:700, color:ORANGE,
+                    }}>
+                      {project.code}
+                    </span>
+                  )}
+                </div>
+              )}
+              {(po.created_by_name || po.created_by_phone) && (
+                <div style={{ display:'flex', alignItems:'center', gap:8, marginLeft:'auto' }}>
+                  <span style={{ fontSize:'7.5pt', fontWeight:700, textTransform:'uppercase', letterSpacing:'.4px', color:GREY }}>Engineer</span>
+                  {po.created_by_name && <span style={{ fontWeight:600, color:NAVY }}>{po.created_by_name}</span>}
+                  {po.created_by_phone && (
+                    <span style={{ color:GREY, fontSize:'8pt' }}>· Tel: {po.created_by_phone}</span>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* ── Divider ── */}
-          <div style={{ height:3, background:`linear-gradient(90deg,${ORANGE} 0%,#fb923c 60%,${BORDER} 100%)`, margin:'12px 0 16px', borderRadius:2 }} />
+          <div style={{ height:3, background:`linear-gradient(90deg,${ORANGE} 0%,#fb923c 60%,${BORDER} 100%)`, margin:'10px 0 14px', borderRadius:2 }} />
 
           {/* ── Supplier + Order info ── */}
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginBottom:4 }}>
@@ -181,7 +223,7 @@ export default function PrintLPOPage() {
                   ['Payment Terms', po.payment_terms || '—'],
                   ['Delivery',      po.delivery_method === 'pickup' ? 'Ex-Works / Pickup' : 'Delivery to Site'],
                   ['Approved By',   po.approved_by_name || '—'],
-                  ['Prepared By',   po.created_by_name],
+                  ['LPO By',        po.created_by_name],
                 ].map(([label, value], i) => (
                   <div key={i} style={{
                     display:'flex', alignItems:'baseline', padding:'5px 10px',
@@ -197,42 +239,42 @@ export default function PrintLPOPage() {
           </div>
 
           {/* ── Items table ── */}
-          <div style={{ fontSize:'9pt', fontWeight:700, letterSpacing:'.8px', textTransform:'uppercase', color:ORANGE, borderBottom:`1.5px solid #fed7aa`, paddingBottom:4, margin:'16px 0 10px' }}>
+          <div style={{ fontSize:'9pt', fontWeight:700, letterSpacing:'.8px', textTransform:'uppercase', color:ORANGE, borderBottom:`1.5px solid #fed7aa`, paddingBottom:4, margin:'14px 0 10px' }}>
             Order Items
           </div>
           <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'9pt', marginBottom:4 }}>
             <thead>
               <tr style={{ background:NAVY, color:'#fff' }}>
-                <th style={{ padding:'8px 10px', textAlign:'left', fontSize:'7.5pt', fontWeight:700, letterSpacing:'.5px', textTransform:'uppercase', width:28 }}>#</th>
-                <th style={{ padding:'8px 10px', textAlign:'left', fontSize:'7.5pt', fontWeight:700, letterSpacing:'.5px', textTransform:'uppercase' }}>Description</th>
-                <th style={{ padding:'8px 10px', textAlign:'center', fontSize:'7.5pt', fontWeight:700, letterSpacing:'.5px', textTransform:'uppercase', width:45 }}>Unit</th>
-                <th style={{ padding:'8px 10px', textAlign:'right', fontSize:'7.5pt', fontWeight:700, letterSpacing:'.5px', textTransform:'uppercase', width:55 }}>Qty</th>
-                <th style={{ padding:'8px 10px', textAlign:'right', fontSize:'7.5pt', fontWeight:700, letterSpacing:'.5px', textTransform:'uppercase', width:80 }}>Unit Price</th>
-                {hasDiscount && <th style={{ padding:'8px 10px', textAlign:'right', fontSize:'7.5pt', fontWeight:700, letterSpacing:'.5px', textTransform:'uppercase', width:55 }}>Disc%</th>}
-                <th style={{ padding:'8px 10px', textAlign:'right', fontSize:'7.5pt', fontWeight:700, letterSpacing:'.5px', textTransform:'uppercase', width:85 }}>Amount</th>
+                <th style={{ padding:'7px 10px', textAlign:'left', fontSize:'7.5pt', fontWeight:700, letterSpacing:'.5px', textTransform:'uppercase', width:28 }}>#</th>
+                <th style={{ padding:'7px 10px', textAlign:'left', fontSize:'7.5pt', fontWeight:700, letterSpacing:'.5px', textTransform:'uppercase' }}>Description</th>
+                <th style={{ padding:'7px 10px', textAlign:'center', fontSize:'7.5pt', fontWeight:700, letterSpacing:'.5px', textTransform:'uppercase', width:45 }}>Unit</th>
+                <th style={{ padding:'7px 10px', textAlign:'right', fontSize:'7.5pt', fontWeight:700, letterSpacing:'.5px', textTransform:'uppercase', width:55 }}>Qty</th>
+                <th style={{ padding:'7px 10px', textAlign:'right', fontSize:'7.5pt', fontWeight:700, letterSpacing:'.5px', textTransform:'uppercase', width:80 }}>Unit Price</th>
+                {hasDiscount && <th style={{ padding:'7px 10px', textAlign:'right', fontSize:'7.5pt', fontWeight:700, letterSpacing:'.5px', textTransform:'uppercase', width:55 }}>Disc%</th>}
+                <th style={{ padding:'7px 10px', textAlign:'right', fontSize:'7.5pt', fontWeight:700, letterSpacing:'.5px', textTransform:'uppercase', width:85 }}>Amount</th>
               </tr>
             </thead>
             <tbody>
               {po.items.map((item: PurchaseOrderItem, idx: number) => (
                 <tr key={item.id ?? idx} style={{ borderBottom:`1px solid #f1f5f9`, background: idx%2===0 ? '#fff' : '#fafafa' }}>
-                  <td style={{ padding:'7px 10px', textAlign:'center', color:'#94a3b8' }}>{idx+1}</td>
-                  <td style={{ padding:'7px 10px' }}>
+                  <td style={{ padding:'6px 10px', textAlign:'center', color:'#94a3b8' }}>{idx+1}</td>
+                  <td style={{ padding:'6px 10px' }}>
                     <div style={{ fontWeight:600, color:NAVY, lineHeight:1.3 }}>{item.product?.name ?? `Item #${item.product_id}`}</div>
                     {item.product?.code && <div style={{ fontSize:'7.5pt', color:'#94a3b8', marginTop:1 }}>{item.product.code}</div>}
                     {item.notes && <div style={{ fontSize:'8pt', color:'#777', marginTop:1 }}>{item.notes}</div>}
                   </td>
-                  <td style={{ padding:'7px 10px', textAlign:'center' }}>{item.product?.unit || '—'}</td>
-                  <td style={{ padding:'7px 10px', textAlign:'right' }}>{fmt(item.quantity, 2)}</td>
-                  <td style={{ padding:'7px 10px', textAlign:'right' }}>AED {fmt(item.unit_price)}</td>
-                  {hasDiscount && <td style={{ padding:'7px 10px', textAlign:'right' }}>{fmt(item.discount ?? 0, 1)}%</td>}
-                  <td style={{ padding:'7px 10px', textAlign:'right', fontWeight:600 }}>AED {fmt(item.total)}</td>
+                  <td style={{ padding:'6px 10px', textAlign:'center' }}>{item.product?.unit || '—'}</td>
+                  <td style={{ padding:'6px 10px', textAlign:'right' }}>{fmt(item.quantity, 2)}</td>
+                  <td style={{ padding:'6px 10px', textAlign:'right' }}>AED {fmt(item.unit_price)}</td>
+                  {hasDiscount && <td style={{ padding:'6px 10px', textAlign:'right' }}>{fmt(item.discount ?? 0, 1)}%</td>}
+                  <td style={{ padding:'6px 10px', textAlign:'right', fontWeight:600 }}>AED {fmt(item.total)}</td>
                 </tr>
               ))}
             </tbody>
             <tfoot>
               <tr style={{ background:LIGHT, borderTop:`2px solid ${BORDER}` }}>
                 <td colSpan={hasDiscount ? 4 : 3} />
-                <td style={{ padding:'7px 10px', textAlign:'right', fontSize:'8.5pt', color:GREY, fontWeight:600 }}>
+                <td style={{ padding:'6px 10px', textAlign:'right', fontSize:'8.5pt', color:GREY, fontWeight:600 }}>
                   {po.items.length} item{po.items.length !== 1 ? 's' : ''}
                 </td>
                 <td />
@@ -242,7 +284,7 @@ export default function PrintLPOPage() {
           </table>
 
           {/* ── Totals ── */}
-          <div style={{ display:'flex', justifyContent:'flex-end', marginTop:12, marginBottom:8 }}>
+          <div style={{ display:'flex', justifyContent:'flex-end', marginTop:10, marginBottom:6 }}>
             <div style={{ width:280, border:`1px solid ${BORDER}`, borderRadius:8, overflow:'hidden' }}>
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'6px 14px', fontSize:'9pt', borderBottom:`1px solid #f1f5f9`, background:'#fafafa' }}>
                 <span style={{ color:GREY, fontWeight:500 }}>Subtotal</span>
@@ -270,8 +312,8 @@ export default function PrintLPOPage() {
           {/* ── Amount in words ── */}
           <div style={{
             background:LIGHT, border:`1px solid ${BORDER}`, borderLeft:`3px solid ${NAVY}`,
-            borderRadius:'0 6px 6px 0', padding:'8px 14px',
-            fontSize:'9pt', color:NAVY, fontStyle:'italic', margin:'10px 0', lineHeight:1.5,
+            borderRadius:'0 6px 6px 0', padding:'7px 14px',
+            fontSize:'9pt', color:NAVY, fontStyle:'italic', margin:'8px 0', lineHeight:1.5,
           }}>
             <span style={{ fontStyle:'normal', fontWeight:700, fontSize:'7.5pt', textTransform:'uppercase', letterSpacing:'.5px', color:GREY, marginRight:8 }}>
               Amount in Words
@@ -282,10 +324,10 @@ export default function PrintLPOPage() {
           {/* ── Terms ── */}
           {(po.payment_terms || po.delivery_terms) && (
             <>
-              <div style={{ fontSize:'9pt', fontWeight:700, letterSpacing:'.8px', textTransform:'uppercase', color:ORANGE, borderBottom:`1.5px solid #fed7aa`, paddingBottom:4, margin:'16px 0 10px' }}>
+              <div style={{ fontSize:'9pt', fontWeight:700, letterSpacing:'.8px', textTransform:'uppercase', color:ORANGE, borderBottom:`1.5px solid #fed7aa`, paddingBottom:4, margin:'14px 0 8px' }}>
                 Terms & Conditions
               </div>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, padding:'10px 14px', background:LIGHT, border:`1px solid ${BORDER}`, borderRadius:6, marginBottom:8 }}>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, padding:'8px 14px', background:LIGHT, border:`1px solid ${BORDER}`, borderRadius:6, marginBottom:6 }}>
                 {po.payment_terms && (
                   <div>
                     <div style={{ fontSize:'7.5pt', fontWeight:700, textTransform:'uppercase', letterSpacing:'.4px', color:GREY, marginBottom:3 }}>Payment Terms</div>
@@ -303,7 +345,7 @@ export default function PrintLPOPage() {
           )}
 
           {po.terms_and_conditions && (
-            <div style={{ fontSize:'8.5pt', color:'#555', lineHeight:1.65, marginBottom:8, padding:'8px 0' }}>
+            <div style={{ fontSize:'8.5pt', color:'#555', lineHeight:1.65, marginBottom:6, padding:'6px 0' }}>
               {po.terms_and_conditions}
             </div>
           )}
@@ -311,30 +353,25 @@ export default function PrintLPOPage() {
           {po.notes && (
             <div style={{
               background:'#fffbeb', border:`1px solid #fed7aa`, borderLeft:`3px solid ${ORANGE}`,
-              borderRadius:'0 6px 6px 0', padding:'8px 12px',
-              fontSize:'9pt', color:'#78350f', margin:'10px 0', lineHeight:1.55,
+              borderRadius:'0 6px 6px 0', padding:'7px 12px',
+              fontSize:'9pt', color:'#78350f', margin:'8px 0', lineHeight:1.55,
             }}>
               <span style={{ fontWeight:700, color:'#c2410c', marginRight:4 }}>Notes:</span> {po.notes}
             </div>
           )}
 
           {/* ── Signatures ── */}
-          <div style={{ fontSize:'9pt', fontWeight:700, letterSpacing:'.8px', textTransform:'uppercase', color:ORANGE, borderBottom:`1.5px solid #fed7aa`, paddingBottom:4, margin:'16px 0 10px' }}>
+          <div style={{ fontSize:'9pt', fontWeight:700, letterSpacing:'.8px', textTransform:'uppercase', color:ORANGE, borderBottom:`1.5px solid #fed7aa`, paddingBottom:4, margin:'14px 0 10px' }}>
             Authorization
           </div>
           <div style={{ display:'flex', gap:0, border:`1px solid ${BORDER}`, borderRadius:8, overflow:'hidden' }}>
-            {[
-              { label:'Prepared By',  name: po.created_by_name },
-              { label:'Checked By',   name: '' },
-              { label:'Approved By',  name: po.approved_by_name || '' },
-              { label:'Supplier',     name: '' },
-            ].map((s, i) => (
+            {signatories.map((s, i) => (
               <div key={i} style={{
-                flex:1, padding:'14px 12px 10px', textAlign:'center',
-                borderRight: i < 3 ? `1px solid ${BORDER}` : 'none',
+                flex:1, padding:'10px 12px 8px', textAlign:'center',
+                borderRight: i < signatories.length - 1 ? `1px solid ${BORDER}` : 'none',
                 background:'#fafafa',
               }}>
-                <div style={{ height:1, background:'#94a3b8', margin:'32px 0 8px' }} />
+                <div style={{ height:1, background:'#94a3b8', margin:'24px 0 6px' }} />
                 <div style={{ fontSize:'7.5pt', fontWeight:700, textTransform:'uppercase', letterSpacing:'.5px', color:GREY }}>{s.label}</div>
                 {s.name && <div style={{ fontSize:'9pt', fontWeight:600, color:NAVY, marginTop:3 }}>{s.name}</div>}
               </div>
@@ -342,7 +379,7 @@ export default function PrintLPOPage() {
           </div>
 
           {/* ── Footer ── */}
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:20, paddingTop:10, borderTop:`1px solid ${BORDER}`, fontSize:'7pt', color:'#94a3b8', gap:16 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:16, paddingTop:8, borderTop:`1px solid ${BORDER}`, fontSize:'7pt', color:'#94a3b8', gap:16 }}>
             <span>This document is computer-generated and valid without a handwritten signature unless otherwise stated.</span>
             <span>{COMPANY.name} &nbsp;·&nbsp; {COMPANY.address}</span>
           </div>

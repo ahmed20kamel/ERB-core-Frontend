@@ -6,7 +6,7 @@ import Image from 'next/image';
 export const COMPANY = {
   name:    'AL YAFOUR CONSTRUCTION L.L.C',
   address: 'Abu Dhabi, United Arab Emirates',
-  phone:   '+971 2 000 0000',
+  phone:   '+971 50 622 2469',
   email:   'info@alyafour.ae',
   trn:     '100123456700003',
   logo:    '/logo.png',

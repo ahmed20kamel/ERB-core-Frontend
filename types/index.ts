@@ -345,6 +345,8 @@ export interface PurchaseOrder {
   rejection_reason?: string;
   created_by: number;
   created_by_name: string;
+  created_by_phone?: string;
+  quotation_created_by_name?: string | null;
   has_grn?: boolean;
   grns_count?: number;
   created_at: string;
