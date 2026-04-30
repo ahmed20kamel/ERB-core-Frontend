@@ -200,6 +200,19 @@ export interface Product {
   updated_at: string;
 }
 
+// Cost Code Types
+export interface CostCode {
+  id: number;
+  qb_code: string;
+  excel_code: string;
+  description: string;
+  level: 1 | 2 | 3;
+  parent: number | null;
+  parent_code?: string | null;
+  parent_desc?: string | null;
+  is_active: boolean;
+}
+
 // Purchase Request Types
 export interface PurchaseRequestItem {
   id?: number;
@@ -323,6 +336,8 @@ export interface PurchaseOrderItem {
 
 export interface PurchaseOrder {
   terms_and_conditions?: string;
+  cost_code?: CostCode | null;
+  cost_code_id?: number | null;
   id: number;
   order_number: string;
   purchase_request?: number | PurchaseRequest;

@@ -199,6 +199,20 @@ export default function PrintLPOPage() {
             </div>
           )}
 
+          {/* ── Cost Code bar ── */}
+          {po.cost_code && (
+            <div style={{
+              display:'flex', alignItems:'center', gap:10,
+              background:'#fff8f0', border:`1px solid #fed7aa`, borderLeft:`3px solid ${ORANGE}`,
+              borderRadius:'0 6px 6px 0', padding:'6px 14px', marginTop:6, fontSize:'8.5pt',
+            }}>
+              <span style={{ fontSize:'7pt', fontWeight:700, textTransform:'uppercase', letterSpacing:'.5px', color:GREY }}>Cost Code</span>
+              <span style={{ fontWeight:800, color:ORANGE, fontSize:'9.5pt' }}>{po.cost_code.excel_code}</span>
+              <span style={{ color:'#94a3b8', fontSize:'7.5pt' }}>|</span>
+              <span style={{ color:NAVY, fontWeight:500 }}>{po.cost_code.description.slice(0,80)}</span>
+            </div>
+          )}
+
           {/* ── Divider ── */}
           <div style={{ height:3, background:`linear-gradient(90deg,${ORANGE} 0%,#fb923c 60%,${BORDER} 100%)`, margin:'10px 0 14px', borderRadius:2 }} />
 

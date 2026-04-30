@@ -14,6 +14,7 @@ import { PurchaseOrderItem } from '@/types';
 import { PurchaseOrderFormData, toPurchaseOrderCreateData } from '@/lib/types/form-data';
 import { toast } from '@/lib/hooks/use-toast';
 import SearchableDropdown from '@/components/ui/SearchableDropdown';
+import CostCodePicker from '@/components/ui/CostCodePicker';
 import FormField from '@/components/ui/FormField';
 import { formatPrice } from '@/lib/utils/format';
 import { formatBackendError, validateRequired, validatePositiveNumber, validateDateAfter } from '@/lib/utils/validation';
@@ -84,6 +85,8 @@ Terms & Conditions:
     discount: 0,
     status: 'draft',
   });
+
+  const [selectedCostCode, setSelectedCostCode] = useState<import('@/types').CostCode | null>(null);
 
   const [items, setItems] = useState<
     (Omit<PurchaseOrderItem, 'product' | 'total' | 'created_at'> & { _product?: any })[]
@@ -340,7 +343,8 @@ Terms & Conditions:
       return;
     }
     
-    mutation.mutate(toPurchaseOrderCreateData(formData, items));
+    const payload = { ...toPurchaseOrderCreateData(formData, items), cost_code_id: selectedCostCode?.id ?? null };
+    mutation.mutate(payload);
   };
 
   const calculateSubtotal = () => {
@@ -836,6 +840,26 @@ Terms & Conditions:
                 </p>
               </div>
             )}
+          </div>
+
+          {/* Cost Code Section */}
+          <div className="card" style={{ marginBottom: 'var(--spacing-6)' }}>
+            <h3 style={{ fontSize: 'var(--font-lg)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--text-primary)', margin: 0, marginBottom: 'var(--spacing-4)' }}>
+              Cost Code
+            </h3>
+            <div>
+              <label className="form-label">Direct Cost Code <span style={{ color: 'var(--muted-foreground)', fontWeight: 400 }}>(optional)</span></label>
+              <CostCodePicker
+                value={selectedCostCode}
+                onChange={setSelectedCostCode}
+              />
+              {selectedCostCode && (
+                <div style={{ marginTop: 8, padding: '6px 10px', background: 'var(--muted)', borderRadius: 6, fontSize: 13 }}>
+                  <span style={{ fontWeight: 600, color: '#f97316' }}>{selectedCostCode.excel_code}</span>
+                  <span style={{ color: 'var(--muted-foreground)', marginLeft: 8 }}>{selectedCostCode.description}</span>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Terms & Conditions Section - Unified */}
