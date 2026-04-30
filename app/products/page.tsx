@@ -29,6 +29,7 @@ export default function ProductsPage() {
   const [filters, setFilters] = useState<Record<string, any>>({});
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [isImporting, setIsImporting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const importFileRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -52,6 +53,37 @@ export default function ProductsPage() {
     },
     onError: () => toast('Failed to delete product', 'error'),
   });
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const all = await productsApi.getAll({ page_size: 10000 });
+      const XLSX = (await import('xlsx')).default;
+      const rows = all.results.map(p => ({
+        Code:        p.code,
+        Name:        p.name,
+        Name_AR:     p.name_ar ?? '',
+        Category:    p.category ?? '',
+        Unit:        p.unit ?? '',
+        Brand:       p.brand ?? '',
+        Description: p.description ?? '',
+        Unit_Price:  p.unit_price ?? '',
+        Sell_Price:  p.sell_price ?? '',
+        Buy_Price:   p.buy_price ?? '',
+        Stock:       p.stock_balance ?? '',
+        Status:      p.status ?? '',
+      }));
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Products');
+      XLSX.writeFile(wb, `products-${new Date().toISOString().slice(0,10)}.xlsx`);
+      toast(`Exported ${rows.length} products`, 'success');
+    } catch {
+      toast('Export failed', 'error');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -144,6 +176,14 @@ export default function ProductsPage() {
                   style={{ display: 'none' }}
                   onChange={handleImport}
                 />
+                <Button
+                  variant="secondary"
+                  onClick={handleExport}
+                  disabled={isExporting}
+                  isLoading={isExporting}
+                >
+                  Export Excel
+                </Button>
                 <Button
                   variant="secondary"
                   onClick={() => importFileRef.current?.click()}
