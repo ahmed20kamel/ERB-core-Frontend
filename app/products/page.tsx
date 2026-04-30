@@ -1,5 +1,6 @@
 'use client';
 
+import * as XLSX from 'xlsx';
 import { useState, useRef } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -58,7 +59,6 @@ export default function ProductsPage() {
     setIsExporting(true);
     try {
       const all = await productsApi.getAll({ page_size: 10000 });
-      const XLSX = (await import('xlsx')).default;
       const rows = all.results.map(p => ({
         Code:        p.code,
         Name:        p.name,
