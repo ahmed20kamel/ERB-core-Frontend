@@ -120,9 +120,12 @@ export default function AIProcurementChat({ onAddItems }: Props) {
         items: addedItems.length ? addedItems : undefined,
       }]);
     } catch (err: any) {
+      const serverError = err?.response?.data?.error;
       setMessages((prev) => [...prev, {
         role: 'assistant',
-        content: '❌ حدث خطأ، حاول مرة أخرى.',
+        content: serverError
+          ? `❌ ${serverError}`
+          : '❌ حدث خطأ في الاتصال، حاول مرة أخرى.',
       }]);
     } finally {
       setLoading(false);
