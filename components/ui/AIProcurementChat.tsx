@@ -43,55 +43,88 @@ interface Props {
   onFormUpdate?: (fields: AIFormUpdate) => void;
 }
 
+type VoiceState = 'idle' | 'listening' | 'thinking' | 'speaking';
+
 export default function AIProcurementChat({ onAddItems, onFormUpdate }: Props) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'assistant', content: 'مرحباً! أنا مساعدك الذكي للمشتريات. أخبرني بما تحتاجه وسأضيفه لك مباشرة.\n\nيمكنك:\n• كتابة احتياجاتك بالعربي أو الإنجليزي\n• تسجيل صوتي\n• إرسال صورة قائمة أو سكرين شوت' },
+    { role: 'assistant', content: 'مرحباً! أنا مساعدك الذكي للمشتريات.\n\nيمكنك الكتابة أو الضغط على 🎙 للمحادثة الصوتية المباشرة.' },
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [recording, setRecording] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  // Voice conversation state
+  const [voiceState, setVoiceState] = useState<VoiceState>('idle');
+  const [interimText, setInterimText] = useState('');
+
   const bottomRef = useRef<HTMLDivElement>(null);
-  const mediaRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<BlobPart[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const recognitionRef = useRef<any>(null);
+  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingTextRef = useRef('');
+  const messagesRef = useRef(messages);
+  messagesRef.current = messages;
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, loading]);
+  }, [messages, loading, interimText]);
 
-  // ── Send message ────────────────────────────────────────────────────
-  const send = useCallback(async (textOverride?: string) => {
-    const text = (textOverride ?? input).trim();
-    if (!text && !imageFile) return;
+  // ── Speak text with Web Speech Synthesis ─────────────────────────────
+  const speak = useCallback((text: string, onDone?: () => void) => {
+    if (!('speechSynthesis' in window)) { onDone?.(); return; }
+    window.speechSynthesis.cancel();
+    // Strip markdown and emoji for cleaner TTS
+    const clean = text.replace(/[*_`#~\[\]()]/g, '').replace(/✓|❌|🤖|😊|🙏/g, '').trim();
+    const utterance = new SpeechSynthesisUtterance(clean);
+    // Detect Arabic
+    const isArabic = /[؀-ۿ]/.test(clean);
+    utterance.lang  = isArabic ? 'ar-SA' : 'en-US';
+    utterance.rate  = 1.05;
+    utterance.pitch = 1;
+    utterance.onend = () => onDone?.();
+    utterance.onerror = () => onDone?.();
+    window.speechSynthesis.speak(utterance);
+  }, []);
+
+  // ── Stop voice recognition cleanly ───────────────────────────────────
+  const stopRecognition = useCallback(() => {
+    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch {}
+      recognitionRef.current = null;
+    }
+    setInterimText('');
+    pendingTextRef.current = '';
+  }, []);
+
+  // ── Send message to AI ────────────────────────────────────────────────
+  const sendMessage = useCallback(async (text: string, isVoice = false) => {
+    if (!text.trim() && !imageFile) return;
 
     const userMsg: ChatMessage = { role: 'user', content: text };
-    const newMessages = [...messages, userMsg];
+    const newMessages = [...messagesRef.current, userMsg];
     setMessages(newMessages);
     setInput('');
     setLoading(true);
+    if (isVoice) setVoiceState('thinking');
 
     try {
-      // Build history for API (only text content for history)
       const history = newMessages.map((m) => ({ role: m.role, content: m.content }));
-
-      const formData = new FormData();
-      formData.append('messages', JSON.stringify(history));
+      const fd = new FormData();
+      fd.append('messages', JSON.stringify(history));
       if (imageFile) {
-        formData.append('image', imageFile);
+        fd.append('image', imageFile);
         setImageFile(null);
         setImagePreview(null);
       }
 
-      const res = await apiClient.post('/ai/chat/', formData);
+      const res = await apiClient.post('/ai/chat/', fd);
       const { reply, tool_use } = res.data;
 
-      let addedItems: AddedItem[] = [];
-
-      // Handle form fields update
+      // Handle form fields
       if (tool_use?.form && onFormUpdate) {
         const formFields: AIFormUpdate = {};
         if (tool_use.form.project_id)  formFields.project_id  = tool_use.form.project_id;
@@ -102,104 +135,124 @@ export default function AIProcurementChat({ onAddItems, onFormUpdate }: Props) {
       }
 
       // Handle product items
+      let addedItems: AddedItem[] = [];
       if (tool_use?.items?.length) {
         addedItems = tool_use.items;
         const prItems: PRItem[] = [];
         for (const item of tool_use.items) {
           try {
             const product = await productsApi.getById(item.product_id);
-            prItems.push({
-              product_id:   item.product_id,
-              product,
-              quantity:     item.quantity,
-              unit:         item.unit || product.unit || '',
-              reason:       item.reason || '',
-              notes:        item.notes || '',
-              project_site: item.project_site || '',
-            });
+            prItems.push({ product_id: item.product_id, product, quantity: item.quantity, unit: item.unit || product.unit || '', reason: item.reason || '', notes: item.notes || '', project_site: item.project_site || '' });
           } catch {
-            prItems.push({
-              product_id:   item.product_id,
-              quantity:     item.quantity,
-              unit:         item.unit || '',
-              reason:       item.reason || '',
-              notes:        item.notes || '',
-              project_site: item.project_site || '',
-            });
+            prItems.push({ product_id: item.product_id, quantity: item.quantity, unit: item.unit || '', reason: item.reason || '', notes: item.notes || '', project_site: item.project_site || '' });
           }
         }
         onAddItems(prItems);
       }
 
       const assistantText = tool_use?.message || reply || '✓ تم';
-      setMessages((prev) => [...prev, {
-        role: 'assistant',
-        content: assistantText,
-        items: addedItems.length ? addedItems : undefined,
-      }]);
+      setMessages((prev) => [...prev, { role: 'assistant', content: assistantText, items: addedItems.length ? addedItems : undefined }]);
+
+      // Voice mode: speak the reply then resume listening
+      if (isVoice) {
+        setVoiceState('speaking');
+        speak(assistantText, () => {
+          setVoiceState('listening');
+          startListening(true);
+        });
+      }
     } catch (err: any) {
       const serverError = err?.response?.data?.error;
-      setMessages((prev) => [...prev, {
-        role: 'assistant',
-        content: serverError
-          ? `❌ ${serverError}`
-          : '❌ حدث خطأ في الاتصال، حاول مرة أخرى.',
-      }]);
+      const errMsg = serverError ? `❌ ${serverError}` : '❌ حدث خطأ في الاتصال، حاول مرة أخرى.';
+      setMessages((prev) => [...prev, { role: 'assistant', content: errMsg }]);
+      if (isVoice) {
+        setVoiceState('listening');
+        startListening(true);
+      }
     } finally {
       setLoading(false);
     }
-  }, [input, imageFile, messages, onAddItems]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [imageFile, onAddItems, onFormUpdate, speak]);
 
-  // ── Voice recording ─────────────────────────────────────────────────
-  const toggleRecording = async () => {
-    if (recording) {
-      mediaRef.current?.stop();
-      setRecording(false);
-      return;
-    }
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mr = new MediaRecorder(stream);
-      chunksRef.current = [];
-      mr.ondataavailable = (e) => chunksRef.current.push(e.data);
-      mr.onstop = async () => {
-        stream.getTracks().forEach((t) => t.stop());
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
-        // Use Web Speech API for transcription (browser built-in)
-        // Fallback: send audio as text placeholder
-        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-        if (SpeechRecognition) {
-          // Already handled via continuous recognition below
-        }
-      };
-      mr.start();
-      mediaRef.current = mr;
-      setRecording(true);
+  // ── Start continuous voice recognition ───────────────────────────────
+  const startListening = useCallback((resume = false) => {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) { alert('متصفحك لا يدعم التعرف على الصوت. استخدم Chrome.'); return; }
 
-      // Use Web Speech API for live transcription
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      if (SpeechRecognition) {
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'ar-SA';
-        recognition.interimResults = false;
-        recognition.maxAlternatives = 1;
-        recognition.onresult = (event: any) => {
-          const transcript = event.results[0][0].transcript;
-          setInput((prev) => prev ? prev + ' ' + transcript : transcript);
-        };
-        recognition.onend = () => {
-          mediaRef.current?.stop();
-          setRecording(false);
-        };
-        recognition.start();
-        mediaRef.current = { stop: () => recognition.stop() } as any;
+    stopRecognition();
+    if (!resume) setVoiceState('listening');
+
+    const rec = new SR();
+    rec.continuous      = true;
+    rec.interimResults  = true;
+    rec.lang            = 'ar-SA';
+    rec.maxAlternatives = 1;
+    recognitionRef.current = rec;
+
+    rec.onresult = (e: any) => {
+      let interim = '';
+      let finalChunk = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0].transcript;
+        if (e.results[i].isFinal) finalChunk += t;
+        else interim += t;
       }
-    } catch {
-      alert('لا يمكن الوصول إلى الميكروفون');
+      setInterimText(interim);
+      if (finalChunk) {
+        pendingTextRef.current += finalChunk + ' ';
+        setInterimText('');
+        // Reset silence timer
+        if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+        silenceTimerRef.current = setTimeout(() => {
+          const text = pendingTextRef.current.trim();
+          if (text) {
+            pendingTextRef.current = '';
+            stopRecognition();
+            setVoiceState('thinking');
+            sendMessage(text, true);
+          }
+        }, 1500);
+      }
+    };
+
+    rec.onerror = (e: any) => {
+      if (e.error === 'no-speech') return; // ignore, just keep going
+      if (e.error !== 'aborted') setVoiceState('idle');
+    };
+
+    rec.onend = () => {
+      // Auto-restart if still in listening state (browser sometimes stops)
+      if (voiceState === 'listening' && recognitionRef.current === rec) {
+        try { rec.start(); } catch {}
+      }
+    };
+
+    try { rec.start(); } catch {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stopRecognition, sendMessage]);
+
+  // ── Toggle voice conversation mode ───────────────────────────────────
+  const toggleVoice = useCallback(() => {
+    if (voiceState !== 'idle') {
+      window.speechSynthesis?.cancel();
+      stopRecognition();
+      setVoiceState('idle');
+    } else {
+      startListening();
     }
+  }, [voiceState, stopRecognition, startListening]);
+
+  // Cleanup on unmount
+  useEffect(() => () => { stopRecognition(); window.speechSynthesis?.cancel(); }, [stopRecognition]);
+
+  // ── Text send ─────────────────────────────────────────────────────────
+  const send = useCallback(() => sendMessage(input), [sendMessage, input]);
+
+  const handleKey = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
   };
 
-  // ── Image upload ────────────────────────────────────────────────────
   const handleImage = (file: File) => {
     setImageFile(file);
     const reader = new FileReader();
@@ -209,31 +262,32 @@ export default function AIProcurementChat({ onAddItems, onFormUpdate }: Props) {
 
   const handlePaste = (e: React.ClipboardEvent) => {
     const item = Array.from(e.clipboardData.items).find((i) => i.type.startsWith('image'));
-    if (item) {
-      const file = item.getAsFile();
-      if (file) handleImage(file);
-    }
+    if (item) { const f = item.getAsFile(); if (f) handleImage(f); }
   };
 
-  // ── Keyboard ────────────────────────────────────────────────────────
-  const handleKey = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+  // ── Voice state UI helpers ────────────────────────────────────────────
+  const voiceLabel: Record<VoiceState, string> = {
+    idle:      'محادثة صوتية',
+    listening: 'يسمع… تكلم',
+    thinking:  'يفكر…',
+    speaking:  'يتكلم…',
+  };
+  const voiceColor: Record<VoiceState, string> = {
+    idle:      '#6b7280',
+    listening: '#22c55e',
+    thinking:  '#f97316',
+    speaking:  '#3b82f6',
   };
 
+  // ── Collapsed button ──────────────────────────────────────────────────
   if (!open) {
     return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        style={{
-          display: 'flex', alignItems: 'center', gap: 8,
-          padding: '8px 16px', borderRadius: 24,
-          background: 'linear-gradient(135deg, #f97316, #ea580c)',
-          color: '#fff', border: 'none', cursor: 'pointer',
-          fontSize: 13, fontWeight: 700,
-          boxShadow: '0 2px 12px rgba(249,115,22,0.4)',
-          transition: 'all 0.2s',
-        }}
+      <button type="button" onClick={() => setOpen(true)} style={{
+        display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px',
+        borderRadius: 24, background: 'linear-gradient(135deg,#f97316,#ea580c)',
+        color: '#fff', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700,
+        boxShadow: '0 2px 12px rgba(249,115,22,0.4)', transition: 'all 0.2s',
+      }}
         onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1.05)'; }}
         onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
       >
@@ -245,17 +299,17 @@ export default function AIProcurementChat({ onAddItems, onFormUpdate }: Props) {
   return (
     <div style={{
       position: 'fixed', bottom: 24, right: 24, zIndex: 9999,
-      width: 400, height: 560,
+      width: 420, height: 600,
       background: 'var(--card-bg)', border: '1px solid var(--border-primary)',
       borderRadius: 16, boxShadow: '0 8px 40px rgba(0,0,0,0.18)',
       display: 'flex', flexDirection: 'column', overflow: 'hidden',
     }}>
+
       {/* Header */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '12px 16px',
-        background: 'linear-gradient(135deg, #f97316, #ea580c)',
-        color: '#fff',
+        background: 'linear-gradient(135deg,#f97316,#ea580c)', color: '#fff',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 20 }}>🤖</span>
@@ -264,11 +318,45 @@ export default function AIProcurementChat({ onAddItems, onFormUpdate }: Props) {
             <div style={{ fontSize: 11, opacity: 0.85 }}>Claude · يفهم عربي وإنجليزي</div>
           </div>
         </div>
-        <button type="button" onClick={() => setOpen(false)}
-          style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 20, lineHeight: 1 }}>
-          ×
-        </button>
+        <button type="button" onClick={() => { stopRecognition(); window.speechSynthesis?.cancel(); setOpen(false); }}
+          style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 20, lineHeight: 1 }}>×</button>
       </div>
+
+      {/* Voice mode banner */}
+      {voiceState !== 'idle' && (
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+          padding: '10px 16px', background: voiceColor[voiceState] + '18',
+          borderBottom: `2px solid ${voiceColor[voiceState]}`,
+        }}>
+          {/* Animated rings */}
+          <div style={{ position: 'relative', width: 32, height: 32, flexShrink: 0 }}>
+            {voiceState === 'listening' && [0, 1, 2].map((i) => (
+              <div key={i} style={{
+                position: 'absolute', inset: 0, borderRadius: '50%',
+                border: `2px solid ${voiceColor.listening}`,
+                animation: `ripple 1.8s ease-out ${i * 0.6}s infinite`,
+              }} />
+            ))}
+            <div style={{
+              position: 'absolute', inset: 4, borderRadius: '50%',
+              background: voiceColor[voiceState],
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 12,
+            }}>
+              {voiceState === 'listening' ? '🎙' : voiceState === 'speaking' ? '🔊' : '⏳'}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 13, color: voiceColor[voiceState] }}>{voiceLabel[voiceState]}</div>
+            {interimText && <div style={{ fontSize: 12, color: '#6b7280', fontStyle: 'italic' }}>{interimText}</div>}
+          </div>
+          <button type="button" onClick={toggleVoice} style={{
+            marginLeft: 'auto', padding: '4px 10px', borderRadius: 8,
+            background: '#ef4444', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 12,
+          }}>إيقاف</button>
+        </div>
+      )}
 
       {/* Messages */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -288,11 +376,7 @@ export default function AIProcurementChat({ onAddItems, onFormUpdate }: Props) {
             {m.items && m.items.length > 0 && (
               <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4, width: '88%' }}>
                 {m.items.map((it, j) => (
-                  <div key={j} style={{
-                    fontSize: 11, padding: '5px 10px', borderRadius: 8,
-                    background: '#d1fae5', color: '#065f46',
-                    border: '1px solid #6ee7b7',
-                  }}>
+                  <div key={j} style={{ fontSize: 11, padding: '5px 10px', borderRadius: 8, background: '#d1fae5', color: '#065f46', border: '1px solid #6ee7b7' }}>
                     ✓ <strong>{it.product_name}</strong> × {it.quantity} {it.unit || ''}
                   </div>
                 ))}
@@ -300,15 +384,12 @@ export default function AIProcurementChat({ onAddItems, onFormUpdate }: Props) {
             )}
           </div>
         ))}
+
         {loading && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div style={{ display: 'flex', gap: 4 }}>
-              {[0,1,2].map((i) => (
-                <div key={i} style={{
-                  width: 7, height: 7, borderRadius: '50%',
-                  background: '#f97316',
-                  animation: `bounce 1.2s ease-in-out ${i * 0.2}s infinite`,
-                }} />
+              {[0, 1, 2].map((i) => (
+                <div key={i} style={{ width: 7, height: 7, borderRadius: '50%', background: '#f97316', animation: `bounce 1.2s ease-in-out ${i * 0.2}s infinite` }} />
               ))}
             </div>
             <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>جاري التفكير…</span>
@@ -322,75 +403,54 @@ export default function AIProcurementChat({ onAddItems, onFormUpdate }: Props) {
         <div style={{ padding: '0 14px 8px', position: 'relative', display: 'inline-block' }}>
           <img src={imagePreview} alt="preview" style={{ maxHeight: 80, borderRadius: 8, border: '1px solid var(--border-primary)' }} />
           <button type="button" onClick={() => { setImageFile(null); setImagePreview(null); }}
-            style={{ position: 'absolute', top: -4, right: 10, background: '#ef4444', color: '#fff', border: 'none', borderRadius: '50%', width: 18, height: 18, cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            ×
-          </button>
+            style={{ position: 'absolute', top: -4, right: 10, background: '#ef4444', color: '#fff', border: 'none', borderRadius: '50%', width: 18, height: 18, cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
         </div>
       )}
 
       {/* Input area */}
       <div style={{ padding: '10px 12px', borderTop: '1px solid var(--border-primary)', display: 'flex', gap: 6, alignItems: 'flex-end' }}>
-        {/* Image upload */}
-        <button type="button" onClick={() => fileInputRef.current?.click()}
-          title="أرسل صورة"
-          style={{ flexShrink: 0, padding: '7px', borderRadius: 8, background: 'var(--bg-secondary)', border: '1px solid var(--border-primary)', cursor: 'pointer', fontSize: 16, color: 'var(--text-secondary)' }}>
-          📎
-        </button>
+        {/* Image */}
+        <button type="button" onClick={() => fileInputRef.current?.click()} title="أرسل صورة"
+          style={{ flexShrink: 0, padding: 7, borderRadius: 8, background: 'var(--bg-secondary)', border: '1px solid var(--border-primary)', cursor: 'pointer', fontSize: 16, color: 'var(--text-secondary)' }}>📎</button>
         <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }}
           onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImage(f); e.target.value = ''; }} />
 
-        {/* Text input */}
-        <textarea
-          ref={textareaRef}
-          rows={1}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKey}
-          onPaste={handlePaste}
-          placeholder="اكتب احتياجاتك… أو الصق صورة"
+        {/* Text */}
+        <textarea ref={textareaRef} rows={1} value={input}
+          onChange={(e) => setInput(e.target.value)} onKeyDown={handleKey} onPaste={handlePaste}
+          placeholder={voiceState !== 'idle' ? 'تكلم أو اكتب…' : 'اكتب احتياجاتك…'}
           style={{
             flex: 1, resize: 'none', border: '1px solid var(--border-primary)',
             borderRadius: 8, padding: '7px 10px', fontSize: 13,
             background: 'var(--input-bg)', color: 'var(--text-primary)',
-            outline: 'none', maxHeight: 80, overflowY: 'auto',
-            fontFamily: 'inherit', lineHeight: 1.4,
-          }}
-        />
+            outline: 'none', maxHeight: 80, overflowY: 'auto', fontFamily: 'inherit', lineHeight: 1.4,
+          }} />
 
-        {/* Voice */}
-        <button type="button" onClick={toggleRecording}
-          title={recording ? 'إيقاف التسجيل' : 'تسجيل صوتي'}
+        {/* Voice conversation button */}
+        <button type="button" onClick={toggleVoice} title="محادثة صوتية"
           style={{
-            flexShrink: 0, padding: '7px', borderRadius: 8, cursor: 'pointer', fontSize: 16,
-            background: recording ? '#fee2e2' : 'var(--bg-secondary)',
-            border: `1px solid ${recording ? '#ef4444' : 'var(--border-primary)'}`,
-            color: recording ? '#ef4444' : 'var(--text-secondary)',
-            animation: recording ? 'pulse 1s infinite' : 'none',
+            flexShrink: 0, padding: 7, borderRadius: 8, cursor: 'pointer', fontSize: 16,
+            background: voiceState !== 'idle' ? voiceColor[voiceState] + '22' : 'var(--bg-secondary)',
+            border: `2px solid ${voiceState !== 'idle' ? voiceColor[voiceState] : 'var(--border-primary)'}`,
+            color: voiceState !== 'idle' ? voiceColor[voiceState] : 'var(--text-secondary)',
+            transition: 'all 0.2s',
           }}>
-          {recording ? '⏹' : '🎤'}
+          🎙
         </button>
 
         {/* Send */}
-        <button type="button" onClick={() => send()} disabled={loading || (!input.trim() && !imageFile)}
+        <button type="button" onClick={send} disabled={loading || (!input.trim() && !imageFile)}
           style={{
             flexShrink: 0, padding: '7px 14px', borderRadius: 8,
             background: loading || (!input.trim() && !imageFile) ? 'var(--bg-tertiary)' : 'linear-gradient(135deg,#f97316,#ea580c)',
             color: loading || (!input.trim() && !imageFile) ? 'var(--text-secondary)' : '#fff',
-            border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
-            fontSize: 13, fontWeight: 700,
-          }}>
-          ↑
-        </button>
+            border: 'none', cursor: loading ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 700,
+          }}>↑</button>
       </div>
 
       <style>{`
-        @keyframes bounce {
-          0%,80%,100%{transform:translateY(0)}
-          40%{transform:translateY(-6px)}
-        }
-        @keyframes pulse {
-          0%,100%{opacity:1} 50%{opacity:0.5}
-        }
+        @keyframes bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-6px)} }
+        @keyframes ripple { 0%{transform:scale(1);opacity:1} 100%{transform:scale(2.5);opacity:0} }
       `}</style>
     </div>
   );
