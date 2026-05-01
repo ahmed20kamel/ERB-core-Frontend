@@ -123,6 +123,7 @@ function EditPurchaseOrderPageContent() {
       purchaseOrdersApi.update(id, toPurchaseOrderUpdateData(data, items) as unknown as Partial<PurchaseOrder>),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['purchase-order', id] });
       toast('Purchase Order updated successfully!', 'success');
       router.push(`/purchase-orders/${id}`);
     },

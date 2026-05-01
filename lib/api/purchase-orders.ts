@@ -44,11 +44,14 @@ export const purchaseOrdersApi = {
     purchase_request_id?: number | null;
     purchase_quotation_id?: number | null;
     supplier_id: number;
+    cost_code_id?: number | null;
     order_date: string;
     delivery_date?: string;
     payment_terms?: string;
+    delivery_method?: string;
     delivery_terms?: string;
     notes?: string;
+    terms_and_conditions?: string;
     tax_rate?: number;
     discount?: number;
     status?: string;
