@@ -453,33 +453,27 @@ export default function PrintLPOPage() {
             <div style={{ display:'flex', border:`1px solid ${BORDER}`, borderRadius:8, overflow:'hidden' }}>
               {signatories.map((s, i) => (
                 <div key={i} style={{
-                  flex:1, textAlign:'center', position:'relative',
+                  flex:1, display:'flex', flexDirection:'column',
+                  height:115,
                   borderRight: i < signatories.length - 1 ? `1px solid ${BORDER}` : 'none',
                   background: i%2===0 ? '#fafafa' : '#fff',
-                  minHeight:90,
                 }}>
-                  {/* Stamp */}
-                  {s.stamp && (
-                    <div style={{
-                      position:'absolute', top:'50%', left:'50%',
-                      transform:'translate(-50%, -52%) rotate(-8deg)',
-                      opacity:0.75, pointerEvents:'none', zIndex:1,
-                      width:80, height:80,
-                    }}>
+                  {/* Stamp — centred in the top area */}
+                  <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden' }}>
+                    {s.stamp && (
                       <Image src={s.stamp} alt="stamp" width={80} height={80}
-                        style={{ objectFit:'contain', width:'100%', height:'100%' }}
+                        style={{ objectFit:'contain', opacity:0.78, transform:'rotate(-8deg)' }}
                         unoptimized priority />
-                    </div>
-                  )}
-                  {/* Label + name at bottom */}
-                  <div style={{ position:'absolute', bottom:0, left:0, right:0,
-                    zIndex:2, padding:'0 8px 8px' }}>
+                    )}
+                  </div>
+                  {/* Label + name — pinned to bottom, same height for all */}
+                  <div style={{ flexShrink:0, padding:'0 8px 8px', textAlign:'center' }}>
                     <div style={{ height:1, background:BORDER, marginBottom:5 }} />
                     <div style={{ fontSize:'6.5pt', fontWeight:700, textTransform:'uppercase',
                       letterSpacing:'.6px', color:GREY }}>{s.label}</div>
-                    {s.name && (
-                      <div style={{ fontSize:'8pt', fontWeight:600, color:NAVY, marginTop:2 }}>{s.name}</div>
-                    )}
+                    <div style={{ fontSize:'8pt', fontWeight:600, color:NAVY, marginTop:2, minHeight:14 }}>
+                      {s.name || ''}
+                    </div>
                   </div>
                 </div>
               ))}
