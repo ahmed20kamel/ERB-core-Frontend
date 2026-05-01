@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { costCodesApi } from '@/lib/api/cost-codes';
 import { CostCode } from '@/types';
@@ -18,7 +18,6 @@ export default function CostCodePicker({ value, onChange, placeholder = 'Search 
   const [level2, setLevel2] = useState<CostCode | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Close on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
@@ -27,24 +26,32 @@ export default function CostCodePicker({ value, onChange, placeholder = 'Search 
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const { data: allCodes = [] } = useQuery({
+  // Always fetched on mount — cached for the session
+  const { data: allCodes = [], isLoading } = useQuery({
     queryKey: ['cost-codes'],
     queryFn: () => costCodesApi.getAll(),
     staleTime: 60 * 60 * 1000,
+    gcTime:    60 * 60 * 1000,
   });
 
-  const l1 = allCodes.filter(c => c.level === 1);
-  const l2 = allCodes.filter(c => c.level === 2 && (!level1 || c.parent === level1.id));
-  const l3 = allCodes.filter(c => c.level === 3 && (!level2 || c.parent === level2.id));
+  const l1 = useMemo(() => allCodes.filter(c => c.level === 1), [allCodes]);
+  const l2 = useMemo(() => allCodes.filter(c => c.level === 2 && (!level1 || c.parent === level1.id)), [allCodes, level1]);
+  const l3 = useMemo(() => allCodes.filter(c => c.level === 3 && (!level2 || c.parent === level2.id)), [allCodes, level2]);
 
-  // Search mode: filter all L3 items
-  const searchResults = search.trim().length > 1
-    ? allCodes.filter(c =>
-        c.level === 3 &&
-        (c.excel_code.toLowerCase().includes(search.toLowerCase()) ||
-         c.description.toLowerCase().includes(search.toLowerCase()))
-      ).slice(0, 20)
-    : null;
+  // Search: fires on first character, matches qb_code + excel_code + description
+  const q = search.trim().toLowerCase();
+  const searchResults = useMemo(() => {
+    if (!q) return null;
+    return allCodes
+      .filter(c =>
+        c.level === 3 && (
+          c.qb_code.toLowerCase().includes(q) ||
+          c.excel_code.toLowerCase().includes(q) ||
+          c.description.toLowerCase().includes(q)
+        )
+      )
+      .slice(0, 25);
+  }, [allCodes, q]);
 
   const handleSelect = (code: CostCode) => {
     onChange(code);
@@ -74,18 +81,21 @@ export default function CostCodePicker({ value, onChange, placeholder = 'Search 
         }}
       >
         {value ? (
-          <div style={{ flex: 1, overflow: 'hidden' }}>
-            <span style={{ fontWeight: 600, color: 'var(--primary)', marginRight: 8 }}>{value.excel_code}</span>
-            <span style={{ color: 'var(--muted-foreground)', fontSize: 13 }}>{value.description.slice(0, 60)}{value.description.length > 60 ? '…' : ''}</span>
+          <div style={{ flex: 1, overflow: 'hidden', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontWeight: 700, color: '#f97316', flexShrink: 0 }}>{value.excel_code}</span>
+            <span style={{ color: 'var(--muted-foreground)', fontSize: 12, flexShrink: 0 }}>({value.qb_code})</span>
+            <span style={{ color: 'var(--foreground)', fontSize: 13 }}>
+              {value.description.slice(0, 55)}{value.description.length > 55 ? '…' : ''}
+            </span>
           </div>
         ) : (
           <span style={{ color: 'var(--muted-foreground)' }}>{placeholder}</span>
         )}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
           {value && (
-            <span onClick={handleClear} style={{ cursor: 'pointer', color: 'var(--muted-foreground)', fontSize: 16, lineHeight: 1 }}>×</span>
+            <span onClick={handleClear} style={{ cursor: 'pointer', color: 'var(--muted-foreground)', fontSize: 18, lineHeight: 1, fontWeight: 300 }}>×</span>
           )}
-          <span style={{ color: 'var(--muted-foreground)', fontSize: 12 }}>{open ? '▲' : '▼'}</span>
+          <span style={{ color: 'var(--muted-foreground)', fontSize: 11 }}>{open ? '▲' : '▼'}</span>
         </div>
       </div>
 
@@ -98,41 +108,58 @@ export default function CostCodePicker({ value, onChange, placeholder = 'Search 
           marginTop: 4, overflow: 'hidden',
         }}>
           {/* Search bar */}
-          <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--border)' }}>
+          <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ color: 'var(--muted-foreground)', fontSize: 14 }}>🔍</span>
             <input
               autoFocus
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Type code or description..."
+              placeholder="Type qb code, excel code, or description..."
               style={{
-                width: '100%', padding: '6px 10px', border: '1px solid var(--border)',
+                flex: 1, padding: '6px 8px', border: '1px solid var(--border)',
                 borderRadius: 6, fontSize: 13, background: 'var(--muted)',
                 outline: 'none', boxSizing: 'border-box',
               }}
             />
+            {search && (
+              <span
+                onClick={() => setSearch('')}
+                style={{ cursor: 'pointer', color: 'var(--muted-foreground)', fontSize: 16, lineHeight: 1 }}
+              >×</span>
+            )}
           </div>
 
-          {searchResults ? (
+          {isLoading ? (
+            <div style={{ padding: '24px', textAlign: 'center', color: 'var(--muted-foreground)', fontSize: 13 }}>
+              Loading cost codes…
+            </div>
+          ) : searchResults ? (
             /* ── Search results ── */
-            <div style={{ maxHeight: 280, overflowY: 'auto' }}>
-              {searchResults.length === 0 && (
-                <div style={{ padding: '16px 12px', color: 'var(--muted-foreground)', textAlign: 'center', fontSize: 13 }}>No results</div>
+            <div style={{ maxHeight: 300, overflowY: 'auto' }}>
+              {searchResults.length === 0 ? (
+                <div style={{ padding: '16px 12px', color: 'var(--muted-foreground)', textAlign: 'center', fontSize: 13 }}>
+                  No results for &ldquo;{search}&rdquo;
+                </div>
+              ) : (
+                <>
+                  <div style={{ padding: '4px 12px', fontSize: 11, color: 'var(--muted-foreground)', background: 'var(--muted)', borderBottom: '1px solid var(--border)' }}>
+                    {searchResults.length} result{searchResults.length !== 1 ? 's' : ''}
+                  </div>
+                  {searchResults.map(c => (
+                    <SearchRow key={c.id} code={c} allCodes={allCodes} onSelect={handleSelect} />
+                  ))}
+                </>
               )}
-              {searchResults.map(c => (
-                <SearchRow key={c.id} code={c} allCodes={allCodes} onSelect={handleSelect} />
-              ))}
             </div>
           ) : (
             /* ── Cascading picker ── */
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', maxHeight: 320 }}>
-              {/* L1 */}
               <Column
                 title="Category"
                 items={l1}
                 selected={level1}
                 onSelect={c => { setLevel1(c); setLevel2(null); onChange(null); }}
               />
-              {/* L2 */}
               <Column
                 title="Sub-Category"
                 items={l2}
@@ -140,7 +167,6 @@ export default function CostCodePicker({ value, onChange, placeholder = 'Search 
                 onSelect={c => { setLevel2(c); onChange(null); }}
                 disabled={!level1}
               />
-              {/* L3 */}
               <Column
                 title="Select Item"
                 items={l3}
@@ -157,7 +183,7 @@ export default function CostCodePicker({ value, onChange, placeholder = 'Search 
   );
 }
 
-/* ── Column subcomponent ── */
+/* ── Column ── */
 function Column({ title, items, selected, onSelect, disabled, isLeaf }: {
   title: string;
   items: CostCode[];
@@ -194,9 +220,13 @@ function Column({ title, items, selected, onSelect, disabled, isLeaf }: {
           onMouseEnter={e => { if (selected?.id !== item.id) (e.currentTarget as HTMLElement).style.background = 'var(--muted)'; }}
           onMouseLeave={e => { if (selected?.id !== item.id) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
         >
-          <div style={{ fontWeight: isLeaf ? 500 : 600, lineHeight: 1.3 }}>
-            {isLeaf && <span style={{ color: '#f97316', fontWeight: 700, marginRight: 6 }}>{item.excel_code}</span>}
-            {item.description.slice(0, isLeaf ? 55 : 45)}{item.description.length > (isLeaf ? 55 : 45) ? '…' : ''}
+          {isLeaf && (
+            <div style={{ fontSize: 11, color: selected?.id === item.id ? 'rgba(255,255,255,.8)' : '#f97316', fontWeight: 700, marginBottom: 2 }}>
+              {item.excel_code} <span style={{ fontWeight: 400, opacity: .7 }}>({item.qb_code})</span>
+            </div>
+          )}
+          <div style={{ fontWeight: 500, lineHeight: 1.3, fontSize: isLeaf ? 12 : 13 }}>
+            {item.description.slice(0, isLeaf ? 60 : 45)}{item.description.length > (isLeaf ? 60 : 45) ? '…' : ''}
           </div>
         </div>
       ))}
@@ -205,7 +235,11 @@ function Column({ title, items, selected, onSelect, disabled, isLeaf }: {
 }
 
 /* ── Search row ── */
-function SearchRow({ code, allCodes, onSelect }: { code: CostCode; allCodes: CostCode[]; onSelect: (c: CostCode) => void }) {
+function SearchRow({ code, allCodes, onSelect }: {
+  code: CostCode;
+  allCodes: CostCode[];
+  onSelect: (c: CostCode) => void;
+}) {
   const parent2 = allCodes.find(c => c.id === code.parent);
   const parent1 = parent2 ? allCodes.find(c => c.id === parent2.parent) : null;
 
@@ -220,12 +254,13 @@ function SearchRow({ code, allCodes, onSelect }: { code: CostCode; allCodes: Cos
       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ fontWeight: 700, color: '#f97316', fontSize: 13 }}>{code.excel_code}</span>
-        <span style={{ fontSize: 13, color: 'var(--foreground)' }}>{code.description.slice(0, 70)}</span>
+        <span style={{ fontWeight: 700, color: '#f97316', fontSize: 13, flexShrink: 0 }}>{code.excel_code}</span>
+        <span style={{ fontSize: 11, color: 'var(--muted-foreground)', flexShrink: 0 }}>({code.qb_code})</span>
+        <span style={{ fontSize: 13, color: 'var(--foreground)' }}>{code.description.slice(0, 60)}{code.description.length > 60 ? '…' : ''}</span>
       </div>
       {(parent1 || parent2) && (
-        <div style={{ fontSize: 11, color: 'var(--muted-foreground)', marginTop: 2 }}>
-          {[parent1?.description?.slice(0,30), parent2?.description?.slice(0,30)].filter(Boolean).join(' › ')}
+        <div style={{ fontSize: 11, color: 'var(--muted-foreground)', marginTop: 3 }}>
+          {[parent1?.description?.slice(0, 30), parent2?.description?.slice(0, 30)].filter(Boolean).join(' › ')}
         </div>
       )}
     </div>
