@@ -30,11 +30,12 @@ function toWords(n: number): string {
   return r + ' Only';
 }
 
-const NAVY   = '#1a1a2e';
-const ORANGE = '#f97316';
+const NAVY   = '#1B2A4A';
+const STEEL  = '#334155';
 const GREY   = '#64748b';
 const LIGHT  = '#f8fafc';
 const BORDER = '#e2e8f0';
+const ORANGE = STEEL; // kept for references — no bright orange in this doc
 
 export default function PrintLPOPage() {
   const { id } = useParams<{ id: string }>();
@@ -171,7 +172,7 @@ export default function PrintLPOPage() {
                     background:LIGHT, border:`1px solid ${BORDER}`,
                     borderRadius:8, padding:'10px 14px', display:'inline-block', textAlign:'right', minWidth:165,
                   }}>
-                    <div style={{ fontSize:'7pt', fontWeight:700, letterSpacing:'1.5px', textTransform:'uppercase', color:ORANGE, marginBottom:3 }}>
+                    <div style={{ fontSize:'6.5pt', fontWeight:700, letterSpacing:'1.5px', textTransform:'uppercase', color:GREY, marginBottom:3 }}>
                       LOCAL PURCHASE ORDER
                     </div>
                     <div style={{ fontSize:'16pt', fontWeight:800, color:NAVY, lineHeight:1.1, letterSpacing:'-.5px', marginBottom:6 }}>
@@ -201,13 +202,13 @@ export default function PrintLPOPage() {
               {/* Project side */}
               {po.project_name && (
                 <div style={{ display:'flex', alignItems:'center', gap:10, padding:'7px 14px', borderRight:`1px solid ${BORDER}`, flex:1 }}>
-                  <div style={{ width:3, height:28, background:ORANGE, borderRadius:2, flexShrink:0 }} />
+                  <div style={{ width:3, height:28, background:NAVY, borderRadius:2, flexShrink:0 }} />
                   <div>
                     <div style={{ fontSize:'7pt', fontWeight:700, textTransform:'uppercase', letterSpacing:'.5px', color:GREY, marginBottom:2 }}>Project</div>
                     <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                       <span style={{ fontWeight:700, color:NAVY, fontSize:'9pt' }}>{po.project_name}</span>
                       {po.project_code && (
-                        <span style={{ background:ORANGE, color:'#fff', borderRadius:4, padding:'1px 8px', fontSize:'7.5pt', fontWeight:700 }}>
+                        <span style={{ background:NAVY, color:'#fff', borderRadius:3, padding:'1px 7px', fontSize:'7pt', fontWeight:700 }}>
                           {po.project_code}
                         </span>
                       )}
@@ -240,25 +241,25 @@ export default function PrintLPOPage() {
           {po.cost_code && (
             <div style={{
               display:'flex', alignItems:'center', gap:10,
-              background:'#fff8f0', border:`1px solid #fed7aa`, borderLeft:`3px solid ${ORANGE}`,
-              borderRadius:'0 6px 6px 0', padding:'6px 14px', marginTop:6, fontSize:'8.5pt',
+              background:LIGHT, border:`1px solid ${BORDER}`, borderLeft:`3px solid ${NAVY}`,
+              borderRadius:'0 4px 4px 0', padding:'5px 14px', marginTop:6, fontSize:'8.5pt',
             }}>
-              <span style={{ fontSize:'7pt', fontWeight:700, textTransform:'uppercase', letterSpacing:'.5px', color:GREY }}>Cost Code</span>
-              <span style={{ fontWeight:800, color:ORANGE, fontSize:'9.5pt' }}>{po.cost_code.excel_code}</span>
-              <span style={{ color:'#94a3b8', fontSize:'7.5pt' }}>|</span>
-              <span style={{ color:NAVY, fontWeight:500 }}>{po.cost_code.description.slice(0,80)}</span>
+              <span style={{ fontSize:'6.5pt', fontWeight:700, textTransform:'uppercase', letterSpacing:'.5px', color:GREY }}>Cost Code</span>
+              <span style={{ fontWeight:700, color:NAVY, fontSize:'9pt' }}>{po.cost_code.excel_code}</span>
+              <span style={{ color:BORDER, fontSize:'7.5pt' }}>|</span>
+              <span style={{ color:GREY, fontWeight:400 }}>{po.cost_code.description.slice(0,80)}</span>
             </div>
           )}
 
           {/* ── Divider ── */}
-          <div style={{ height:3, background:`linear-gradient(90deg,${ORANGE} 0%,#fb923c 60%,${BORDER} 100%)`, margin:'10px 0 14px', borderRadius:2 }} />
+          <div style={{ margin:'10px 0 14px', borderTop:`2px solid ${NAVY}` }} />
 
           {/* ── Supplier + Order info ── */}
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginBottom:4 }}>
 
             {/* Supplier */}
             <div>
-              <div style={{ fontSize:'9pt', fontWeight:700, letterSpacing:'.8px', textTransform:'uppercase', color:ORANGE, borderBottom:`1.5px solid #fed7aa`, paddingBottom:4, marginBottom:10 }}>
+              <div style={{ fontSize:'9pt', fontWeight:700, letterSpacing:'.8px', textTransform:'uppercase', color:ORANGE, borderBottom:`1px solid ${BORDER}`, paddingBottom:4, marginBottom:10 }}>
                 Supplier
               </div>
               {supplier ? (
@@ -275,7 +276,7 @@ export default function PrintLPOPage() {
 
             {/* Order Info */}
             <div>
-              <div style={{ fontSize:'9pt', fontWeight:700, letterSpacing:'.8px', textTransform:'uppercase', color:ORANGE, borderBottom:`1.5px solid #fed7aa`, paddingBottom:4, marginBottom:10 }}>
+              <div style={{ fontSize:'9pt', fontWeight:700, letterSpacing:'.8px', textTransform:'uppercase', color:ORANGE, borderBottom:`1px solid ${BORDER}`, paddingBottom:4, marginBottom:10 }}>
                 Order Information
               </div>
               <div style={{ border:`1px solid ${BORDER}`, borderRadius:8, overflow:'hidden' }}>
@@ -299,7 +300,7 @@ export default function PrintLPOPage() {
           </div>
 
           {/* ── Items table ── */}
-          <div style={{ fontSize:'9pt', fontWeight:700, letterSpacing:'.8px', textTransform:'uppercase', color:ORANGE, borderBottom:`1.5px solid #fed7aa`, paddingBottom:4, margin:'14px 0 10px' }}>
+          <div style={{ fontSize:'9pt', fontWeight:700, letterSpacing:'.8px', textTransform:'uppercase', color:ORANGE, borderBottom:`1px solid ${BORDER}`, paddingBottom:4, margin:'14px 0 10px' }}>
             Order Items
           </div>
           <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'9pt', marginBottom:4 }}>
@@ -384,7 +385,7 @@ export default function PrintLPOPage() {
           {/* ── Terms ── */}
           {(po.payment_terms || po.delivery_terms) && (
             <>
-              <div style={{ fontSize:'9pt', fontWeight:700, letterSpacing:'.8px', textTransform:'uppercase', color:ORANGE, borderBottom:`1.5px solid #fed7aa`, paddingBottom:4, margin:'14px 0 8px' }}>
+              <div style={{ fontSize:'9pt', fontWeight:700, letterSpacing:'.8px', textTransform:'uppercase', color:ORANGE, borderBottom:`1px solid ${BORDER}`, paddingBottom:4, margin:'14px 0 8px' }}>
                 Terms & Conditions
               </div>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, padding:'8px 14px', background:LIGHT, border:`1px solid ${BORDER}`, borderRadius:6, marginBottom:6 }}>
@@ -412,54 +413,56 @@ export default function PrintLPOPage() {
 
           {po.notes && (
             <div style={{
-              background:'#fffbeb', border:`1px solid #fed7aa`, borderLeft:`3px solid ${ORANGE}`,
-              borderRadius:'0 6px 6px 0', padding:'7px 12px',
-              fontSize:'9pt', color:'#78350f', margin:'8px 0', lineHeight:1.55,
+              background:LIGHT, border:`1px solid ${BORDER}`, borderLeft:`3px solid ${STEEL}`,
+              borderRadius:'0 4px 4px 0', padding:'6px 12px',
+              fontSize:'8.5pt', color:NAVY, margin:'6px 0', lineHeight:1.55,
             }}>
-              <span style={{ fontWeight:700, color:'#c2410c', marginRight:4 }}>Notes:</span> {po.notes}
+              <span style={{ fontWeight:700, color:STEEL, marginRight:4 }}>Notes:</span> {po.notes}
             </div>
           )}
 
-          {/* ── Authorization / Signatures ── */}
-          <div style={{ fontSize:'9pt', fontWeight:700, letterSpacing:'.8px', textTransform:'uppercase', color:ORANGE, borderBottom:`1.5px solid #fed7aa`, paddingBottom:4, margin:'14px 0 10px' }}>
-            Authorization
-          </div>
-          <div style={{ display:'flex', border:`1px solid ${BORDER}`, borderRadius:8, overflow:'hidden' }}>
-            {signatories.map((s, i) => (
-              <div key={i} style={{
-                flex:1, textAlign:'center',
-                borderRight: i < signatories.length - 1 ? `1px solid ${BORDER}` : 'none',
-                background:'#fafafa', position:'relative', overflow:'hidden',
-              }}>
-                {/* Stamp image — centred, rotated, slightly transparent */}
-                {s.stamp && (
-                  <div style={{
-                    position:'absolute', top:'50%', left:'50%',
-                    transform:'translate(-50%, -54%) rotate(-10deg)',
-                    opacity:0.82, pointerEvents:'none', zIndex:1,
-                    width:96, height:96, marginTop:-4,
-                  }}>
-                    <Image src={s.stamp} alt="stamp" width={96} height={96}
-                      style={{ objectFit:'contain', width:'100%', height:'100%' }}
-                      unoptimized priority />
-                  </div>
-                )}
-                {/* Text — above stamp */}
-                <div style={{ position:'relative', zIndex:2, padding:'10px 12px 10px' }}>
-                  <div style={{ height:1, background:'#cbd5e1', margin:'28px 0 8px' }} />
-                  <div style={{ fontSize:'7.5pt', fontWeight:700, textTransform:'uppercase', letterSpacing:'.6px', color:GREY }}>{s.label}</div>
-                  {s.name && s.name !== '—' && (
-                    <div style={{ fontSize:'9pt', fontWeight:600, color:NAVY, marginTop:3 }}>{s.name}</div>
+          {/* ── Authorization / Signatures + Footer — kept together on same page ── */}
+          <div style={{ breakInside:'avoid', pageBreakInside:'avoid' }}>
+            <div style={{ fontSize:'9pt', fontWeight:700, letterSpacing:'.8px', textTransform:'uppercase', color:STEEL, borderBottom:`1px solid ${BORDER}`, paddingBottom:4, margin:'14px 0 10px' }}>
+              Authorization
+            </div>
+            <div style={{ display:'flex', border:`1px solid ${BORDER}`, borderRadius:8, overflow:'hidden' }}>
+              {signatories.map((s, i) => (
+                <div key={i} style={{
+                  flex:1, textAlign:'center',
+                  borderRight: i < signatories.length - 1 ? `1px solid ${BORDER}` : 'none',
+                  background:'#fafafa', position:'relative', overflow:'hidden',
+                }}>
+                  {/* Stamp image — centred, rotated, slightly transparent */}
+                  {s.stamp && (
+                    <div style={{
+                      position:'absolute', top:'50%', left:'50%',
+                      transform:'translate(-50%, -54%) rotate(-10deg)',
+                      opacity:0.82, pointerEvents:'none', zIndex:1,
+                      width:96, height:96, marginTop:-4,
+                    }}>
+                      <Image src={s.stamp} alt="stamp" width={96} height={96}
+                        style={{ objectFit:'contain', width:'100%', height:'100%' }}
+                        unoptimized priority />
+                    </div>
                   )}
+                  {/* Text — above stamp */}
+                  <div style={{ position:'relative', zIndex:2, padding:'10px 12px 10px' }}>
+                    <div style={{ height:1, background:'#cbd5e1', margin:'20px 0 6px' }} />
+                    <div style={{ fontSize:'7.5pt', fontWeight:700, textTransform:'uppercase', letterSpacing:'.6px', color:GREY }}>{s.label}</div>
+                    {s.name && s.name !== '—' && (
+                      <div style={{ fontSize:'9pt', fontWeight:600, color:NAVY, marginTop:3 }}>{s.name}</div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
 
-          {/* ── Footer ── */}
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:16, paddingTop:8, borderTop:`1px solid ${BORDER}`, fontSize:'7pt', color:'#94a3b8', gap:16 }}>
-            <span>This document is computer-generated and valid without a handwritten signature unless otherwise stated.</span>
-            <span>{COMPANY.name} &nbsp;·&nbsp; {COMPANY.address}</span>
+            {/* ── Footer ── */}
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:14, paddingTop:8, borderTop:`1px solid ${BORDER}`, fontSize:'7pt', color:'#94a3b8', gap:16 }}>
+              <span>This document is computer-generated and valid without a handwritten signature unless otherwise stated.</span>
+              <span>{COMPANY.name} &nbsp;·&nbsp; {COMPANY.address}</span>
+            </div>
           </div>
 
         </div>
