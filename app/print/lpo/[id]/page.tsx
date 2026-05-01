@@ -83,7 +83,7 @@ export default function PrintLPOPage() {
   const hasDiscount = discount > 0;
 
   const USER_STAMPS: Record<string, string> = {
-    abdo:  '/stamps/abdo-stamp.svg',
+    abdel: '/stamps/abdo-stamp.svg',
     sayed: '/stamps/sayed-stamp.svg',
     noura: '/stamps/noura-stamp.svg',
     saif:  '/stamps/saif-stamp.svg',
