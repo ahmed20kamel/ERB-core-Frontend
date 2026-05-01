@@ -16,6 +16,7 @@ import QuantityInput from '@/components/ui/QuantityInput';
 import SearchableDropdown, { DropdownOption } from '@/components/ui/SearchableDropdown';
 import FormField from '@/components/ui/FormField';
 import AIProcurementChat, { AIFormUpdate } from '@/components/ui/AIProcurementChat';
+import VoiceRealtimeChat from '@/components/ui/VoiceRealtimeChat';
 import { formatPrice } from '@/lib/utils/format';
 import RouteGuard from '@/components/auth/RouteGuard';
 import { useT } from '@/lib/i18n/useT';
@@ -464,7 +465,10 @@ function NewPurchaseRequestPageContent() {
               }}>
                 {t('section', 'requestedItems')}
               </h3>
-              <AIProcurementChat onAddItems={handleAIAddItems} onFormUpdate={handleAIFormUpdate} />
+              <div style={{ display: 'flex', gap: 8 }}>
+                <AIProcurementChat onAddItems={handleAIAddItems} onFormUpdate={handleAIFormUpdate} />
+                <VoiceRealtimeChat onAddItems={handleAIAddItems} onFormUpdate={handleAIFormUpdate} />
+              </div>
             </div>
             
             {/* Add Item Form - Unified Card */}
