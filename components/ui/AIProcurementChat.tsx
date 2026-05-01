@@ -18,6 +18,7 @@ interface AddedItem {
   unit?: string;
   reason?: string;
   notes?: string;
+  project_site?: string;
 }
 
 interface PRItem {
@@ -30,11 +31,19 @@ interface PRItem {
   project_site: string;
 }
 
-interface Props {
-  onAddItems: (items: PRItem[]) => void;
+export interface AIFormUpdate {
+  project_id?: number;
+  title?: string;
+  required_by?: string;
+  notes?: string;
 }
 
-export default function AIProcurementChat({ onAddItems }: Props) {
+interface Props {
+  onAddItems: (items: PRItem[]) => void;
+  onFormUpdate?: (fields: AIFormUpdate) => void;
+}
+
+export default function AIProcurementChat({ onAddItems, onFormUpdate }: Props) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
     { role: 'assistant', content: 'مرحباً! أنا مساعدك الذكي للمشتريات. أخبرني بما تحتاجه وسأضيفه لك مباشرة.\n\nيمكنك:\n• كتابة احتياجاتك بالعربي أو الإنجليزي\n• تسجيل صوتي\n• إرسال صورة قائمة أو سكرين شوت' },
@@ -82,31 +91,40 @@ export default function AIProcurementChat({ onAddItems }: Props) {
 
       let addedItems: AddedItem[] = [];
 
+      // Handle form fields update
+      if (tool_use?.form && onFormUpdate) {
+        const formFields: AIFormUpdate = {};
+        if (tool_use.form.project_id)  formFields.project_id  = tool_use.form.project_id;
+        if (tool_use.form.title)       formFields.title       = tool_use.form.title;
+        if (tool_use.form.required_by) formFields.required_by = tool_use.form.required_by;
+        if (tool_use.form.notes)       formFields.notes       = tool_use.form.notes;
+        if (Object.keys(formFields).length) onFormUpdate(formFields);
+      }
+
+      // Handle product items
       if (tool_use?.items?.length) {
         addedItems = tool_use.items;
-
-        // Resolve full product objects
         const prItems: PRItem[] = [];
         for (const item of tool_use.items) {
           try {
             const product = await productsApi.getById(item.product_id);
             prItems.push({
-              product_id: item.product_id,
+              product_id:   item.product_id,
               product,
-              quantity: item.quantity,
-              unit: item.unit || product.unit || '',
-              reason: item.reason || '',
-              notes: item.notes || '',
-              project_site: '',
+              quantity:     item.quantity,
+              unit:         item.unit || product.unit || '',
+              reason:       item.reason || '',
+              notes:        item.notes || '',
+              project_site: item.project_site || '',
             });
           } catch {
             prItems.push({
-              product_id: item.product_id,
-              quantity: item.quantity,
-              unit: item.unit || '',
-              reason: item.reason || '',
-              notes: item.notes || '',
-              project_site: '',
+              product_id:   item.product_id,
+              quantity:     item.quantity,
+              unit:         item.unit || '',
+              reason:       item.reason || '',
+              notes:        item.notes || '',
+              project_site: item.project_site || '',
             });
           }
         }

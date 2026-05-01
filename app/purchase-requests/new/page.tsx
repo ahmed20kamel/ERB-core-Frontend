@@ -15,7 +15,7 @@ import ProductSelector from '@/components/ui/ProductSelector';
 import QuantityInput from '@/components/ui/QuantityInput';
 import SearchableDropdown, { DropdownOption } from '@/components/ui/SearchableDropdown';
 import FormField from '@/components/ui/FormField';
-import AIProcurementChat from '@/components/ui/AIProcurementChat';
+import AIProcurementChat, { AIFormUpdate } from '@/components/ui/AIProcurementChat';
 import { formatPrice } from '@/lib/utils/format';
 import RouteGuard from '@/components/auth/RouteGuard';
 import { useT } from '@/lib/i18n/useT';
@@ -189,6 +189,24 @@ function NewPurchaseRequestPageContent() {
       return next;
     });
     toast(`AI added ${aiItems.length} item(s) to the list`, 'success');
+  };
+
+  const handleAIFormUpdate = (fields: AIFormUpdate) => {
+    setFormData((prev) => {
+      const updated = { ...prev };
+      if (fields.title)       updated.title       = fields.title;
+      if (fields.required_by) updated.required_by = fields.required_by;
+      if (fields.notes)       updated.notes       = fields.notes;
+      if (fields.project_id && projectsData?.results) {
+        const project = projectsData.results.find((p: Project) => p.id === fields.project_id);
+        if (project) {
+          updated.project_id   = project.id;
+          updated.project_code = project.code;
+          updated.title        = updated.title || project.name;
+        }
+      }
+      return updated;
+    });
   };
 
   const handleProductSelect = (product: Product | null) => {
@@ -446,7 +464,7 @@ function NewPurchaseRequestPageContent() {
               }}>
                 {t('section', 'requestedItems')}
               </h3>
-              <AIProcurementChat onAddItems={handleAIAddItems} />
+              <AIProcurementChat onAddItems={handleAIAddItems} onFormUpdate={handleAIFormUpdate} />
             </div>
             
             {/* Add Item Form - Unified Card */}
