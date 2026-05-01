@@ -98,10 +98,10 @@ export default function PrintLPOPage() {
   }
 
   const signatories = [
-    { label: 'Prepared By', name: po.pr_created_by_name        || '', stamp: resolveStamp(po.pr_created_by_name) },
-    { label: 'Checked By',  name: po.quotation_created_by_name || '', stamp: resolveStamp(po.quotation_created_by_name) ?? '/stamps/noura-stamp.svg' },
-    { label: 'Approved By', name: po.approved_by_name          || '', stamp: resolveStamp(po.approved_by_name)          ?? '/stamps/saif-stamp.svg'  },
-    { label: 'Supplier',    name: supplier?.name ?? '',               stamp: null },
+    { label: 'Prepared By', name: po.pr_created_by_name        || '',        stamp: resolveStamp(po.pr_created_by_name) },
+    { label: 'Checked By',  name: po.quotation_created_by_name || 'Noura',   stamp: resolveStamp(po.quotation_created_by_name) ?? '/stamps/noura-stamp.svg' },
+    { label: 'Approved By', name: po.approved_by_name          || 'Saif',    stamp: resolveStamp(po.approved_by_name)          ?? '/stamps/saif-stamp.svg'  },
+    { label: 'Supplier',    name: supplier?.name ?? '',                       stamp: null },
   ];
 
   return (
@@ -467,11 +467,11 @@ export default function PrintLPOPage() {
                     )}
                   </div>
                   {/* Label + name — pinned to bottom, same height for all */}
-                  <div style={{ flexShrink:0, padding:'0 8px 8px', textAlign:'center' }}>
-                    <div style={{ height:1, background:BORDER, marginBottom:5 }} />
-                    <div style={{ fontSize:'6.5pt', fontWeight:700, textTransform:'uppercase',
+                  <div style={{ flexShrink:0, padding:'0 6px 7px', textAlign:'center' }}>
+                    <div style={{ height:1, background:BORDER, marginBottom:4 }} />
+                    <div style={{ fontSize:'5.5pt', fontWeight:700, textTransform:'uppercase',
                       letterSpacing:'.6px', color:GREY }}>{s.label}</div>
-                    <div style={{ fontSize:'8pt', fontWeight:600, color:NAVY, marginTop:2, minHeight:14 }}>
+                    <div style={{ fontSize:'7pt', fontWeight:600, color:NAVY, marginTop:2, minHeight:12 }}>
                       {s.name || ''}
                     </div>
                   </div>
