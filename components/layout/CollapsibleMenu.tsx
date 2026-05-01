@@ -9,6 +9,7 @@ interface MenuItem {
   name: string;
   href: string;
   icon?: ReactNode;
+  badge?: number;
   adminOnly?: boolean;
   superAdminOnly?: boolean;
   roles?: string[];
@@ -131,7 +132,25 @@ export default function CollapsibleMenu({
                     {item.icon}
                   </span>
                 )}
-                <span className="truncate font-semibold">{item.name}</span>
+                <span className="truncate font-semibold flex-1">{item.name}</span>
+                {!!item.badge && item.badge > 0 && (
+                  <span style={{
+                    flexShrink: 0,
+                    minWidth: 18, height: 18,
+                    borderRadius: 9,
+                    background: '#ef4444',
+                    color: '#fff',
+                    fontSize: 10,
+                    fontWeight: 700,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0 5px',
+                    lineHeight: 1,
+                  }}>
+                    {item.badge > 99 ? '99+' : item.badge}
+                  </span>
+                )}
               </Link>
             );
           })}

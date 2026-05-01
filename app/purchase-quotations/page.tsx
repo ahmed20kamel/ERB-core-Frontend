@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
@@ -111,6 +111,7 @@ export default function PurchaseQuotationsPage() {
     mutationFn: purchaseQuotationsApi.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['purchase-quotations'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-count'] });
       toast('Quotation deleted successfully', 'success');
     },
     onError: () => {
@@ -124,6 +125,7 @@ export default function PurchaseQuotationsPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['purchase-quotations'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-count'] });
       const count = selectedItems.size;
       setSelectedItems(new Set());
       toast(`${count} quotation(s) deleted successfully`, 'success');
@@ -487,3 +489,4 @@ export default function PurchaseQuotationsPage() {
     </MainLayout>
   );
 }
+

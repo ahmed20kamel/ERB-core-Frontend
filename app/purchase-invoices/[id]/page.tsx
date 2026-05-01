@@ -52,6 +52,7 @@ export default function PurchaseInvoiceDetailPage() {
     mutationFn: () => purchaseInvoicesApi.approve(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['purchase-invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-count'] });
       toast('Invoice approved successfully!', 'success');
     },
     onError: (error: any) => {
@@ -63,6 +64,7 @@ export default function PurchaseInvoiceDetailPage() {
     mutationFn: (reason: string) => purchaseInvoicesApi.reject(id, reason),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['purchase-invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-count'] });
       setRejectDialogOpen(false);
       toast('Invoice rejected', 'info');
     },
@@ -75,6 +77,7 @@ export default function PurchaseInvoiceDetailPage() {
     mutationFn: () => purchaseInvoicesApi.markPaid(id, {}),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['purchase-invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-count'] });
       toast('Invoice marked as paid!', 'success');
     },
     onError: (error: any) => {

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
@@ -148,6 +148,7 @@ export default function PurchaseRequestsPage() {
     mutationFn: purchaseRequestsApi.approve,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['purchase-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-count'] });
       toast('Request approved successfully', 'success');
     },
     onError: () => {
@@ -159,6 +160,7 @@ export default function PurchaseRequestsPage() {
     mutationFn: ({ id, reason }: { id: number; reason: string }) => purchaseRequestsApi.reject(id, reason),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['purchase-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-count'] });
       toast('Request rejected', 'info');
     },
     onError: (error: any) => {
@@ -171,6 +173,7 @@ export default function PurchaseRequestsPage() {
     mutationFn: purchaseRequestsApi.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['purchase-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-count'] });
       toast('Request deleted successfully', 'success');
     },
     onError: () => {
@@ -184,6 +187,7 @@ export default function PurchaseRequestsPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['purchase-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-count'] });
       const count = selectedItems.size;
       setSelectedItems(new Set());
       toast(`${count} request(s) deleted successfully`, 'success');
@@ -566,3 +570,4 @@ export default function PurchaseRequestsPage() {
     </MainLayout>
   );
 }
+

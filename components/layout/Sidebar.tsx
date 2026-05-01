@@ -6,6 +6,7 @@ import { useUIStore } from '@/lib/store/ui-store';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { useT } from '@/lib/i18n/useT';
 import CollapsibleMenu from './CollapsibleMenu';
+import { usePendingCounts } from '@/lib/hooks/use-pending-counts';
 import {
   DashboardIcon, FileTextIcon, BuildingIcon, PackageIcon,
   BriefcaseIcon, DollarIcon, UsersIcon, XIcon, ShoppingCartIcon, AlertIcon,
@@ -16,17 +17,18 @@ export default function Sidebar() {
   const { sidebarOpen, setSidebarOpen } = useUIStore();
   const { user } = useAuth();
   const t = useT();
+  const pending = usePendingCounts();
 
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(href + '/');
 
   const purchaseItems = [
-    { name: t('nav', 'prList'),         href: '/purchase-requests',  icon: <FileTextIcon className="w-4 h-4" /> },
-    { name: t('nav', 'qrList'),         href: '/quotation-requests', icon: <BriefcaseIcon className="w-4 h-4" /> },
-    { name: t('nav', 'quotationsList'), href: '/purchase-quotations',icon: <DollarIcon className="w-4 h-4" /> },
-    { name: t('nav', 'poList'),         href: '/purchase-orders',    icon: <ShoppingCartIcon className="w-4 h-4" /> },
-    { name: t('nav', 'grnList'),        href: '/goods-receiving',    icon: <PackageIcon className="w-4 h-4" /> },
-    { name: t('nav', 'invoiceList'),    href: '/purchase-invoices',  icon: <DollarIcon className="w-4 h-4" /> },
+    { name: t('nav', 'prList'),         href: '/purchase-requests',  icon: <FileTextIcon className="w-4 h-4" />,    badge: pending.pr        },
+    { name: t('nav', 'qrList'),         href: '/quotation-requests', icon: <BriefcaseIcon className="w-4 h-4" />                             },
+    { name: t('nav', 'quotationsList'), href: '/purchase-quotations',icon: <DollarIcon className="w-4 h-4" />,     badge: pending.quotation  },
+    { name: t('nav', 'poList'),         href: '/purchase-orders',    icon: <ShoppingCartIcon className="w-4 h-4" />,badge: pending.po         },
+    { name: t('nav', 'grnList'),        href: '/goods-receiving',    icon: <PackageIcon className="w-4 h-4" />                               },
+    { name: t('nav', 'invoiceList'),    href: '/purchase-invoices',  icon: <DollarIcon className="w-4 h-4" />,     badge: pending.invoice    },
   ];
 
   const otherItems = [

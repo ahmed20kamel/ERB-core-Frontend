@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -125,6 +125,7 @@ export default function PurchaseInvoicesPage() {
     mutationFn: purchaseInvoicesApi.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['purchase-invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-count'] });
       toast('Invoice deleted successfully', 'success');
     },
     onError: () => {
@@ -138,6 +139,7 @@ export default function PurchaseInvoicesPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['purchase-invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-count'] });
       const count = selectedItems.size;
       setSelectedItems(new Set());
       toast(`${count} invoice(s) deleted successfully`, 'success');
@@ -449,3 +451,4 @@ export default function PurchaseInvoicesPage() {
     </MainLayout>
   );
 }
+

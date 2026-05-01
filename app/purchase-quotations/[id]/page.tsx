@@ -46,6 +46,7 @@ export default function PurchaseQuotationDetailPage() {
     mutationFn: () => purchaseQuotationsApi.award(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['purchase-quotations'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-count'] });
       toast('Quotation awarded successfully!', 'success');
     },
     onError: (error: any) => {
@@ -58,6 +59,7 @@ export default function PurchaseQuotationDetailPage() {
     mutationFn: () => purchaseQuotationsApi.reject(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['purchase-quotations'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-count'] });
       toast('Quotation rejected', 'info');
     },
     onError: (error: any) => {

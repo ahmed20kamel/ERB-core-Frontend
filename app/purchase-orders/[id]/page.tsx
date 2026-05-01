@@ -52,6 +52,7 @@ export default function PurchaseOrderDetailPage() {
     mutationFn: () => purchaseOrdersApi.approve(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-count'] });
       toast('Purchase Order approved successfully!', 'success');
     },
     onError: (error: any) => {
@@ -63,6 +64,7 @@ export default function PurchaseOrderDetailPage() {
     mutationFn: (reason: string) => purchaseOrdersApi.reject(id, reason),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-count'] });
       setRejectDialogOpen(false);
       toast('Purchase Order rejected', 'info');
     },
@@ -75,6 +77,7 @@ export default function PurchaseOrderDetailPage() {
     mutationFn: (reason: string) => purchaseOrdersApi.cancel(id, reason),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-count'] });
       setCancelDialogOpen(false);
       toast('Purchase Order cancelled', 'info');
     },

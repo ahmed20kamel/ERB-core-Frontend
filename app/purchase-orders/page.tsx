@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
@@ -57,6 +57,7 @@ export default function PurchaseOrdersPage() {
     mutationFn: (id: number) => purchaseOrdersApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-count'] });
       toast('Purchase Order deleted', 'success');
     },
     onError: () => toast('Failed to delete purchase order', 'error'),
@@ -75,6 +76,7 @@ export default function PurchaseOrdersPage() {
       await purchaseOrdersApi.delete(id).catch(() => {});
     }
     queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-count'] });
     setSelectedItems(new Set());
     toast(`Deleted ${selectedItems.size} purchase orders`, 'success');
   };
@@ -258,3 +260,4 @@ export default function PurchaseOrdersPage() {
     </MainLayout>
   );
 }
+

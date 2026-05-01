@@ -56,6 +56,7 @@ export default function PurchaseRequestDetailPage() {
     mutationFn: purchaseRequestsApi.approve,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['purchase-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-count'] });
     },
   });
 
@@ -63,6 +64,7 @@ export default function PurchaseRequestDetailPage() {
     mutationFn: (reason: string) => purchaseRequestsApi.reject(id, reason),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['purchase-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-count'] });
       setRejectDialogOpen(false);
     },
     onError: (error: any) => {
@@ -75,6 +77,7 @@ export default function PurchaseRequestDetailPage() {
     mutationFn: purchaseRequestsApi.undoApproval,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['purchase-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['pending-count'] });
     },
   });
 
