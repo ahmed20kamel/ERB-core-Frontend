@@ -78,32 +78,41 @@ body {
 
 /* ── Print media ── */
 @media print {
-  @page { size: A4 portrait; margin: 0; }
+  /* Natural page margins — no double-margin with inner padding */
+  @page {
+    size: A4 portrait;
+    margin: 8mm 10mm;
+  }
 
-  body {
+  html, body {
     background: #fff !important;
+    margin: 0 !important;
+    padding: 0 !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
 
-  /* Hide the control bar */
+  /* Hide the control bar completely */
   .print-controls-bar {
     display: none !important;
   }
 
-  /* A4 sheet fills the page */
-  .print-doc {
-    width: 210mm !important;
-    min-height: 297mm !important;
-    margin: 0 !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-    page-break-after: always;
-  }
-
-  /* Page wrapper background */
+  /* Page wrapper: no grey, no padding */
   .print-page-bg {
     background: #fff !important;
     min-height: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* A4 sheet: natural height, no forced page breaks */
+  .print-doc {
+    width: 100% !important;
+    min-height: auto !important;
+    margin: 0 !important;
+    padding: 0 8mm !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    /* Removed: page-break-after: always — was creating blank trailing page */
   }
 }

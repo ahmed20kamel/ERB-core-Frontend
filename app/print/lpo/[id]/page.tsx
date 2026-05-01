@@ -49,6 +49,14 @@ export default function PrintLPOPage() {
     retry: 1,
   });
 
+  // PDF filename = LPO number (browsers use document.title as the Save-as-PDF filename)
+  useEffect(() => {
+    if (po?.order_number) {
+      document.title = `LPO-${po.order_number}`;
+    }
+    return () => { document.title = 'ERB Procurement'; };
+  }, [po?.order_number]);
+
   if (!hasToken || isLoading) return (
     <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'Inter,sans-serif', color:'#888' }}>
       Loading…
@@ -108,28 +116,41 @@ export default function PrintLPOPage() {
           <span style={{ fontWeight:700, fontSize:14, color:NAVY }}>LPO — {po.order_number}</span>
           <StatusBadge status={po.status} />
         </div>
-        <div style={{ display:'flex', gap:8 }}>
+        <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+          {/* Download PDF — title is already set to LPO number */}
           <button onClick={() => window.print()} style={{
             display:'inline-flex', alignItems:'center', gap:6,
-            padding:'6px 16px', borderRadius:6, border:`1px solid ${BORDER}`,
+            padding:'7px 18px', borderRadius:6,
+            background:NAVY, color:'#fff',
+            border:'none', fontSize:12, fontWeight:700, cursor:'pointer',
+            letterSpacing:'.2px',
+          }}>
+            ⬇ Download PDF
+          </button>
+          {/* Print */}
+          <button onClick={() => window.print()} style={{
+            display:'inline-flex', alignItems:'center', gap:6,
+            padding:'7px 16px', borderRadius:6, border:`1px solid ${BORDER}`,
             background:LIGHT, color:'#374151', fontSize:12, fontWeight:600, cursor:'pointer',
-          }}>🖨 Print / Save PDF</button>
+          }}>
+            🖨 Print
+          </button>
           <button onClick={() => window.close()} style={{
             display:'inline-flex', alignItems:'center', gap:6,
-            padding:'6px 14px', borderRadius:6, border:`1px solid #e5e7eb`,
+            padding:'7px 12px', borderRadius:6, border:`1px solid #e5e7eb`,
             background:'transparent', color:'#9ca3af', fontSize:12, cursor:'pointer',
-          }}>✕ Close</button>
+          }}>✕</button>
         </div>
       </div>
 
       {/* ── A4 sheet ── */}
       <div className="print-doc" style={{
-        width:'210mm', minHeight:'297mm',
+        width:'210mm', minHeight:'auto',
         margin:'24px auto', background:'#fff',
         borderRadius:4, boxShadow:'0 4px 32px rgba(0,0,0,.18)',
         overflow:'hidden',
       }}>
-        <div style={{ padding:'12mm 16mm 10mm', color:NAVY, lineHeight:1.5 }}>
+        <div style={{ padding:'10mm 14mm 8mm', color:NAVY, lineHeight:1.5 }}>
 
           {/* ── HEADER ── */}
           <table style={{ width:'100%', borderCollapse:'collapse', marginBottom:0 }}>
