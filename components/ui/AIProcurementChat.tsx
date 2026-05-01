@@ -72,42 +72,42 @@ export default function AIProcurementChat({ onAddItems, onFormUpdate }: Props) {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading, interimText]);
 
-  // ── Pick best available voice ─────────────────────────────────────────
-  const pickVoice = useCallback((lang: string): SpeechSynthesisVoice | null => {
-    const voices = window.speechSynthesis.getVoices();
-    const langPrefix = lang.split('-')[0];
-    // Prefer neural / natural / premium voices
-    const priority = ['Neural', 'Natural', 'Premium', 'Enhanced', 'Online'];
-    for (const kw of priority) {
-      const v = voices.find(v => v.lang.startsWith(langPrefix) && v.name.includes(kw));
-      if (v) return v;
-    }
-    // Prefer named good Arabic voices
-    const named = ['Zariyah', 'Hamed', 'Maged', 'Tarik', 'Layla'];
-    for (const n of named) {
-      const v = voices.find(v => v.name.includes(n));
-      if (v) return v;
-    }
-    return voices.find(v => v.lang.startsWith(langPrefix)) || null;
-  }, []);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // ── Speak text with Web Speech Synthesis ─────────────────────────────
+  // ── Speak via OpenAI TTS (falls back to browser if API fails) ────────
   const speak = useCallback((text: string, onDone?: () => void) => {
-    if (!('speechSynthesis' in window)) { onDone?.(); return; }
-    window.speechSynthesis.cancel();
     if (!text.trim()) { onDone?.(); return; }
-    const isArabic = /[؀-ۿ]/.test(text);
-    const lang = isArabic ? 'ar-SA' : 'en-US';
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang  = lang;
-    utterance.rate  = isArabic ? 0.92 : 0.96;   // slightly slower = more natural
-    utterance.pitch = 1;
-    const voice = pickVoice(lang);
-    if (voice) utterance.voice = voice;
-    utterance.onend   = () => onDone?.();
-    utterance.onerror = () => onDone?.();
-    window.speechSynthesis.speak(utterance);
-  }, [pickVoice]);
+
+    // Stop any current audio
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = '';
+      audioRef.current = null;
+    }
+    window.speechSynthesis?.cancel();
+
+    apiClient.post('/ai/tts/', { text }, { responseType: 'blob' })
+      .then((res) => {
+        const url = URL.createObjectURL(res.data);
+        const audio = new Audio(url);
+        audioRef.current = audio;
+        audio.onended  = () => { URL.revokeObjectURL(url); audioRef.current = null; onDone?.(); };
+        audio.onerror  = () => { URL.revokeObjectURL(url); audioRef.current = null; onDone?.(); };
+        audio.play().catch(() => { onDone?.(); });
+      })
+      .catch(() => {
+        // Fallback to browser TTS
+        if ('speechSynthesis' in window) {
+          const u = new SpeechSynthesisUtterance(text);
+          u.lang  = /[؀-ۿ]/.test(text) ? 'ar-SA' : 'en-US';
+          u.rate  = 0.92;
+          u.onend = () => onDone?.();
+          window.speechSynthesis.speak(u);
+        } else {
+          onDone?.();
+        }
+      });
+  }, []);
 
   // ── Stop voice recognition cleanly ───────────────────────────────────
   const stopRecognition = useCallback(() => {
@@ -264,7 +264,11 @@ export default function AIProcurementChat({ onAddItems, onFormUpdate }: Props) {
   }, [voiceState, stopRecognition, startListening]);
 
   // Cleanup on unmount
-  useEffect(() => () => { stopRecognition(); window.speechSynthesis?.cancel(); }, [stopRecognition]);
+  useEffect(() => () => {
+    stopRecognition();
+    window.speechSynthesis?.cancel();
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+  }, [stopRecognition]);
 
   // ── Text send ─────────────────────────────────────────────────────────
   const send = useCallback(() => sendMessage(input), [sendMessage, input]);
