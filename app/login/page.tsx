@@ -30,7 +30,7 @@ export default function LoginPage() {
     onSuccess: (data) => {
       setError('');
       setAuth(data.user, data.tokens.access, data.tokens.refresh);
-      router.push('/dashboard');
+      // redirect handled by the useEffect watching isAuthenticated
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.error || err?.response?.data?.detail || 'Invalid username or password';
