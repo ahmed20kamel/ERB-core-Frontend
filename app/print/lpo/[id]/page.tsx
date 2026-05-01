@@ -157,15 +157,71 @@ export default function PrintLPOPage() {
           <table style={{ width:'100%', borderCollapse:'collapse', marginBottom:0 }}>
             <tbody>
               <tr>
-                <td style={{ width:80, verticalAlign:'middle' }}>
+                <td style={{ width:80, verticalAlign:'top', paddingTop:4 }}>
                   <Image src={COMPANY.logo} alt="Logo" width={68} height={68}
                     style={{ objectFit:'contain', display:'block' }} priority unoptimized />
                 </td>
-                <td style={{ verticalAlign:'middle', paddingLeft:14 }}>
+                <td style={{ verticalAlign:'top', paddingLeft:14 }}>
+                  {/* Company info */}
                   <div style={{ fontSize:'13pt', fontWeight:800, color:NAVY, letterSpacing:'-.3px', lineHeight:1.2 }}>{COMPANY.name}</div>
                   <div style={{ fontSize:'8pt', color:GREY, marginTop:2 }}>{COMPANY.address}</div>
                   <div style={{ fontSize:'8pt', color:GREY, marginTop:1 }}>{COMPANY.phone} &nbsp;·&nbsp; {COMPANY.email}</div>
                   <div style={{ fontSize:'8pt', color:GREY, marginTop:1 }}>TRN: {COMPANY.trn}</div>
+                  {/* Project + Site Engineer + Cost Code — inline below company info */}
+                  {(hasProjectInfo || po.cost_code) && (
+                    <div style={{
+                      display:'flex', alignItems:'stretch', gap:0,
+                      background:LIGHT, border:`1px solid ${BORDER}`, borderRadius:6,
+                      marginTop:8, overflow:'hidden', fontSize:'8.5pt',
+                    }}>
+                      {po.project_name && (
+                        <div style={{ display:'flex', alignItems:'center', gap:8, padding:'5px 12px', borderRight:`1px solid ${BORDER}`, flex:1 }}>
+                          <div style={{ width:3, height:22, background:NAVY, borderRadius:2, flexShrink:0 }} />
+                          <div>
+                            <div style={{ fontSize:'6pt', fontWeight:700, textTransform:'uppercase', letterSpacing:'.5px', color:GREY, marginBottom:1 }}>Project</div>
+                            <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                              <span style={{ fontWeight:700, color:NAVY, fontSize:'8.5pt' }}>{po.project_name}</span>
+                              {po.project_code && (
+                                <span style={{ background:NAVY, color:'#fff', borderRadius:3, padding:'1px 6px', fontSize:'6.5pt', fontWeight:700 }}>
+                                  {po.project_code}
+                                </span>
+                              )}
+                              {po.project_location && (
+                                <span style={{ color:GREY, fontSize:'7.5pt' }}>· {po.project_location}</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      {po.pr_created_by_name && (
+                        <div style={{ display:'flex', alignItems:'center', gap:8, padding:'5px 12px', borderRight: po.cost_code ? `1px solid ${BORDER}` : 'none' }}>
+                          <div style={{ width:3, height:22, background:NAVY, borderRadius:2, flexShrink:0 }} />
+                          <div>
+                            <div style={{ fontSize:'6pt', fontWeight:700, textTransform:'uppercase', letterSpacing:'.5px', color:GREY, marginBottom:1 }}>Site Engineer</div>
+                            <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                              <span style={{ fontWeight:600, color:NAVY, fontSize:'8.5pt' }}>{po.pr_created_by_name}</span>
+                              {po.pr_created_by_phone && (
+                                <span style={{ color:GREY, fontSize:'7.5pt' }}>· {po.pr_created_by_phone}</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      {po.cost_code && (
+                        <div style={{ display:'flex', alignItems:'center', gap:8, padding:'5px 12px' }}>
+                          <div style={{ width:3, height:22, background:NAVY, borderRadius:2, flexShrink:0 }} />
+                          <div>
+                            <div style={{ fontSize:'6pt', fontWeight:700, textTransform:'uppercase', letterSpacing:'.5px', color:GREY, marginBottom:1 }}>Cost Code</div>
+                            <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                              <span style={{ fontWeight:700, color:NAVY, fontSize:'8.5pt' }}>{po.cost_code.excel_code}</span>
+                              <span style={{ color:BORDER, fontSize:'7pt' }}>|</span>
+                              <span style={{ color:GREY, fontWeight:400, fontSize:'8pt' }}>{po.cost_code.description.slice(0,55)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </td>
                 <td style={{ verticalAlign:'top', textAlign:'right', width:190 }}>
                   <div style={{
@@ -191,65 +247,6 @@ export default function PrintLPOPage() {
               </tr>
             </tbody>
           </table>
-
-          {/* ── Project + Site Engineer + Cost Code — single row ── */}
-          {(hasProjectInfo || po.cost_code) && (
-            <div style={{
-              display:'flex', alignItems:'stretch', gap:0,
-              background:LIGHT, border:`1px solid ${BORDER}`, borderRadius:6,
-              marginTop:8, overflow:'hidden', fontSize:'8.5pt',
-            }}>
-              {/* Project */}
-              {po.project_name && (
-                <div style={{ display:'flex', alignItems:'center', gap:10, padding:'6px 14px', borderRight:`1px solid ${BORDER}`, flex:1 }}>
-                  <div style={{ width:3, height:24, background:NAVY, borderRadius:2, flexShrink:0 }} />
-                  <div>
-                    <div style={{ fontSize:'6.5pt', fontWeight:700, textTransform:'uppercase', letterSpacing:'.5px', color:GREY, marginBottom:1 }}>Project</div>
-                    <div style={{ display:'flex', alignItems:'center', gap:7 }}>
-                      <span style={{ fontWeight:700, color:NAVY, fontSize:'9pt' }}>{po.project_name}</span>
-                      {po.project_code && (
-                        <span style={{ background:NAVY, color:'#fff', borderRadius:3, padding:'1px 7px', fontSize:'7pt', fontWeight:700 }}>
-                          {po.project_code}
-                        </span>
-                      )}
-                      {po.project_location && (
-                        <span style={{ color:GREY, fontSize:'8pt' }}>· {po.project_location}</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-              {/* Site Engineer */}
-              {po.pr_created_by_name && (
-                <div style={{ display:'flex', alignItems:'center', gap:10, padding:'6px 14px', borderRight: po.cost_code ? `1px solid ${BORDER}` : 'none' }}>
-                  <div style={{ width:3, height:24, background:NAVY, borderRadius:2, flexShrink:0 }} />
-                  <div>
-                    <div style={{ fontSize:'6.5pt', fontWeight:700, textTransform:'uppercase', letterSpacing:'.5px', color:GREY, marginBottom:1 }}>Site Engineer</div>
-                    <div style={{ display:'flex', alignItems:'center', gap:7 }}>
-                      <span style={{ fontWeight:600, color:NAVY, fontSize:'9pt' }}>{po.pr_created_by_name}</span>
-                      {po.pr_created_by_phone && (
-                        <span style={{ color:GREY, fontSize:'8pt' }}>· {po.pr_created_by_phone}</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-              {/* Cost Code */}
-              {po.cost_code && (
-                <div style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 14px' }}>
-                  <div style={{ width:3, height:24, background:NAVY, borderRadius:2, flexShrink:0 }} />
-                  <div>
-                    <div style={{ fontSize:'6.5pt', fontWeight:700, textTransform:'uppercase', letterSpacing:'.5px', color:GREY, marginBottom:1 }}>Cost Code</div>
-                    <div style={{ display:'flex', alignItems:'center', gap:7 }}>
-                      <span style={{ fontWeight:700, color:NAVY, fontSize:'9pt' }}>{po.cost_code.excel_code}</span>
-                      <span style={{ color:BORDER, fontSize:'7.5pt' }}>|</span>
-                      <span style={{ color:GREY, fontWeight:400, fontSize:'8.5pt' }}>{po.cost_code.description.slice(0,60)}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
 
           {/* ── Divider ── */}
           <div style={{ margin:'10px 0 14px', borderTop:`2px solid ${NAVY}` }} />
