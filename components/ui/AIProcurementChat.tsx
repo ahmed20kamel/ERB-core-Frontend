@@ -211,6 +211,15 @@ export default function AIProcurementChat({ onAddItems, onFormUpdate }: Props) {
     recognitionRef.current = rec;
 
     rec.onresult = (e: any) => {
+      // Barge-in: stop AI speech the moment user starts talking
+      if (audioRef.current && !audioRef.current.paused) {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+        audioRef.current = null;
+        window.speechSynthesis?.cancel();
+        setVoiceState('listening');
+      }
+
       let interim = '';
       let finalChunk = '';
       for (let i = e.resultIndex; i < e.results.length; i++) {
@@ -232,7 +241,7 @@ export default function AIProcurementChat({ onAddItems, onFormUpdate }: Props) {
             setVoiceState('thinking');
             sendMessage(text, true);
           }
-        }, 1500);
+        }, 900);
       }
     };
 
