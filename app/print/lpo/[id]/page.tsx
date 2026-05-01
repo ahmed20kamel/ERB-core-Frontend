@@ -192,20 +192,20 @@ export default function PrintLPOPage() {
             </tbody>
           </table>
 
-          {/* ── Project + PR Engineer info bar ── */}
-          {hasProjectInfo && (
+          {/* ── Project + Site Engineer + Cost Code — single row ── */}
+          {(hasProjectInfo || po.cost_code) && (
             <div style={{
               display:'flex', alignItems:'stretch', gap:0,
               background:LIGHT, border:`1px solid ${BORDER}`, borderRadius:6,
               marginTop:8, overflow:'hidden', fontSize:'8.5pt',
             }}>
-              {/* Project side */}
+              {/* Project */}
               {po.project_name && (
-                <div style={{ display:'flex', alignItems:'center', gap:10, padding:'7px 14px', borderRight:`1px solid ${BORDER}`, flex:1 }}>
-                  <div style={{ width:3, height:28, background:NAVY, borderRadius:2, flexShrink:0 }} />
+                <div style={{ display:'flex', alignItems:'center', gap:10, padding:'6px 14px', borderRight:`1px solid ${BORDER}`, flex:1 }}>
+                  <div style={{ width:3, height:24, background:NAVY, borderRadius:2, flexShrink:0 }} />
                   <div>
-                    <div style={{ fontSize:'7pt', fontWeight:700, textTransform:'uppercase', letterSpacing:'.5px', color:GREY, marginBottom:2 }}>Project</div>
-                    <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <div style={{ fontSize:'6.5pt', fontWeight:700, textTransform:'uppercase', letterSpacing:'.5px', color:GREY, marginBottom:1 }}>Project</div>
+                    <div style={{ display:'flex', alignItems:'center', gap:7 }}>
                       <span style={{ fontWeight:700, color:NAVY, fontSize:'9pt' }}>{po.project_name}</span>
                       {po.project_code && (
                         <span style={{ background:NAVY, color:'#fff', borderRadius:3, padding:'1px 7px', fontSize:'7pt', fontWeight:700 }}>
@@ -219,13 +219,13 @@ export default function PrintLPOPage() {
                   </div>
                 </div>
               )}
-              {/* PR Engineer side */}
+              {/* Site Engineer */}
               {po.pr_created_by_name && (
-                <div style={{ display:'flex', alignItems:'center', gap:10, padding:'7px 14px' }}>
-                  <div style={{ width:3, height:28, background:NAVY, borderRadius:2, flexShrink:0 }} />
+                <div style={{ display:'flex', alignItems:'center', gap:10, padding:'6px 14px', borderRight: po.cost_code ? `1px solid ${BORDER}` : 'none' }}>
+                  <div style={{ width:3, height:24, background:NAVY, borderRadius:2, flexShrink:0 }} />
                   <div>
-                    <div style={{ fontSize:'7pt', fontWeight:700, textTransform:'uppercase', letterSpacing:'.5px', color:GREY, marginBottom:2 }}>Site Engineer</div>
-                    <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <div style={{ fontSize:'6.5pt', fontWeight:700, textTransform:'uppercase', letterSpacing:'.5px', color:GREY, marginBottom:1 }}>Site Engineer</div>
+                    <div style={{ display:'flex', alignItems:'center', gap:7 }}>
                       <span style={{ fontWeight:600, color:NAVY, fontSize:'9pt' }}>{po.pr_created_by_name}</span>
                       {po.pr_created_by_phone && (
                         <span style={{ color:GREY, fontSize:'8pt' }}>· {po.pr_created_by_phone}</span>
@@ -234,20 +234,20 @@ export default function PrintLPOPage() {
                   </div>
                 </div>
               )}
-            </div>
-          )}
-
-          {/* ── Cost Code bar ── */}
-          {po.cost_code && (
-            <div style={{
-              display:'flex', alignItems:'center', gap:10,
-              background:LIGHT, border:`1px solid ${BORDER}`, borderLeft:`3px solid ${NAVY}`,
-              borderRadius:'0 4px 4px 0', padding:'5px 14px', marginTop:6, fontSize:'8.5pt',
-            }}>
-              <span style={{ fontSize:'6.5pt', fontWeight:700, textTransform:'uppercase', letterSpacing:'.5px', color:GREY }}>Cost Code</span>
-              <span style={{ fontWeight:700, color:NAVY, fontSize:'9pt' }}>{po.cost_code.excel_code}</span>
-              <span style={{ color:BORDER, fontSize:'7.5pt' }}>|</span>
-              <span style={{ color:GREY, fontWeight:400 }}>{po.cost_code.description.slice(0,80)}</span>
+              {/* Cost Code */}
+              {po.cost_code && (
+                <div style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 14px' }}>
+                  <div style={{ width:3, height:24, background:NAVY, borderRadius:2, flexShrink:0 }} />
+                  <div>
+                    <div style={{ fontSize:'6.5pt', fontWeight:700, textTransform:'uppercase', letterSpacing:'.5px', color:GREY, marginBottom:1 }}>Cost Code</div>
+                    <div style={{ display:'flex', alignItems:'center', gap:7 }}>
+                      <span style={{ fontWeight:700, color:NAVY, fontSize:'9pt' }}>{po.cost_code.excel_code}</span>
+                      <span style={{ color:BORDER, fontSize:'7.5pt' }}>|</span>
+                      <span style={{ color:GREY, fontWeight:400, fontSize:'8.5pt' }}>{po.cost_code.description.slice(0,60)}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
