@@ -72,22 +72,42 @@ export default function AIProcurementChat({ onAddItems, onFormUpdate }: Props) {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading, interimText]);
 
+  // ── Pick best available voice ─────────────────────────────────────────
+  const pickVoice = useCallback((lang: string): SpeechSynthesisVoice | null => {
+    const voices = window.speechSynthesis.getVoices();
+    const langPrefix = lang.split('-')[0];
+    // Prefer neural / natural / premium voices
+    const priority = ['Neural', 'Natural', 'Premium', 'Enhanced', 'Online'];
+    for (const kw of priority) {
+      const v = voices.find(v => v.lang.startsWith(langPrefix) && v.name.includes(kw));
+      if (v) return v;
+    }
+    // Prefer named good Arabic voices
+    const named = ['Zariyah', 'Hamed', 'Maged', 'Tarik', 'Layla'];
+    for (const n of named) {
+      const v = voices.find(v => v.name.includes(n));
+      if (v) return v;
+    }
+    return voices.find(v => v.lang.startsWith(langPrefix)) || null;
+  }, []);
+
   // ── Speak text with Web Speech Synthesis ─────────────────────────────
   const speak = useCallback((text: string, onDone?: () => void) => {
     if (!('speechSynthesis' in window)) { onDone?.(); return; }
     window.speechSynthesis.cancel();
-    // Strip markdown and emoji for cleaner TTS
-    const clean = text.replace(/[*_`#~\[\]()]/g, '').replace(/✓|❌|🤖|😊|🙏/g, '').trim();
-    const utterance = new SpeechSynthesisUtterance(clean);
-    // Detect Arabic
-    const isArabic = /[؀-ۿ]/.test(clean);
-    utterance.lang  = isArabic ? 'ar-SA' : 'en-US';
-    utterance.rate  = 1.05;
+    if (!text.trim()) { onDone?.(); return; }
+    const isArabic = /[؀-ۿ]/.test(text);
+    const lang = isArabic ? 'ar-SA' : 'en-US';
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang  = lang;
+    utterance.rate  = isArabic ? 0.92 : 0.96;   // slightly slower = more natural
     utterance.pitch = 1;
-    utterance.onend = () => onDone?.();
+    const voice = pickVoice(lang);
+    if (voice) utterance.voice = voice;
+    utterance.onend   = () => onDone?.();
     utterance.onerror = () => onDone?.();
     window.speechSynthesis.speak(utterance);
-  }, []);
+  }, [pickVoice]);
 
   // ── Stop voice recognition cleanly ───────────────────────────────────
   const stopRecognition = useCallback(() => {
@@ -122,7 +142,7 @@ export default function AIProcurementChat({ onAddItems, onFormUpdate }: Props) {
       }
 
       const res = await apiClient.post('/ai/chat/', fd);
-      const { reply, tool_use } = res.data;
+      const { reply, tool_use, spoken_reply } = res.data;
 
       // Handle form fields
       if (tool_use?.form && onFormUpdate) {
@@ -153,10 +173,10 @@ export default function AIProcurementChat({ onAddItems, onFormUpdate }: Props) {
       const assistantText = tool_use?.message || reply || '✓ تم';
       setMessages((prev) => [...prev, { role: 'assistant', content: assistantText, items: addedItems.length ? addedItems : undefined }]);
 
-      // Voice mode: speak the reply then resume listening
+      // Voice mode: speak clean version then resume listening
       if (isVoice) {
         setVoiceState('speaking');
-        speak(assistantText, () => {
+        speak(spoken_reply || assistantText, () => {
           setVoiceState('listening');
           startListening(true);
         });
