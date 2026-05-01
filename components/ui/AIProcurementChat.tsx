@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import apiClient from '@/lib/api/client';
 import { Product } from '@/types';
 import { productsApi } from '@/lib/api/products';
@@ -316,15 +317,26 @@ export default function AIProcurementChat({ onAddItems, onFormUpdate }: Props) {
   if (!open) {
     return (
       <button type="button" onClick={() => setOpen(true)} style={{
-        display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px',
-        borderRadius: 24, background: 'linear-gradient(135deg,#f97316,#ea580c)',
-        color: '#fff', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700,
-        boxShadow: '0 2px 12px rgba(249,115,22,0.4)', transition: 'all 0.2s',
+        display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px',
+        borderRadius: 8, background: '#fff',
+        color: '#1a1a2e', border: '1.5px solid #e2e8f0', cursor: 'pointer',
+        fontSize: 12, fontWeight: 600,
+        boxShadow: '0 1px 6px rgba(0,0,0,0.08)', transition: 'box-shadow 0.2s, border-color 0.2s',
       }}
-        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1.05)'; }}
-        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; }}
+        onMouseEnter={(e) => {
+          const el = e.currentTarget as HTMLElement;
+          el.style.boxShadow = '0 4px 16px rgba(249,115,22,0.18)';
+          el.style.borderColor = '#f97316';
+        }}
+        onMouseLeave={(e) => {
+          const el = e.currentTarget as HTMLElement;
+          el.style.boxShadow = '0 1px 6px rgba(0,0,0,0.08)';
+          el.style.borderColor = '#e2e8f0';
+        }}
       >
-        <span style={{ fontSize: 18 }}>🤖</span> AI Assistant
+        <Image src="/logo.svg" alt="ERB" width={22} height={22} style={{ flexShrink: 0 }} unoptimized />
+        <span style={{ color: '#f97316', fontWeight: 700 }}>AI</span>
+        <span style={{ color: '#64748b' }}>Assistant</span>
       </button>
     );
   }
@@ -341,18 +353,21 @@ export default function AIProcurementChat({ onAddItems, onFormUpdate }: Props) {
       {/* Header */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '12px 16px',
-        background: 'linear-gradient(135deg,#f97316,#ea580c)', color: '#fff',
+        padding: '10px 14px',
+        background: '#1a1a2e', color: '#fff',
+        borderBottom: '2px solid #f97316',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 20 }}>🤖</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Image src="/logo.svg" alt="ERB" width={32} height={32} style={{ flexShrink: 0 }} unoptimized />
           <div>
-            <div style={{ fontWeight: 700, fontSize: 14 }}>AI Procurement Assistant</div>
-            <div style={{ fontSize: 11, opacity: 0.85 }}>Claude · يفهم عربي وإنجليزي</div>
+            <div style={{ fontWeight: 700, fontSize: 13, letterSpacing: '.2px' }}>
+              <span style={{ color: '#f97316' }}>AI</span> Procurement Assistant
+            </div>
+            <div style={{ fontSize: 10, opacity: 0.6, marginTop: 1 }}>Claude · عربي / English</div>
           </div>
         </div>
         <button type="button" onClick={() => { stopRecognition(); window.speechSynthesis?.cancel(); setOpen(false); }}
-          style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 20, lineHeight: 1 }}>×</button>
+          style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 20, lineHeight: 1, opacity: 0.7 }}>×</button>
       </div>
 
       {/* Voice mode banner */}

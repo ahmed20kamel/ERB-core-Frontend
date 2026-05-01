@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
+import Image from 'next/image';
 import apiClient from '@/lib/api/client';
 import { productsApi } from '@/lib/api/products';
 import type { AIFormUpdate } from './AIProcurementChat';
@@ -221,17 +222,27 @@ export default function VoiceRealtimeChat({ onAddItems, onFormUpdate }: Props) {
           type="button"
           onClick={() => setOpen(true)}
           style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            padding: '8px 16px', borderRadius: 24,
-            background: 'linear-gradient(135deg,#8b5cf6,#7c3aed)',
-            color: '#fff', border: 'none', cursor: 'pointer',
-            fontSize: 13, fontWeight: 700,
-            boxShadow: '0 2px 12px rgba(139,92,246,0.4)',
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '7px 14px', borderRadius: 8,
+            background: '#fff',
+            color: '#1a1a2e', border: '1.5px solid #e2e8f0', cursor: 'pointer',
+            fontSize: 12, fontWeight: 600,
+            boxShadow: '0 1px 6px rgba(0,0,0,0.08)', transition: 'box-shadow 0.2s, border-color 0.2s',
           }}
-          onMouseEnter={e => (e.currentTarget as HTMLElement).style.transform = 'scale(1.05)'}
-          onMouseLeave={e => (e.currentTarget as HTMLElement).style.transform = 'scale(1)'}
+          onMouseEnter={e => {
+            const el = e.currentTarget as HTMLElement;
+            el.style.boxShadow = '0 4px 16px rgba(139,92,246,0.18)';
+            el.style.borderColor = '#8b5cf6';
+          }}
+          onMouseLeave={e => {
+            const el = e.currentTarget as HTMLElement;
+            el.style.boxShadow = '0 1px 6px rgba(0,0,0,0.08)';
+            el.style.borderColor = '#e2e8f0';
+          }}
         >
-          <span style={{ fontSize: 18 }}>🎙</span> Voice AI
+          <Image src="/logo.svg" alt="ERB" width={22} height={22} style={{ flexShrink: 0 }} unoptimized />
+          <span style={{ color: '#8b5cf6', fontWeight: 700 }}>Voice</span>
+          <span style={{ color: '#64748b' }}>AI</span>
         </button>
       )}
 
@@ -246,17 +257,22 @@ export default function VoiceRealtimeChat({ onAddItems, onFormUpdate }: Props) {
 
           {/* Header */}
           <div style={{
-            padding: '12px 16px',
-            background: 'linear-gradient(135deg,#8b5cf6,#7c3aed)',
-            color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            flexShrink: 0,
+            padding: '10px 14px',
+            background: '#1a1a2e', color: '#fff',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            flexShrink: 0, borderBottom: '2px solid #8b5cf6',
           }}>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: 14 }}>🎙 Voice Assistant</div>
-              <div style={{ fontSize: 11, opacity: 0.85 }}>GPT-4o Realtime · عربي / English</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <Image src="/logo.svg" alt="ERB" width={32} height={32} style={{ flexShrink: 0 }} unoptimized />
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 13, letterSpacing: '.2px' }}>
+                  <span style={{ color: '#8b5cf6' }}>Voice</span> AI Assistant
+                </div>
+                <div style={{ fontSize: 10, opacity: 0.6, marginTop: 1 }}>GPT-4o Realtime · عربي / English</div>
+              </div>
             </div>
             <button type="button" onClick={() => { stopVoice(); setOpen(false); }}
-              style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 22, lineHeight: 1, padding: 0 }}>×</button>
+              style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 22, lineHeight: 1, padding: 0, opacity: 0.7 }}>×</button>
           </div>
 
           {/* Visualization panel */}
